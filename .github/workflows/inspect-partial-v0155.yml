@@ -17,7 +17,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Inspect staged V0.155 archive
+      - name: Recover staged V0.155 prefix
         shell: bash
         run: |
           set -u
@@ -42,17 +42,31 @@ jobs:
           set +e
           xz -dc /tmp/partial.xz > /tmp/partial.tar 2>/tmp/xz.err
           xz_status=$?
+          mkdir -p /tmp/recovered
+          tar -xf /tmp/partial.tar -C /tmp/recovered 2>/tmp/tar-extract.err
+          tar_status=$?
           set -e
           echo "XZ_STATUS=$xz_status"
+          echo "TAR_STATUS=$tar_status"
           echo "PARTIAL_XZ_BYTES=$(wc -c </tmp/partial.xz)"
           echo "PARTIAL_TAR_BYTES=$(wc -c </tmp/partial.tar)"
+          cd /tmp/recovered
+          find . -type f -print | LC_ALL=C sort > /tmp/recovered-files.txt
+          sha256sum $(find . -type f -print | LC_ALL=C sort) > /tmp/recovered-sha256.txt || true
+          echo "RECOVERED_FILES=$(wc -l </tmp/recovered-files.txt)"
+          echo '--- LAST RECOVERED FILES ---'
+          tail -40 /tmp/recovered-files.txt
           echo '--- XZ ERROR ---'
           cat /tmp/xz.err || true
-          echo '--- LAST COMPLETE TAR ENTRIES ---'
-          set +e
-          tar -tvf /tmp/partial.tar 2>/tmp/tar.err | tail -40
-          tar_status=${PIPESTATUS[0]}
-          set -e
-          echo "TAR_STATUS=$tar_status"
-          echo '--- TAR ERROR ---'
-          cat /tmp/tar.err || true
+          echo '--- TAR EXTRACT ERROR ---'
+          cat /tmp/tar-extract.err || true
+
+      - name: Upload recovered manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: v0155-recovered-manifest
+          path: |
+            /tmp/recovered-files.txt
+            /tmp/recovered-sha256.txt
+          if-no-files-found: error
+          retention-days: 1
