@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - '.import-v0155/fresh-020.b64'
+      - '.import-v0155/fresh-029.b64'
 
 permissions:
   contents: write
