@@ -1,0 +1,62 @@
+{
+  "name": "notre-table",
+  "version": "0.154.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo start --ios",
+    "android": "expo start --android",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "audit": "node scripts/audit-project.cjs",
+    "regression": "node scripts/regression-tests.cjs",
+    "verify": "npm run preflight && npm run continuity:audit && npm run source:hygiene:audit && npm run backend:audit && npm run release:audit && npm run release:gate-test && npm run audit && npm run regression",
+    "preflight": "node scripts/environment-preflight.cjs",
+    "validate:bundle:android": "expo export --platform android --output-dir .validation/android",
+    "validate:bundle:ios": "expo export --platform ios --output-dir .validation/ios",
+    "validate:installed": "npm run validate:expo-deps && npm run typecheck && npm run verify && npm run validate:bundle:android && npm run validate:bundle:ios",
+    "backend:audit": "node scripts/backend-contract-audit.cjs",
+    "release:audit": "node scripts/release-audit.cjs",
+    "backend:live-smoke": "node scripts/backend-live-smoke.cjs",
+    "ci:validate": "npm run validate:installed",
+    "eas-build-pre-install": "node scripts/eas-build-pre-install.cjs",
+    "validate:expo-deps": "expo install --check",
+    "release:gate-test": "node scripts/eas-build-pre-install-tests.cjs",
+    "release:evidence": "node scripts/release-evidence.cjs",
+    "release:doctor": "node scripts/release-doctor.cjs",
+    "release:doctor:strict": "node scripts/release-doctor.cjs --strict",
+    "beta:acceptance:audit": "node scripts/beta-acceptance-audit.cjs",
+    "continuity:audit": "node scripts/continuity-audit.cjs",
+    "source:hygiene:audit": "node scripts/source-hygiene-audit.cjs"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@supabase/supabase-js": "^2.57.4",
+    "expo": "~57.0.17",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-url-polyfill": "^2.0.0",
+    "expo-notifications": "~57.0.18",
+    "expo-print": "~57.0.2",
+    "expo-sharing": "~57.0.19",
+    "expo-image-picker": "~57.0.17",
+    "expo-keep-awake": "~57.0.2",
+    "expo-localization": "~57.0.2",
+    "expo-file-system": "~57.0.7",
+    "expo-linking": "~57.0.10",
+    "expo-network": "~57.0.2",
+    "expo-system-ui": "~57.0.4",
+    "react-native-safe-area-context": "~5.7.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "engines": {
+    "node": "22.16.x",
+    "npm": "10.9.x"
+  },
+  "packageManager": "npm@10.9.2"
+}
