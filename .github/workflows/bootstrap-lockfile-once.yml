@@ -1,0 +1,59 @@
+name: Bootstrap lockfile once
+
+on:
+  push:
+    paths:
+      - '.github/workflows/bootstrap-lockfile-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Use Node 22.16.0
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.16.0'
+
+      - name: Verify toolchain
+        shell: bash
+        run: |
+          test "$(node --version)" = "v22.16.0"
+          test "$(npm --version)" = "10.9.2"
+
+      - name: Refuse existing lockfile
+        shell: bash
+        run: |
+          test ! -f package-lock.json
+
+      - name: Generate lockfile
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Prove clean install
+        run: npm ci --no-audit --no-fund
+
+      - name: Preserve validated lockfile
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: notre-table-package-lock-bootstrap
+          path: package-lock.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Commit validated lockfile and remove one-shot workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm .github/workflows/bootstrap-lockfile-once.yml
+          git add package-lock.json .github/workflows/bootstrap-lockfile-once.yml
+          git commit -m "Add validated npm lockfile"
+          git push
