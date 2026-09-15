@@ -1,0 +1,36 @@
+name: Inspect staged V0.155 archive
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.import-v0155/diag-ready.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect partial archive
+        shell: bash
+        run: |
+          set +e
+          cat .import-v0155/chunk000.b64 .import-v0155/chunk001.b64 .import-v0155/chunk002.b64 .import-v0155/chunk003.b64 .import-v0155/chunk004.b64 .import-v0155/chunk005.b64 .import-v0155/chunk006.b64 .import-v0155/chunk007.b64 .import-v0155/chunk008.b64 .import-v0155/chunk009.b64 .import-v0155/chunk010.b64 .import-v0155/chunk011.b64 .import-v0155/chunk012.b64 .import-v0155/chunk013.b64 .import-v0155/chunk014.b64 .import-v0155/chunk014z.b64 | base64 --decode > /tmp/partial.tar.xz
+          xz -dc /tmp/partial.tar.xz > /tmp/partial.tar 2>/tmp/xz-error.txt
+          {
+            echo '=== xz ==='
+            cat /tmp/xz-error.txt
+            echo '=== tar listing ==='
+            tar -tvf /tmp/partial.tar 2>&1
+            echo '=== first 1024 bytes base64 ==='
+            head -c 1024 /tmp/partial.tar | base64 -w0
+            echo
+          } > .import-v0155/diag-v0155.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .import-v0155/diag-v0155.txt
+          git commit -m 'Inspect staged V0.155 archive' || true
+          git push origin HEAD:main || true
