@@ -1,0 +1,62 @@
+name: Debug V0.155 final import
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/debug-v0155-final.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Diagnose reconstruction
+        shell: bash
+        run: |
+          set +e
+          LOG=/tmp/v0155-debug.txt
+          SRC=/tmp/v0155-debug-source
+          rm -rf "$SRC" /tmp/v0155-partial.* /tmp/v0155-overlay.* "$LOG"
+          mkdir -p "$SRC"
+          echo '=== OLD PREFIX ===' >> "$LOG"
+          cat .import-v0155/chunk000.b64 .import-v0155/chunk001.b64 .import-v0155/chunk002.b64 .import-v0155/chunk003.b64 .import-v0155/chunk004.b64 .import-v0155/chunk005.b64 .import-v0155/chunk006.b64 .import-v0155/chunk007.b64 .import-v0155/chunk008.b64 .import-v0155/chunk009.b64 .import-v0155/chunk010.b64 .import-v0155/chunk011.b64 .import-v0155/chunk012.b64 .import-v0155/chunk013.b64 .import-v0155/chunk014.b64 .import-v0155/chunk014z.b64 > /tmp/v0155-partial.b64
+          echo "cat_partial=$? bytes=$(wc -c </tmp/v0155-partial.b64)" >> "$LOG"
+          base64 --decode /tmp/v0155-partial.b64 > /tmp/v0155-partial.xz
+          echo "decode_partial=$? bytes=$(wc -c </tmp/v0155-partial.xz) sha=$(sha256sum /tmp/v0155-partial.xz | cut -d' ' -f1)" >> "$LOG"
+          xz -dc /tmp/v0155-partial.xz > /tmp/v0155-partial.tar 2>/tmp/v0155-xz.err
+          echo "xz_partial=$? tar_bytes=$(wc -c </tmp/v0155-partial.tar)" >> "$LOG"
+          tar -xf /tmp/v0155-partial.tar -C "$SRC" 2>/tmp/v0155-tar.err
+          echo "tar_partial=$? recovered=$(find "$SRC" -type f | wc -l | tr -d ' ')" >> "$LOG"
+          echo '-- xz stderr --' >> "$LOG"; cat /tmp/v0155-xz.err >> "$LOG"
+          echo '-- tar stderr --' >> "$LOG"; cat /tmp/v0155-tar.err >> "$LOG"
+
+          echo '=== OVERLAY ===' >> "$LOG"
+          cat .import-v0155-overlay/part000.b64 .import-v0155-overlay/part001.b64 .import-v0155-overlay/part002.b64 .import-v0155-overlay/part003.b64 .import-v0155-overlay/part004.b64 .import-v0155-overlay/part005.b64 .import-v0155-overlay/part006.b64 .import-v0155-overlay/part007.b64 .import-v0155-overlay/part008.b64 .import-v0155-overlay/part009.b64 .import-v0155-overlay/part010.b64 .import-v0155-overlay/part011.b64 .import-v0155-overlay/part012.b64 .import-v0155-overlay/part013.b64 .import-v0155-overlay/part014.b64 .import-v0155-overlay/part015.b64 .import-v0155-overlay/part016_0.b64 .import-v0155-overlay/part016_1.b64 .import-v0155-overlay/part016_2.b64 .import-v0155-overlay/part016_3.b64 .import-v0155-overlay/part016_4.b64 .import-v0155-overlay/part017_0.b64 .import-v0155-overlay/part017_1.b64 .import-v0155-overlay/part017_2.b64 .import-v0155-overlay/part017_3.b64 .import-v0155-overlay/part017_4.b64 > /tmp/v0155-overlay.b64
+          echo "cat_overlay=$? b64_bytes=$(wc -c </tmp/v0155-overlay.b64) b64_sha=$(sha256sum /tmp/v0155-overlay.b64 | cut -d' ' -f1)" >> "$LOG"
+          base64 --decode /tmp/v0155-overlay.b64 > /tmp/v0155-overlay.tar.xz
+          echo "decode_overlay=$? bytes=$(wc -c </tmp/v0155-overlay.tar.xz) sha=$(sha256sum /tmp/v0155-overlay.tar.xz | cut -d' ' -f1)" >> "$LOG"
+          xz -t /tmp/v0155-overlay.tar.xz 2>/tmp/v0155-overlay-xz.err
+          echo "xz_test_overlay=$?" >> "$LOG"
+          cat /tmp/v0155-overlay-xz.err >> "$LOG"
+          tar -xJf /tmp/v0155-overlay.tar.xz -C "$SRC" 2>/tmp/v0155-overlay-tar.err
+          echo "extract_overlay=$? count_before_extra_delete=$(find "$SRC" -type f | wc -l | tr -d ' ')" >> "$LOG"
+          cat /tmp/v0155-overlay-tar.err >> "$LOG"
+          rm -f "$SRC/supabase/migrations/202609150014_recipe_stock_alignment.sql"
+          echo "count_after_extra_delete=$(find "$SRC" -type f | wc -l | tr -d ' ')" >> "$LOG"
+          (cd "$SRC" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > /tmp/v0155-manifest.sha256)
+          echo "manifest_sha=$(sha256sum /tmp/v0155-manifest.sha256 | cut -d' ' -f1)" >> "$LOG"
+          cp /tmp/v0155-manifest.sha256 /tmp/v0155-debug-manifest.sha256
+          cat "$LOG"
+      - name: Upload diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v0155-final-debug
+          path: |
+            /tmp/v0155-debug.txt
+            /tmp/v0155-debug-manifest.sha256
+          retention-days: 1
