@@ -1,5 +1,6 @@
 name: Bootstrap lockfile once
 
+# One-shot network bootstrap for Notre Table V0.154.
 on:
   push:
     paths:
