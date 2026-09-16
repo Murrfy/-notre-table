@@ -1,10 +1,9 @@
-# Re-run after all verified transport blocks are present.
 name: Complete verified V0.155 source import
 
 on:
   push:
     branches:
-      - main
+      - v0155-direct-import
     paths:
       - '.github/workflows/import-v0155.yml'
 
@@ -29,6 +28,7 @@ jobs:
           rm -rf "$SOURCE" /tmp/v0155-partial.* /tmp/v0155-overlay.* /tmp/v0155-manifest.sha256
           mkdir -p "$SOURCE"
 
+          # Recover the 194 complete files already present in the original staged archive.
           cat \
             .import-v0155/chunk000.b64 \
             .import-v0155/chunk001.b64 \
@@ -57,6 +57,7 @@ jobs:
           recovered_count=$(find "$SOURCE" -type f | wc -l | tr -d ' ')
           test "$recovered_count" = "194"
 
+          # Rebuild the verified overlay using only the intact transport segments.
           cat \
             .import-v0155-overlay/part000.b64 \
             .import-v0155-overlay/part001.b64 \
@@ -71,9 +72,15 @@ jobs:
             .import-v0155-overlay/part010.b64 \
             .import-v0155-overlay/part011.b64 \
             .import-v0155-overlay/part012.b64 \
-            .import-v0155-overlay/part013.b64 \
-            .import-v0155-overlay/part014.b64 \
-            .import-v0155-overlay/part015.b64 \
+            .import-v0155-overlay/part013_0.b64 \
+            .import-v0155-overlay/part013_1.b64 \
+            .import-v0155-overlay/part013_2.b64 \
+            .import-v0155-overlay/part013_3.b64 \
+            .import-v0155-overlay/part013_4.b64 \
+            .import-v0155-overlay/part014a.b64 \
+            .import-v0155-overlay/part014b.b64 \
+            .import-v0155-overlay/part015a.b64 \
+            .import-v0155-overlay/part015b.b64 \
             .import-v0155-overlay/part016_0.b64 \
             .import-v0155-overlay/part016_1.b64 \
             .import-v0155-overlay/part016_2.b64 \
@@ -88,6 +95,7 @@ jobs:
           echo 'c4f84f78495e272ba6c26c6c5c9390639ea7b3c92c9ac72134ebd42f34c83f1e  /tmp/v0155-overlay.tar.xz' | sha256sum -c -
           tar -xJf /tmp/v0155-overlay.tar.xz -C "$SOURCE"
 
+          # Remove the obsolete staging-only migration that is not part of official V0.155.
           rm -f "$SOURCE/supabase/migrations/202609150014_recipe_stock_alignment.sql"
 
           final_count=$(find "$SOURCE" -type f | wc -l | tr -d ' ')
@@ -121,4 +129,4 @@ jobs:
             exit 0
           fi
           git commit -m 'Complete verified V0.155 source import'
-          git push origin HEAD:main
+          git push origin HEAD:v0155-direct-import
