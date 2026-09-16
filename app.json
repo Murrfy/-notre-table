@@ -1,0 +1,65 @@
+{
+  "expo": {
+    "name": "Notre Table",
+    "slug": "notre-table",
+    "version": "0.155.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.notretable.app",
+      "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.notretable.app",
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.USE_EXACT_ALARM"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-localization",
+        {
+          "supportedLocales": {
+            "ios": [
+              "fr",
+              "en",
+              "es",
+              "he"
+            ],
+            "android": [
+              "fr",
+              "en",
+              "es",
+              "he"
+            ]
+          }
+        }
+      ],
+      "expo-notifications",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos only when you choose a recipe image or profile photo.",
+          "cameraPermission": "Allow $(PRODUCT_NAME) to use the camera only when you choose to photograph a recipe.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-system-ui"
+    ],
+    "scheme": "notretable",
+    "locales": {
+      "en": "./languages/en.json",
+      "fr": "./languages/fr.json",
+      "es": "./languages/es.json",
+      "he": "./languages/he.json"
+    }
+  }
+}

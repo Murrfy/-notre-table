@@ -1,0 +1,10 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "Notre Table",
+    "NSPhotoLibraryUsageDescription": "Notre Table accesses your photos only when you choose a recipe image or profile photo.",
+    "NSCameraUsageDescription": "Notre Table uses the camera only when you choose to photograph a recipe."
+  },
+  "android": {
+    "app_name": "Notre Table"
+  }
+}

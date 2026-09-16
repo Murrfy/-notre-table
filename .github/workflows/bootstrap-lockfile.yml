@@ -1,0 +1,60 @@
+name: Bootstrap npm lockfile
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap-lockfile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Use Node 22.16.0
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22.16.0'
+
+      - name: Refuse to overwrite an existing committed lockfile
+        shell: bash
+        run: |
+          if [ -f package-lock.json ]; then
+            echo "::error::package-lock.json already exists. Update it through a reviewed dependency change, not the bootstrap workflow."
+            exit 1
+          fi
+
+      - name: Generate npm lockfile only
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Prove lockfile installs cleanly
+        run: npm ci --no-audit --no-fund
+
+      - name: Full installed validation against generated lockfile
+        run: npm run ci:validate
+
+      - name: Generate release evidence manifest
+        run: npm run release:evidence
+
+      - name: Preserve generated lockfile for review and commit
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: notre-table-package-lock-${{ github.sha }}
+          path: package-lock.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Preserve bootstrap validation evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: notre-table-bootstrap-exports-${{ github.sha }}
+          path: .validation/
+          if-no-files-found: error
+          retention-days: 14

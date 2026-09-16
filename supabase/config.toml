@@ -1,0 +1,2 @@
+[functions.light-response]
+verify_jwt = false

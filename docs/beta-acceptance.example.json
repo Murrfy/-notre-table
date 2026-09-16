@@ -1,0 +1,85 @@
+{
+  "format_version": 1,
+  "app_version": "0.155.0",
+  "source_revision": "REPLACE_WITH_COMMIT_SHA",
+  "build_id": "REPLACE_WITH_EAS_BUILD_ID",
+  "tested_at": "2026-09-15T12:00:00Z",
+  "devices": [
+    {
+      "label": "device_a",
+      "platform": "ios",
+      "os_version": "REPLACE"
+    },
+    {
+      "label": "device_b",
+      "platform": "android",
+      "os_version": "REPLACE"
+    }
+  ],
+  "scenarios": {
+    "auth.signup_confirmation_deeplink": {
+      "status": "pending",
+      "evidence": ""
+    },
+    "auth.password_recovery_deeplink": {
+      "status": "pending",
+      "evidence": ""
+    },
+    "session.switch_a_signout_b": {
+      "status": "pending",
+      "evidence": ""
+    },
+    "session.switch_a_to_b_direct": {
+      "status": "pending",
+      "evidence": ""
+    },
+    "household.invite_join": {
+      "status": "pending",
+      "evidence": ""
+    },
+    "collaboration.planning_realtime": {
+      "status": "pending",
+      "evidence": ""
+    },
+    "collaboration.shopping_realtime": {
+      "status": "pending",
+      "evidence": ""
+    },
+    "offline.disconnect_reconnect": {
+      "status": "pending",
+      "evidence": ""
+    },
+    "offline.account_switch_isolation": {
+      "status": "pending",
+      "evidence": ""
+    },
+    "light_member.open_without_app": {
+      "status": "pending",
+      "evidence": ""
+    },
+    "light_member.presence_one_click": {
+      "status": "pending",
+      "evidence": ""
+    },
+    "light_member.desire_optional_two_click": {
+      "status": "pending",
+      "evidence": ""
+    },
+    "light_member.surprise_one_click_yes": {
+      "status": "pending",
+      "evidence": ""
+    },
+    "light_member.take_charge_single_winner": {
+      "status": "pending",
+      "evidence": ""
+    },
+    "light_member.token_replay_rejected": {
+      "status": "pending",
+      "evidence": ""
+    },
+    "light_member.organizer_realtime_summary": {
+      "status": "pending",
+      "evidence": ""
+    }
+  }
+}
