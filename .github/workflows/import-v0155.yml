@@ -1,3 +1,4 @@
+# Re-run after all verified transport blocks are present.
 name: Complete verified V0.155 source import
 
 on:
@@ -28,7 +29,6 @@ jobs:
           rm -rf "$SOURCE" /tmp/v0155-partial.* /tmp/v0155-overlay.* /tmp/v0155-manifest.sha256
           mkdir -p "$SOURCE"
 
-          # Recover the 194 complete files already present in the original staged archive.
           cat \
             .import-v0155/chunk000.b64 \
             .import-v0155/chunk001.b64 \
@@ -57,8 +57,6 @@ jobs:
           recovered_count=$(find "$SOURCE" -type f | wc -l | tr -d ' ')
           test "$recovered_count" = "194"
 
-          # Add the verified official V0.155 overlay. The last two original blocks
-          # are split into small transport segments; concatenation is byte-exact.
           cat \
             .import-v0155-overlay/part000.b64 \
             .import-v0155-overlay/part001.b64 \
@@ -90,14 +88,10 @@ jobs:
           echo 'c4f84f78495e272ba6c26c6c5c9390639ea7b3c92c9ac72134ebd42f34c83f1e  /tmp/v0155-overlay.tar.xz' | sha256sum -c -
           tar -xJf /tmp/v0155-overlay.tar.xz -C "$SOURCE"
 
-          # Remove the one obsolete staging-only migration that is not in V0.155.
           rm -f "$SOURCE/supabase/migrations/202609150014_recipe_stock_alignment.sql"
 
           final_count=$(find "$SOURCE" -type f | wc -l | tr -d ' ')
           test "$final_count" = "268"
-
-          # Strict content verification: this digest represents the sorted SHA-256
-          # manifest of all 268 files in the official V0.155 checkpoint.
           (
             cd "$SOURCE"
             find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > /tmp/v0155-manifest.sha256
@@ -110,7 +104,6 @@ jobs:
         run: |
           set -euo pipefail
           rsync -a --delete --exclude='.git/' /tmp/notre-table-v0155/ ./
-
           final_count=$(find . -path './.git' -prune -o -type f -print | wc -l | tr -d ' ')
           test "$final_count" = "268"
           find . -path './.git' -prune -o -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > /tmp/repo-v0155-manifest.sha256
