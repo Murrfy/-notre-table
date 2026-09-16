@@ -18,7 +18,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for f in .import-v0155-final/part*.b64; do
+          for f in .import-v0155-final/part*.b64 \
+                   .import-v0155-overlay/part015a.b64 .import-v0155-overlay/part015b.b64 \
+                   .import-v0155-overlay/part016_*.b64 .import-v0155-overlay/part017_*.b64; do
             [ -f "$f" ] || continue
             raw=$(tr -d '\r\n\t ' < "$f")
             printf '%s size=%s normalized=%s sha256=%s\n' "$f" "$(wc -c < "$f" | tr -d ' ')" "${#raw}" "$(printf '%s' "$raw" | sha256sum | cut -d' ' -f1)"
