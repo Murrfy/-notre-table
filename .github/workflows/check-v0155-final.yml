@@ -1,0 +1,25 @@
+name: Check V0.155 final transport
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/check-v0155-final.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect normalized transport blocks
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in .import-v0155-final/part*.b64; do
+            [ -f "$f" ] || continue
+            raw=$(tr -d '\r\n\t ' < "$f")
+            printf '%s size=%s normalized=%s sha256=%s\n' "$f" "$(wc -c < "$f" | tr -d ' ')" "${#raw}" "$(printf '%s' "$raw" | sha256sum | cut -d' ' -f1)"
+          done
