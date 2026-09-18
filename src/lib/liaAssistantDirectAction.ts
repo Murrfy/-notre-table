@@ -105,6 +105,9 @@ export function parseLiaDirectAppAction(text:string,now=new Date(),seed:LiaDirec
   }
 
   const shoppingPatterns=[
+    /^(?:il\s+me\s+manque|je\s+n['’]?ai\s+plus|j['’]?ai\s+besoin\s+de)\s+(.+?)(?:\s*[,;:]\s*|\s+)(?:ajoute|mets)(?:-?(?:le|la|les)|\s+(?:le|la|les|ça|ca|ceci))?\s+(?:aux\s+courses|dans\s+(?:la\s+)?liste\s+de\s+courses)\s*[.!?]*$/i,
+    /^(?:i(?:'|’)m\s+out\s+of|i\s+need)\s+(.+?)(?:\s*[,;:]\s*|\s+)(?:add|put)(?:\s+it)?\s+(?:to|on)\s+(?:the\s+)?(?:shopping|grocery)\s+list\s*[.!?]*$/i,
+    /^(?:me\s+falta|necesito)\s+(.+?)(?:\s*[,;:]\s*|\s+)(?:añade|agrega|pon)(?:lo|la|los|las|\s+eso)?\s+(?:a|en)\s+(?:la\s+)?lista\s+(?:de\s+)?(?:compras|supermercado)\s*[.!?]*$/i,
     /^(?:ajoute|mets)\s+(.+?)\s+(?:aux\s+courses|dans\s+(?:la\s+)?liste\s+de\s+courses)\s*[.!?]*$/i,
     /^(?:ajoute|mets)\s+(?:aux\s+courses|dans\s+(?:la\s+)?liste\s+de\s+courses)\s+(.+?)\s*[.!?]*$/i,
     /^(?:add|put)\s+(.+?)\s+(?:to|on)\s+(?:the\s+)?(?:shopping|grocery)\s+list\s*[.!?]*$/i,

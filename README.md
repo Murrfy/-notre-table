@@ -1,5 +1,11 @@
-# Notre Table — V0.291
+# Notre Table — V0.292
 
+
+## V0.292 — Dire naturellement qu’un ingrédient manque et l’ajouter aux courses
+
+V0.292 reprend le moteur d’actions LIA existant au lieu de créer une logique spéciale cuisine. Une formulation comme « LIA, il me manque du lait, ajoute-le aux courses » ou « je n’ai plus d’œufs, mets-les dans la liste de courses » devient une vraie action `shopping.add_item`.
+
+Le garde-fou reste strict : une simple constatation comme « il me manque du lait » ne modifie rien. L’utilisateur doit explicitement demander l’ajout aux courses. L’écriture passe ensuite par la frontière d’actions approuvées déjà utilisée par Notre Table et ne produit jamais de faux succès.
 
 ## V0.291 — « Et le lait ? » garde le même nombre de personnes
 

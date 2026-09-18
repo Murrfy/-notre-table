@@ -5909,6 +5909,33 @@ test('V0.291 a recognized ingredient follow-up refreshes the same bounded servin
 });
 
 
+test('V0.292 LIA recognizes an explicit natural missing-item request to shopping',()=>{
+  const parsed=liaAssistantDirectAction.parseLiaDirectAppAction('il me manque du lait, ajoute-le aux courses');
+  assert.equal(parsed.recognized,true);
+  if(!parsed.recognized)throw new Error('expected recognized shopping action');
+  assert.equal(parsed.draft.type,'shopping.add_item');
+  if(parsed.draft.type!=='shopping.add_item')throw new Error('expected shopping.add_item');
+  assert.equal(parsed.draft.label,'lait');
+  assert.equal(parsed.missing,null);
+});
+
+test('V0.292 natural shopping phrasing keeps write intent explicit and does not act on a plain shortage statement',()=>{
+  assert.equal(liaAssistantDirectAction.parseLiaDirectAppAction('il me manque du lait').recognized,false);
+  assert.equal(liaAssistantDirectAction.parseLiaDirectAppAction("je n'ai plus d'œufs").recognized,false);
+  const parsed=liaAssistantDirectAction.parseLiaDirectAppAction("je n'ai plus d'œufs, mets-les dans la liste de courses");
+  assert.equal(parsed.recognized,true);
+  if(!parsed.recognized||parsed.draft.type!=='shopping.add_item')throw new Error('expected shopping add');
+  assert.equal(parsed.draft.label,'œufs');
+});
+
+test('V0.292 natural missing-item command still uses the existing approved shopping action executor',()=>{
+  const execution=fs.readFileSync(path.join(root,'src/services/liaAssistantDirectActionExecution.ts'),'utf8');
+  assert.ok(execution.includes("draft.type==='shopping.add_item'"));
+  assert.ok(execution.includes("type:'shopping.add_item'"));
+  assert.ok(execution.includes('executeLiaAssistantApprovedAction'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
