@@ -76,7 +76,7 @@ export function liaContextualGuidancePrompt(event:LiaContextualGuidanceEvent,lan
   }
   if(event.kind==='profile_enrichment_question'){
     return fr
-      ?`${prefix}profite d’un moment calme pour apprendre une petite information familiale manquante, sans donner l’impression d’un formulaire. Demande simplement quand est l’anniversaire de ${event.subjectName}. Précise que le jour et le mois suffisent et que l’année est facultative. Une seule question, ton naturel et chaleureux, aucune insistance.`
+      ?`${prefix}profite d’un moment calme pour apprendre une petite information familiale manquante, sans donner l’impression d’un formulaire. Demande simplement quand est l’anniversaire de ${event.subjectName}. Précise que le jour et le mois suffisent et que l’année est facultative. Tu peux ponctuellement terminer par la petite chute « Et le poids… non je plaisante 😏 », mais ne la répète pas systématiquement. Une seule question, ton naturel et chaleureux, aucune insistance.`
       :`${prefix}use a calm moment to learn one small missing family detail without sounding like a form. Simply ask when ${event.subjectName}'s birthday is. Say that day and month are enough and the year is optional. Ask one question only, warmly, with no pressure.`;
   }
   if(event.kind==='family_choice_changed'){
@@ -121,7 +121,7 @@ export function liaContextualGuidanceFallback(event:LiaContextualGuidanceEvent,l
   }
   if(event.kind==='profile_enrichment_question'){
     return fr
-      ?`${prefix}au fait, pour que je pense aux anniversaires : c’est quand celui de ${event.subjectName} ? Le jour et le mois me suffisent, l’année est facultative.`
+      ?`${prefix}au fait, pour que je pense aux anniversaires… c’est quand celui de ${event.subjectName} ? Le jour et le mois me suffisent. Et le poids… non je plaisante 😏`
       :`${prefix}by the way, so I can keep birthdays in mind: when is ${event.subjectName}'s birthday? Day and month are enough; the year is optional.`;
   }
   if(event.kind==='family_choice_changed'){
