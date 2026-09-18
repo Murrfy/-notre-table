@@ -5776,6 +5776,45 @@ test('V0.287 cooking screen answers from the recipe and refuses to invent or mer
 });
 
 
+test('V0.288 playful wrong-name address recognizes Coco without changing LIA canonical identity',()=>{
+  const tease=liaIdentity.detectLiaPlayfulWrongNameAddress('Coco tu me mets de la musique ?',['LIA']);
+  assert.equal(tease.addressed,true);
+  assert.equal(tease.usedName,'Coco');
+  assert.equal(tease.cleanedText,'tu me mets de la musique ?');
+  assert.equal(tease.mirrorNickname,'Boubou');
+  assert.equal(liaIdentity.liaPlayfulNameTeasePrefix('fr-FR',tease.mirrorNickname),'Oui Boubou 😏.');
+  assert.equal(liaIdentity.LIA_CANONICAL_NAME,'LIA');
+});
+
+test('V0.288 playful wrong-name address is narrow and refuses ordinary names or sensitive moments',()=>{
+  assert.equal(liaIdentity.detectLiaPlayfulWrongNameAddress('Michel tu me passes le sel',['LIA']).addressed,false);
+  assert.equal(liaIdentity.detectLiaPlayfulWrongNameAddress('Coco au secours appelle la police',['LIA']).addressed,false);
+  assert.equal(liaIdentity.detectLiaPlayfulWrongNameAddress('LIA mets de la musique',['LIA']).addressed,false);
+  assert.equal(liaIdentity.detectLiaPlayfulWrongNameAddress('Coco on parle de musique',['LIA']).addressed,false);
+});
+
+test('V0.288 playful name can route the real underlying music action',()=>{
+  const routed=liaAssistantVoice.routeLiaAssistantVoiceRequest('Coco tu me mets de la musique ?',['LIA','Coco']);
+  assert.equal(routed.directAddressed,true);
+  assert.equal(routed.cleanedText,'tu me mets de la musique ?');
+  assert.equal(routed.intent,'music');
+  const music=liaMusicCommand.parseLiaMusicCommand(routed.cleanedText);
+  assert.equal(music.recognized,true);
+  assert.equal(music.query,null);
+});
+
+test('V0.288 LIA orb mirrors the tease once while executing the cleaned real request',()=>{
+  const source=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
+  assert.ok(source.includes('detectLiaPlayfulWrongNameAddress(text,directNames)'));
+  assert.ok(source.includes('directNames:effectiveDirectNames'));
+  assert.ok(source.includes('text:responseText'));
+  assert.ok(source.includes('liaPlayfulNameTeasePrefix(locale.languageTag,playfulNameTease.mirrorNickname)'));
+  assert.ok(source.includes('await speakLia(spokenReply,locale.languageTag'));
+  assert.ok(source.includes('await speakLia(spokenText,locale.languageTag'));
+  assert.ok(source.includes('turn:responseTurn'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
