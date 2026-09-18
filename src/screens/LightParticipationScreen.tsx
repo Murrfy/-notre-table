@@ -11,14 +11,14 @@ import {
   subscribeLightMealResponses,updateLightMember,
 } from '../services/lightParticipation';
 
-const desires:Array<{key:LightDesire;label:TranslationKey}>=[
-  {key:'home',label:'light.choice.home'},
-  {key:'pizza',label:'light.choice.pizza'},
-  {key:'pasta',label:'light.choice.pasta'},
-  {key:'sushi',label:'light.choice.sushi'},
-  {key:'chinese',label:'light.choice.chinese'},
+const desires:Array<{key:LightDesire;label:TranslationKey;icon:string}>=[
+  {key:'home',label:'light.choice.home',icon:'🍲'},
+  {key:'pizza',label:'light.choice.pizza',icon:'🍕'},
+  {key:'pasta',label:'light.choice.pasta',icon:'🍝'},
+  {key:'sushi',label:'light.choice.sushi',icon:'🍣'},
+  {key:'chinese',label:'light.choice.chinese',icon:'🥡'},
 ];
-const emptySummary:LightMealSummary={total:0,presence:{yes:0,no:0,maybe:0,take_charge:0},desires:{home:0,pizza:0,pasta:0,sushi:0,chinese:0},take_charge_name:null,notes:[]};
+const emptySummary:LightMealSummary={total:0,presence:{yes:0,no:0,maybe:0,take_charge:0},desires:{home:0,pizza:0,pasta:0,sushi:0,chinese:0},take_charge_name:null,notes:[],responses:[],recipients:[]};
 
 function expiryForMealDate(mealDate:string){
   const end=new Date(`${mealDate}T23:59:59.999`);
@@ -129,6 +129,7 @@ export function LightParticipationScreen({householdId,householdName,mealDate,mea
     try{
       if(demo){setMessage(locale.t('light.demoShare'));return;}
       const token=await issueLightResponseToken(question.id,member.id);
+      await refreshSummary(question.id);
       const link=lightResponseLink(token);
       const text=locale.t('light.shareMessage',{name:member.display_name,meal:mealLabel,date:dateLabel,link});
       await Share.share({message:text});
