@@ -133,6 +133,22 @@ export function liaHandsFreeCookingServingTarget(text:string):number|null{
   return value!==null&&value>=1&&value<=50?value:null;
 }
 
+export function liaCookingServingFollowupTarget(text:string):number|null{
+  const folded=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’]/g,"'").replace(/[?!.,;:]+/g,' ').replace(/\s+/g,' ').trim();
+  const patterns:RegExp[]=[
+    /^(?:et\s+)?pour\s+([\p{L}\d'-]+)(?:\s+(?:personnes?|portions?))?$/iu,
+    /^(?:and\s+)?for\s+([\p{L}\d'-]+)(?:\s+(?:people|servings?))?$/iu,
+    /^(?:y\s+)?para\s+([\p{L}\d'-]+)(?:\s+(?:personas?|porciones?))?$/iu,
+    /^(?:ו\s*)?ל[- ]?\s*([\p{L}\d'-]+)(?:\s*(?:אנשים|מנות))?$/u,
+  ];
+  for(const pattern of patterns){
+    const match=folded.match(pattern);
+    if(!match)continue;
+    return liaHandsFreeCookingServingTarget(`pour ${match[1]} personnes`);
+  }
+  return null;
+}
+
 export function liaHandsFreeCookingScaleIngredientsTarget(text:string):number|null{
   const folded=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’]/g,"'").replace(/[?!.,;:]+/g,' ').replace(/\s+/g,' ').trim();
   const scale=/\b(?:adapte|ajuste|recalcule|redimensionne|scale|adjust|recalculate|resize|adapta|ajusta|recalcula|התאם|התאימי)\b/.test(folded);

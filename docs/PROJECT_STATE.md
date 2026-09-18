@@ -1,3 +1,12 @@
+## V0.290 — Suivi conversationnel des portions
+
+- Après une quantité ciblée ou une adaptation de toute la liste, « et pour 8 ? » réutilise le contexte récent.
+- Le contexte mémorise seulement le type de demande et l’ingrédient éventuel ; aucune donnée n’est persistée.
+- Fenêtre maximale : 2 minutes dans la session cuisine active.
+- Un nombre isolé n’est pas considéré comme un suivi de portions.
+- Le suivi sans répéter « LIA » passe par le micro global existant ; aucun second pipeline vocal.
+- Toute parole non reconnue comme suivi fait retomber le contexte afin d’éviter une écoute conversationnelle permanente.
+
 ## V0.289 — Liste complète adaptée au nombre de personnes
 
 - « Adapte les ingrédients pour 6 personnes » recalcule toute la liste depuis les quantités et portions réelles de la recette ouverte.

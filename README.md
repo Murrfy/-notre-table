@@ -1,5 +1,11 @@
-# Notre Table — V0.289
+# Notre Table — V0.290
 
+
+## V0.290 — « Et pour 8 ? » sans tout répéter
+
+V0.290 reprend V0.289 et rend les demandes de portions réellement conversationnelles. Après une question comme « combien de farine pour 6 personnes ? » ou « adapte les ingrédients pour 6 personnes », LIA comprend désormais un suivi court comme « et pour 8 ? » ou « and for six? » sans obliger l’utilisateur à répéter l’ingrédient ou toute la commande.
+
+Le contexte reste strictement local au mode cuisine et expire après deux minutes. Une valeur isolée comme « 8 » n’est jamais interprétée comme une commande. Le micro global de LIA reste le seul pipeline d’écoute : pendant cette courte fenêtre il accepte le suivi sans nouveau « LIA », puis revient automatiquement au comportement normal.
 
 ## V0.289 — Adapter toute la liste d’ingrédients
 

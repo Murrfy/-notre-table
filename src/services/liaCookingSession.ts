@@ -23,6 +23,7 @@ type Handler=(text:string,languageTag:string)=>LiaCookingSessionVoiceResult|Prom
 let handler:Handler|null=null;
 let clearHandlerClarification:(()=>void)|null=null;
 let clarificationPending=false;
+let followupUntilMs=0;
 
 export function setLiaCookingSessionVoiceHandler(next:Handler,clearClarification?:()=>void):()=>void{
   handler=next;
@@ -32,16 +33,21 @@ export function setLiaCookingSessionVoiceHandler(next:Handler,clearClarification
       handler=null;
       clearHandlerClarification=null;
       clarificationPending=false;
+      followupUntilMs=0;
     }
   };
 }
 export function liaCookingSessionActive():boolean{return Boolean(handler);}
 export function liaCookingSessionClarificationPending():boolean{return clarificationPending;}
+export function liaCookingSessionFollowupActive(nowMs=Date.now()):boolean{return Boolean(handler)&&followupUntilMs>=nowMs;}
+export function markLiaCookingSessionFollowupWindow(windowMs=120_000):void{followupUntilMs=Date.now()+Math.max(1,windowMs);}
 export function clearLiaCookingSessionClarification():void{
   clarificationPending=false;
+  followupUntilMs=0;
   clearHandlerClarification?.();
 }
 export async function runLiaCookingSessionVoiceCommand(text:string,languageTag:string):Promise<LiaCookingSessionVoiceResult>{
+  followupUntilMs=0;
   const result=handler?await handler(text,languageTag):{handled:false,spokenReply:null};
   clarificationPending=Boolean(result.clarificationPending);
   return result;

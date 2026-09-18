@@ -5855,6 +5855,35 @@ test('V0.289 list approximation carries real recipe data and remains explicitly 
 });
 
 
+test('V0.290 cooking parses short serving follow-ups without treating bare numbers as commands',()=>{
+  assert.equal(liaCookingCompanion.liaCookingServingFollowupTarget('et pour 8 ?'),8);
+  assert.equal(liaCookingCompanion.liaCookingServingFollowupTarget('and for six?'),6);
+  assert.equal(liaCookingCompanion.liaCookingServingFollowupTarget('y para 10 personas?'),10);
+  assert.equal(liaCookingCompanion.liaCookingServingFollowupTarget('8'),null);
+  assert.equal(liaCookingCompanion.liaCookingServingFollowupTarget('il reste 8 minutes'),null);
+});
+
+test('V0.290 cooking reuses only a recent ingredient-or-list serving context',()=>{
+  const screen=fs.readFileSync(path.join(root,'src/screens/CookingModeScreen.tsx'),'utf8');
+  assert.ok(screen.includes("lastServingQueryRef=useRef<{kind:'ingredient_quantity'|'scale_ingredients'"));
+  assert.ok(screen.includes('now-previousServingQuery.atMs<=120_000'));
+  assert.ok(screen.includes('adapte les ingrédients pour ${followupTarget} personnes'));
+  assert.ok(screen.includes('combien de ${previousServingQuery.ingredientQuery} pour ${followupTarget} personnes'));
+  assert.ok(screen.includes('Tu veux adapter quel ingrédient, ou toute la liste ?'));
+});
+
+test('V0.290 brief serving follow-up is accepted by the global LIA lane and expires instead of becoming permanent listening context',()=>{
+  const session=fs.readFileSync(path.join(root,'src/services/liaCookingSession.ts'),'utf8');
+  const execution=fs.readFileSync(path.join(root,'src/services/liaAssistantVoiceExecution.ts'),'utf8');
+  const orb=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
+  assert.ok(session.includes('liaCookingSessionFollowupActive'));
+  assert.ok(session.includes('markLiaCookingSessionFollowupWindow'));
+  assert.ok(session.includes('followupUntilMs=0;\n  const result=handler?await handler'));
+  assert.ok(execution.includes('cookingFollowupActive&&!cookingPending&&!request.directAddressed'));
+  assert.ok(orb.includes('liaCookingSessionFollowupActive()'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
