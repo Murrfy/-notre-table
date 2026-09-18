@@ -44,7 +44,7 @@ export type LiaAssistantVoiceExecution=
   |{status:'cooking_command';spokenReply:string}
   |{status:'cooking_approximation_requested';request:LiaCookingApproximationRequest}
   |{status:'action_cancelled';spokenReply:string}
-  |{status:'app_action_context_noted'|'app_action_completed'|'app_action_needs_clarification'|'app_action_unavailable'|'app_action_failed';spokenReply:string}
+  |{status:'app_action_context_noted'|'app_action_completed'|'app_action_partial'|'app_action_needs_clarification'|'app_action_unavailable'|'app_action_failed';spokenReply:string}
   |{status:'phone';result:LiaPhoneCallResult;spokenReply:string|null};
 
 export async function executeLiaAssistantVoiceRequest(input:{text:string;languageTag:string;awaitingPhoneName?:boolean;awaitingPhoneClarification?:boolean;awaitingMessageClarification?:boolean;directNames?:ReadonlyArray<string>;householdId?:string;weekStart?:string;demo?:boolean}):Promise<LiaAssistantVoiceExecution>{
@@ -164,7 +164,7 @@ export async function executeLiaAssistantVoiceRequest(input:{text:string;languag
     clearLiaCalendarClarification();
     const result=await prepareLiaDirectAppActionFromSpeech({text:request.cleanedText,languageTag:input.languageTag,householdId:input.householdId,weekStart:input.weekStart,demo:input.demo});
     if(result.status==='not_recognized')return{status:'defer_to_response',intent:'action'};
-    return{status:result.status==='completed'?'app_action_completed':result.status==='needs_clarification'?'app_action_needs_clarification':result.status==='failed'?'app_action_failed':'app_action_unavailable',spokenReply:result.spokenReply};
+    return{status:result.status==='completed'?'app_action_completed':result.status==='partial'?'app_action_partial':result.status==='needs_clarification'?'app_action_needs_clarification':result.status==='failed'?'app_action_failed':'app_action_unavailable',spokenReply:result.spokenReply};
   }
   if(actionPending&&request.directAddressed&&request.intent==='music'){
     clearLiaPhoneCallClarification();
@@ -269,7 +269,7 @@ export async function executeLiaAssistantVoiceRequest(input:{text:string;languag
   if(directActionPending){
     const result=await continueLiaDirectAppActionClarification(request.directAddressed?request.cleanedText:input.text);
     if(result.status==='not_recognized')return{status:'defer_to_response',intent:'action'};
-    return{status:result.status==='completed'?'app_action_completed':result.status==='needs_clarification'?'app_action_needs_clarification':result.status==='failed'?'app_action_failed':'app_action_unavailable',spokenReply:result.spokenReply};
+    return{status:result.status==='completed'?'app_action_completed':result.status==='partial'?'app_action_partial':result.status==='needs_clarification'?'app_action_needs_clarification':result.status==='failed'?'app_action_failed':'app_action_unavailable',spokenReply:result.spokenReply};
   }
   if(reminderPending){
     const result=await continueLiaReminderClarification(request.directAddressed?request.cleanedText:input.text,input.languageTag);
@@ -290,7 +290,7 @@ export async function executeLiaAssistantVoiceRequest(input:{text:string;languag
   if(shoppingShortageFollowup){
     const shortageFollowup=await continueLiaShoppingShortageFollowup(request.directAddressed?request.cleanedText:input.text);
     if(shortageFollowup.status!=='not_recognized'){
-      return{status:shortageFollowup.status==='completed'?'app_action_completed':shortageFollowup.status==='needs_clarification'?'app_action_needs_clarification':shortageFollowup.status==='failed'?'app_action_failed':'app_action_unavailable',spokenReply:shortageFollowup.spokenReply};
+      return{status:shortageFollowup.status==='completed'?'app_action_completed':shortageFollowup.status==='partial'?'app_action_partial':shortageFollowup.status==='needs_clarification'?'app_action_needs_clarification':shortageFollowup.status==='failed'?'app_action_failed':'app_action_unavailable',spokenReply:shortageFollowup.spokenReply};
     }
     if(request.directAddressed)clearLiaShoppingShortageFollowup();
   }
@@ -353,7 +353,7 @@ export async function executeLiaAssistantVoiceRequest(input:{text:string;languag
   }
   if(request.intent==='action'){
     const result=await prepareLiaDirectAppActionFromSpeech({text:request.cleanedText,languageTag:input.languageTag,householdId:input.householdId,weekStart:input.weekStart,demo:input.demo});
-    if(result.status!=='not_recognized')return{status:result.status==='completed'?'app_action_completed':result.status==='needs_clarification'?'app_action_needs_clarification':result.status==='failed'?'app_action_failed':'app_action_unavailable',spokenReply:result.spokenReply};
+    if(result.status!=='not_recognized')return{status:result.status==='completed'?'app_action_completed':result.status==='partial'?'app_action_partial':result.status==='needs_clarification'?'app_action_needs_clarification':result.status==='failed'?'app_action_failed':'app_action_unavailable',spokenReply:result.spokenReply};
   }
   return{status:'defer_to_response',intent:request.intent};
 }
