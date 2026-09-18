@@ -1,3 +1,11 @@
+## V0.287 — Quantité d’ingrédient ciblée en mode cuisine
+
+- « Combien de farine ? » / « Il faut combien d’œufs ? » interroge uniquement la recette réellement ouverte.
+- La correspondance utilise la clé d’ingrédient canonique déjà présente dans Notre Table ; aucun modèle ne devine un ingrédient.
+- Ingrédient absent ou quantité inconnue : LIA le dit explicitement.
+- Plusieurs occurrences du même ingrédient : LIA refuse de sommer silencieusement des quantités potentiellement destinées à des usages différents.
+- Même session cuisine et même micro global ; aucun pipeline parallèle.
+
 ## V0.286 — Navigation vocale directe par numéro d’étape
 
 - « Va à l’étape 4 » et « reviens à l’étape deux » ciblent directement une étape réelle.
