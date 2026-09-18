@@ -292,6 +292,7 @@ export async function executeLiaAssistantVoiceRequest(input:{text:string;languag
     if(shortageFollowup.status!=='not_recognized'){
       return{status:shortageFollowup.status==='completed'?'app_action_completed':shortageFollowup.status==='needs_clarification'?'app_action_needs_clarification':shortageFollowup.status==='failed'?'app_action_failed':'app_action_unavailable',spokenReply:shortageFollowup.spokenReply};
     }
+    if(request.directAddressed)clearLiaShoppingShortageFollowup();
   }
   if(!request.directAddressed||request.intent==='listen_only')return{status:'not_assistant_request'};
   if(liaCookingSessionActive()){
