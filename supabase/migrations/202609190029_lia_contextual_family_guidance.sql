@@ -51,6 +51,23 @@ where q.id=t.question_id
   and q.closed_at is null
   and q.expires_at>now();
 
+-- The organizer listens to question/response changes while Message famille is open,
+-- and the global LIA family monitor follows responses after the screen is closed.
+do $ begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname='supabase_realtime' and schemaname='public' and tablename='light_meal_questions'
+  ) then
+    alter publication supabase_realtime add table public.light_meal_questions;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname='supabase_realtime' and schemaname='public' and tablename='light_meal_responses'
+  ) then
+    alter publication supabase_realtime add table public.light_meal_responses;
+  end if;
+end $;
+
 -- 2) Question writes accept only the five active meal choices.
 create or replace function public.upsert_light_meal_question(
   p_household_id uuid,
