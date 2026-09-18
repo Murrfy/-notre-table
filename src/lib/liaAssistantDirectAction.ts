@@ -79,7 +79,7 @@ function planningFields(value:string,now:Date):{date:string|null;displayDay:stri
     .replace(/\b(?:ce soir)\b/ig,' ');
   return{date:day.date,displayDay:day.displayDay,mealType,customTitle:stripArticle(work)||null};
 }
-function missingFor(draft:LiaDirectAppActionDraft):LiaDirectAppActionParse['missing']{
+function missingFor(draft:LiaDirectAppActionDraft):'label'|'content'|'date'|'meal_type'|'meal_title'|null{
   if(draft.type==='shopping.add_item')return draft.label?null:'label';
   if(draft.type==='memo.create')return draft.content?null:'content';
   if(!draft.customTitle)return'meal_title';
