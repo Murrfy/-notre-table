@@ -1,4 +1,13 @@
 # Vérifications techniques — état courant V0.294
 - Checkpoint V0.294 : tableau famille nominatif et modifiable, guidage contextuel de LIA, prise en charge du repas et enrichissement progressif du profil familial.
-- Validation installée GitHub : à exécuter sur la branche V0.294 avant intégration dans `main`.
-- Base V0.293 : validation installée GitHub complète réussie, **698/698 régressions**, exports Expo Android/iOS réussis.
+- `npm ci` : **PASS** sur runner GitHub avec Node 22.16.0 / npm 10.9.2.
+- `expo install --check` : **PASS**, dépendances SDK 57 à jour.
+- TypeScript installé (`tsc --noEmit`) : **PASS**.
+- `npm run verify` : **PASS**.
+- Régressions : **709/709 PASS**.
+- Gates EAS : **17/17 PASS**.
+- Matrice d’acceptation : **53 scénarios / 33 invariants critiques PASS**.
+- Audit TypeScript/TSX : **222 fichiers transpilés, 0 diagnostic**.
+- Expo Android : **export PASS**.
+- Expo iOS : **export PASS**.
+- Release evidence : **599 fichiers hashés**, contrat SHA-256 `402a953993c42439836c752c3c4aa918e06f16d082ad11e2e37c45fc1dfbb8fd`.
