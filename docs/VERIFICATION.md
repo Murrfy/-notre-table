@@ -1,13 +1,4 @@
-# Vérifications techniques — état courant V0.287
-- Checkpoint V0.287 : question vocale ciblée sur la quantité d’un ingrédient réel de la recette ouverte.
-- `npm ci` : **PASS** sur runner GitHub avec Node 22.16.0 / npm 10.9.2.
-- `expo install --check` : **PASS**, dépendances SDK 57 à jour.
-- TypeScript installé (`tsc --noEmit`) : **PASS**.
-- `npm run verify` : **PASS**.
-- Régressions : **678/678 PASS**.
-- Gates EAS : **17/17 PASS**.
-- Matrice d’acceptation : **53 scénarios / 33 invariants critiques PASS**.
-- Audit TypeScript/TSX : **219 fichiers transpilés, 0 diagnostic**.
-- Expo Android : **export PASS**.
-- Expo iOS : **export PASS**.
-- Release evidence : **587 fichiers hashés**, contrat SHA-256 `3bed2eaafe27121e5902fc9ebd5a80cad2d51229a1b7c99ba7028201532047ee`.
+# Vérifications techniques — état courant V0.288
+- Checkpoint V0.288 : quantité ciblée d’un ingrédient adaptée à un nombre de personnes explicite.
+- Validation installée GitHub : à exécuter sur la branche V0.288 avant intégration dans `main`.
+- Base V0.287 : validation installée GitHub complète réussie, **678/678 régressions**, exports Expo Android/iOS réussis.
