@@ -20,7 +20,7 @@ import {clearLiaPantryVisionRecipeOpenClarification,liaPantryVisionRecipeOpenCla
 
 export type LiaAssistantVoiceExecution=
   |{status:'not_assistant_request'}
-  |{status:'defer_to_response';intent:'answer'|'research'|'reminder'|'music'|'navigation'|'calendar'|'pantry_vision'|'action'}
+  |{status:'defer_to_response';intent:'answer'|'research'|'reminder'|'timer'|'music'|'navigation'|'calendar'|'pantry_vision'|'action'}
   |{status:'message_unavailable';spokenReply:string|null}
   |{status:'message_prepared';spokenReply:string|null}
   |{status:'message_needs_clarification';spokenReply:string|null}
@@ -221,7 +221,7 @@ export async function executeLiaAssistantVoiceRequest(input:{text:string;languag
   if(pantryRecipeOpenPending){
     const result=prepareLiaPantryVisionRecipeOpenFromSpeech({text:request.directAddressed?request.cleanedText:input.text,languageTag:input.languageTag,continuation:true});
     if(result.status==='open_requested')return{status:'pantry_recipe_open_requested',recipeId:result.recipeId,startCooking:result.startCooking,spokenReply:result.spokenReply};
-    return{status:result.status==='needs_recipe'?'pantry_recipe_open_needs_recipe':'pantry_recipe_open_unavailable',spokenReply:result.spokenReply};
+    return{status:result.status==='needs_recipe'?'pantry_recipe_open_needs_recipe':'pantry_recipe_open_unavailable',spokenReply:result.spokenReply??''};
   }
   if(pantryPlanningPending){
     const result=await prepareLiaPantryVisionPlanningFromSpeech({text:request.directAddressed?request.cleanedText:input.text,languageTag:input.languageTag,householdId:input.householdId,weekStart:input.weekStart,demo:input.demo,continuation:true});
@@ -269,7 +269,7 @@ export async function executeLiaAssistantVoiceRequest(input:{text:string;languag
     if(/^(?:arrete|stoppe|stop|termine|quitte)\s+(?:le\s+)?(?:guidage|gps|navigation)|^(?:stop|end)\s+(?:guidance|navigation)$/.test(folded)){requestLiaNavigationStop();return{status:'navigation_stopped',spokenReply:input.languageTag.startsWith('fr')?'D’accord, j’arrête le guidage.':'Okay, I am stopping guidance.'};}
     const along=await prepareLiaNavigationAlongRouteFromSpeech(request.cleanedText,input.languageTag);
     if(along.status!=='not_recognized')return{status:along.status==='needs_confirmation'?'navigation_stopover_needs_confirmation':along.status==='added'?'navigation_stopover_added':along.status==='cancelled'?'navigation_stopover_cancelled':'navigation_stopover_unavailable',spokenReply:'spokenReply'in along?along.spokenReply:(input.languageTag.startsWith('fr')?'Je n’ai pas trouvé.':'I did not find anything.')};
-    const liveNavigationReply=liaNavigationLiveReply(request.cleanedText,input.languageTag);if(liveNavigationReply)return{status:'navigation_status',spokenReply:liveNavigationReply};
+    const liveNavigationReply=liaNavigationLiveReply(request.cleanedText,input.languageTag);if(liveNavigationReply)return{status:'navigation_status',spokenReply:liveNavigationReply.spokenReply};
   }
   if(!request.directAddressed||request.intent==='listen_only')return{status:'not_assistant_request'};
   if(liaCookingSessionActive()){
