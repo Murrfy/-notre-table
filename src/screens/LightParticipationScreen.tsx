@@ -17,9 +17,8 @@ const desires:Array<{key:LightDesire;label:TranslationKey}>=[
   {key:'pasta',label:'light.choice.pasta'},
   {key:'sushi',label:'light.choice.sushi'},
   {key:'chinese',label:'light.choice.chinese'},
-  {key:'surprise',label:'light.choice.surprise'},
 ];
-const emptySummary:LightMealSummary={total:0,presence:{yes:0,no:0,maybe:0,take_charge:0},desires:{home:0,pizza:0,pasta:0,sushi:0,chinese:0,surprise:0},take_charge_name:null,notes:[]};
+const emptySummary:LightMealSummary={total:0,presence:{yes:0,no:0,maybe:0,take_charge:0},desires:{home:0,pizza:0,pasta:0,sushi:0,chinese:0},take_charge_name:null,notes:[]};
 
 function expiryForMealDate(mealDate:string){
   const end=new Date(`${mealDate}T23:59:59.999`);
