@@ -1,5 +1,11 @@
-# Notre Table — V0.287
+# Notre Table — V0.288
 
+
+## V0.288 — LIA a du répondant quand on taquine son prénom
+
+V0.288 reprend V0.287 et câble réellement la règle d’identité déjà validée : LIA sait que son prénom reste LIA, mais une adresse manifestement taquine comme « Coco, tu me mets de la musique ? » peut être reconnue comme une demande adressée à elle. LIA répond alors avec un surnom miroir léger — par exemple « Oui Boubou 😏 » — puis exécute la demande réelle.
+
+La détection est volontairement étroite : seuls des surnoms de forme clairement ludique sont admis, jamais un prénom ordinaire entendu dans une conversation. Les contextes urgents ou sensibles coupent cette plaisanterie. Le surnom miroir est ponctuel, non persisté et ne remplace jamais le prénom canonique LIA.
 
 ## V0.287 — Demander une quantité d’ingrédient à LIA
 
