@@ -12,6 +12,7 @@ import {clearLiaNavigationAlongRoutePending,continueLiaNavigationAlongRoute,liaN
 import {clearLiaCalendarClarification,continueLiaCalendarClarification,liaCalendarClarificationPending,prepareLiaCalendarFromSpeech} from './liaAssistantCalendarExecution';
 import {prepareLiaCalendarNavigationFromSpeech} from './liaCalendarNavigation';
 import {clearLiaCookingSessionClarification,liaCookingSessionActive,liaCookingSessionClarificationPending,liaCookingSessionFollowupActive,runLiaCookingSessionVoiceCommand,type LiaCookingApproximationRequest} from './liaCookingSession';
+import {clearLiaProfileEnrichmentClarification,continueLiaProfileEnrichmentClarification,liaProfileEnrichmentClarificationPending} from './liaProfileEnrichment';
 import {liaPantryVisionFollowupReply} from './liaPantryVisionSession';
 import {prepareLiaPantryVisionStockFromSpeech} from './liaPantryVisionStock';
 import {clearLiaPantryVisionShoppingClarification,liaPantryVisionShoppingClarificationPending,prepareLiaPantryVisionShoppingFromSpeech} from './liaPantryVisionShopping';
@@ -45,6 +46,7 @@ export type LiaAssistantVoiceExecution=
   |{status:'cooking_approximation_requested';request:LiaCookingApproximationRequest}
   |{status:'action_cancelled';spokenReply:string}
   |{status:'app_action_context_noted'|'app_action_completed'|'app_action_needs_clarification'|'app_action_unavailable'|'app_action_failed';spokenReply:string}
+  |{status:'profile_enrichment_saved'|'profile_enrichment_needs_clarification'|'profile_enrichment_skipped'|'profile_enrichment_unavailable';spokenReply:string}
   |{status:'phone';result:LiaPhoneCallResult;spokenReply:string|null};
 
 export async function executeLiaAssistantVoiceRequest(input:{text:string;languageTag:string;awaitingPhoneName?:boolean;awaitingPhoneClarification?:boolean;awaitingMessageClarification?:boolean;directNames?:ReadonlyArray<string>;householdId?:string;weekStart?:string;demo?:boolean}):Promise<LiaAssistantVoiceExecution>{
@@ -63,8 +65,9 @@ export async function executeLiaAssistantVoiceRequest(input:{text:string;languag
   const pantryRecipeOpenPending=liaPantryVisionRecipeOpenClarificationPending();
   const cookingPending=liaCookingSessionClarificationPending();
   const cookingFollowupActive=liaCookingSessionFollowupActive();
+  const profileEnrichmentPending=liaProfileEnrichmentClarificationPending();
   const cancellationRequested=isLiaAssistantActionCancellation(input.text)||isLiaAssistantActionCancellation(input.text,directNames);
-  if((input.awaitingPhoneName||input.awaitingPhoneClarification||input.awaitingMessageClarification||reminderPending||timerPending||navigationPending||alongRoutePending||calendarPending||pantryShoppingPending||pantryPlanningPending||pantryRecipeOpenPending||directActionPending||shoppingShortageFollowup||musicPending||cookingPending)&&cancellationRequested){
+  if((input.awaitingPhoneName||input.awaitingPhoneClarification||input.awaitingMessageClarification||reminderPending||timerPending||navigationPending||alongRoutePending||calendarPending||pantryShoppingPending||pantryPlanningPending||pantryRecipeOpenPending||directActionPending||shoppingShortageFollowup||musicPending||cookingPending||profileEnrichmentPending)&&cancellationRequested){
     clearLiaPhoneCallClarification();
     clearLiaMessageClarification();
     clearLiaReminderClarification();
@@ -79,9 +82,19 @@ export async function executeLiaAssistantVoiceRequest(input:{text:string;languag
     clearLiaPantryVisionPlanningClarification();
     clearLiaPantryVisionRecipeOpenClarification();
     clearLiaCookingSessionClarification();
+    clearLiaProfileEnrichmentClarification();
     return{status:'action_cancelled',spokenReply:input.languageTag.startsWith('fr')?'D’accord, j’annule.':'Okay, cancelled.'};
   }
-  const actionPending=Boolean(input.awaitingPhoneName||input.awaitingPhoneClarification||input.awaitingMessageClarification||reminderPending||timerPending||navigationPending||alongRoutePending||calendarPending||pantryShoppingPending||pantryPlanningPending||pantryRecipeOpenPending||directActionPending||musicPending||cookingPending);
+  const actionPending=Boolean(input.awaitingPhoneName||input.awaitingPhoneClarification||input.awaitingMessageClarification||reminderPending||timerPending||navigationPending||alongRoutePending||calendarPending||pantryShoppingPending||pantryPlanningPending||pantryRecipeOpenPending||directActionPending||musicPending||cookingPending||profileEnrichmentPending);
+  const directOverrideIntent=request.directAddressed&&!['answer','research','listen_only'].includes(request.intent);
+  if(profileEnrichmentPending&&directOverrideIntent){
+    clearLiaProfileEnrichmentClarification();
+  }else if(profileEnrichmentPending){
+    const enrichment=await continueLiaProfileEnrichmentClarification({text:request.directAddressed?request.cleanedText:input.text,languageTag:input.languageTag});
+    if(enrichment.status!=='not_pending'){
+      return{status:enrichment.status==='saved'?'profile_enrichment_saved':enrichment.status==='needs_clarification'?'profile_enrichment_needs_clarification':enrichment.status==='skipped'?'profile_enrichment_skipped':'profile_enrichment_unavailable',spokenReply:enrichment.spokenReply};
+    }
+  }
   if(cookingPending){
     const cooking=await runLiaCookingSessionVoiceCommand(request.directAddressed?request.cleanedText:input.text,input.languageTag);
     if(cooking.approximationRequest)return{status:'cooking_approximation_requested',request:cooking.approximationRequest};
