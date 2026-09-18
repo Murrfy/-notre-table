@@ -5971,6 +5971,44 @@ test('V0.293 the global LIA lane accepts only the brief explicit shortage follow
 });
 
 
+test('V0.294 multiple shortage items are split and deduplicated without turning them into one shopping label',()=>{
+  assert.deepEqual(liaAssistantDirectAction.liaShoppingShortageMentions('il me manque du lait et des œufs'),['lait','œufs']);
+  assert.deepEqual(liaAssistantDirectAction.liaShoppingShortageMentions('il me manque du lait, des œufs et du lait'),['lait','œufs']);
+  assert.deepEqual(liaAssistantDirectAction.liaShoppingShortageMentions('il me manque du lait, ajoute-le aux courses'),[]);
+});
+
+test('V0.294 one-turn explicit multiple shortage becomes the existing shopping batch action',()=>{
+  const parsed=liaAssistantDirectAction.parseLiaDirectAppAction('il me manque du lait et des œufs, ajoute-les aux courses');
+  assert.equal(parsed.recognized,true);
+  if(!parsed.recognized)throw new Error('expected recognized batch shopping action');
+  assert.equal(parsed.draft.type,'shopping.add_items');
+  if(parsed.draft.type!=='shopping.add_items')throw new Error('expected shopping.add_items');
+  assert.deepEqual(parsed.draft.labels,['lait','œufs']);
+  assert.equal(parsed.missing,null);
+  const single=liaAssistantDirectAction.parseLiaDirectAppAction('il me manque du lait, ajoute-le aux courses');
+  assert.equal(single.recognized,true);
+  if(!single.recognized)throw new Error('expected single shopping action');
+  assert.equal(single.draft.type,'shopping.add_item');
+});
+
+test('V0.294 two-turn multiple shortage uses the approved batch executor and reports partial results explicitly',()=>{
+  const execution=fs.readFileSync(path.join(root,'src/services/liaAssistantDirectActionExecution.ts'),'utf8');
+  assert.ok(execution.includes("type:'shopping.add_items'"));
+  assert.ok(execution.includes("items:draft.labels.map(label=>({label,aisle:'other'}))"));
+  assert.ok(execution.includes("status:'partial'"));
+  assert.ok(execution.includes('result.resultCount'));
+  assert.ok(execution.includes('result.failedCount'));
+  assert.ok(execution.includes("current.labels.length===1?{type:'shopping.add_item'"));
+});
+
+test('V0.294 global LIA action routing keeps partial shopping distinct from completed',()=>{
+  const voice=fs.readFileSync(path.join(root,'src/services/liaAssistantVoiceExecution.ts'),'utf8');
+  assert.ok(voice.includes("'app_action_partial'"));
+  assert.ok(voice.includes("result.status==='partial'?'app_action_partial'"));
+  assert.ok(voice.includes("shortageFollowup.status==='partial'?'app_action_partial'"));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
