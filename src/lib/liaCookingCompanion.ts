@@ -111,7 +111,7 @@ export function chooseLiaCookingQuestion(input:{
 }
 
 
-export type LiaHandsFreeCookingIntent='start_timer'|'cancel_timer'|'timer_remaining'|'step_status'|'go_to_step'|'ingredient_quantity'|'next_step'|'complete_step'|'finish_recipe'|'previous_step'|'repeat_step'|'show_ingredients'|'hide_ingredients'|'list_ingredients'|'music'|'stop_voice'|'unknown';
+export type LiaHandsFreeCookingIntent='start_timer'|'cancel_timer'|'timer_remaining'|'step_status'|'go_to_step'|'ingredient_quantity'|'scale_ingredients'|'next_step'|'complete_step'|'finish_recipe'|'previous_step'|'repeat_step'|'show_ingredients'|'hide_ingredients'|'list_ingredients'|'music'|'stop_voice'|'unknown';
 
 export function liaHandsFreeCookingStepNumber(text:string):number|null{
   const folded=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’]/g,"'");
@@ -131,6 +131,14 @@ export function liaHandsFreeCookingServingTarget(text:string):number|null{
   const token=match[1].replace(/[-']/g,'');
   const value=/^\d{1,2}$/.test(token)?Number(token):(wordMap[token]??null);
   return value!==null&&value>=1&&value<=50?value:null;
+}
+
+export function liaHandsFreeCookingScaleIngredientsTarget(text:string):number|null{
+  const folded=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’]/g,"'").replace(/[?!.,;:]+/g,' ').replace(/\s+/g,' ').trim();
+  const scale=/\b(?:adapte|ajuste|recalcule|redimensionne|scale|adjust|recalculate|resize|adapta|ajusta|recalcula|התאם|התאימי)\b/.test(folded);
+  const ingredients=/\b(?:ingredients?|ingredientes?|מרכיבים)\b/u.test(folded);
+  if(!scale||!ingredients)return null;
+  return liaHandsFreeCookingServingTarget(text);
 }
 
 function stripCookingServingTarget(text:string):string{
@@ -186,6 +194,7 @@ export function liaHandsFreeCookingIntent(text:string):LiaHandsFreeCookingIntent
   if(/(?:ou\s+(?:est[- ]?ce\s+qu['’]?|en\s+)?on\s+en\s+est|on\s+en\s+est\s+ou|(?:je\s+suis|on\s+est)\s+a\s+quelle\s+etape|quelle\s+etape|il\s+reste\s+combien\s+d['’]?etapes?|combien\s+d['’]?etapes?\s+(?:il\s+)?reste|combien\s+d['’]?etapes?\s+restent|recipe\s+progress|what\s+step\s+are\s+we\s+on)/i.test(folded))return'step_status';
   if(/\b(?:il\s+reste\s+combien|reste\s+combien)\b/i.test(value)||/\b(combien|reste|remaining|left)\b.*\b(min|minute|temps|time)\b/i.test(value))return'timer_remaining';
   if(/\b(lance|mets|d[eé]marre|start)\b.*\b(min|minute|timer|chrono)/i.test(value))return'start_timer';
+  if(liaHandsFreeCookingScaleIngredientsTarget(text)!==null)return'scale_ingredients';
   if(liaHandsFreeCookingIngredientQuery(text))return'ingredient_quantity';
   if(/\b(r[eé]p[eè]te|redis|repeat)\b/i.test(value))return'repeat_step';
   if(/(?:(?:j['’]?ai|on\s+a)\s+(?:fini|termine)\s+(?:la\s+)?recette|(?:finis?|termine|ferme|quitte)\s+(?:la\s+)?recette|(?:quitte|ferme)\s+(?:le\s+)?mode\s+cuisine|finish\s+(?:the\s+)?recipe|exit\s+cooking\s+mode)/i.test(folded))return'finish_recipe';
@@ -231,10 +240,11 @@ export function liaHandsFreeCookingAction(text:string):LiaHandsFreeCookingAction
   const timerSeconds=kind==='start_timer'?liaHandsFreeTimerSeconds(text):null;
   const stepNumber=kind==='go_to_step'?liaHandsFreeCookingStepNumber(text):null;
   const ingredientQuery=kind==='ingredient_quantity'?liaHandsFreeCookingIngredientQuery(text):null;
-  const targetServings=kind==='ingredient_quantity'?liaHandsFreeCookingServingTarget(text):null;
+  const targetServings=kind==='ingredient_quantity'?liaHandsFreeCookingServingTarget(text):kind==='scale_ingredients'?liaHandsFreeCookingScaleIngredientsTarget(text):null;
   if(kind==='start_timer')return{kind,timerSeconds,needsStreamingIntegration:false,safeToExecuteLocally:timerSeconds!==null};
   if(kind==='go_to_step')return{kind,timerSeconds:null,stepNumber,needsStreamingIntegration:false,safeToExecuteLocally:stepNumber!==null};
   if(kind==='ingredient_quantity')return{kind,timerSeconds:null,ingredientQuery,targetServings,needsStreamingIntegration:false,safeToExecuteLocally:ingredientQuery!==null};
+  if(kind==='scale_ingredients')return{kind,timerSeconds:null,targetServings,needsStreamingIntegration:false,safeToExecuteLocally:targetServings!==null};
   if(kind==='music')return{kind,timerSeconds:null,needsStreamingIntegration:true,safeToExecuteLocally:false};
   if(kind==='next_step'||kind==='complete_step'||kind==='finish_recipe'||kind==='previous_step'||kind==='repeat_step'||kind==='timer_remaining'||kind==='step_status'||kind==='cancel_timer'||kind==='show_ingredients'||kind==='hide_ingredients'||kind==='list_ingredients'||kind==='stop_voice')return{kind,timerSeconds:null,needsStreamingIntegration:false,safeToExecuteLocally:true};
   return{kind:'unknown',timerSeconds:null,needsStreamingIntegration:false,safeToExecuteLocally:false};
