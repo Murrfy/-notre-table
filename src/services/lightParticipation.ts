@@ -2,10 +2,7 @@ import { supabase } from '../lib/supabase';
 import { runtimeConfig } from '../lib/runtimeConfig';
 import type { MealType } from '../types';
 
-export type LightDesire='home'|'pizza'|'pasta'|'sushi'|'chinese'|'surprise';
-export type LightPrimaryDesire='home'|'pizza'|'pasta'|'sushi'|'chinese';
-export function lightPrimaryDesire(value:LightDesire|null):LightPrimaryDesire|null{return value==='surprise'?'home':value;}
-export function lightIsHomeDesire(value:LightDesire|null):boolean{return value==='home'||value==='surprise';}
+export type LightDesire='home'|'pizza'|'pasta'|'sushi'|'chinese';
 export type LightMember={
   id:string;
   household_id:string;
@@ -86,7 +83,7 @@ export async function fetchLightMealSummary(questionId:string):Promise<LightMeal
   return {
     total:Number(raw.total??0),
     presence:{yes:Number(raw.presence?.yes??0),no:Number(raw.presence?.no??0),maybe:Number(raw.presence?.maybe??0),take_charge:Number(raw.presence?.take_charge??0)},
-    desires:{home:Number(raw.desires?.home??0),pizza:Number(raw.desires?.pizza??0),pasta:Number(raw.desires?.pasta??0),sushi:Number(raw.desires?.sushi??0),chinese:Number(raw.desires?.chinese??0),surprise:Number(raw.desires?.surprise??0)},
+    desires:{home:Number(raw.desires?.home??0),pizza:Number(raw.desires?.pizza??0),pasta:Number(raw.desires?.pasta??0),sushi:Number(raw.desires?.sushi??0),chinese:Number(raw.desires?.chinese??0)},
     take_charge_name:typeof raw.take_charge_name==='string'?raw.take_charge_name:null,
     notes:Array.isArray(raw.notes)?raw.notes.filter((x:any)=>x&&typeof x.member_name==='string'&&typeof x.note==='string').map((x:any)=>({member_name:x.member_name,note:x.note,responded_at:typeof x.responded_at==='string'?x.responded_at:''})):[],
   };
