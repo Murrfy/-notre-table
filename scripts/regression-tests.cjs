@@ -6082,12 +6082,16 @@ test('V0.294 LIA enriches one family detail slowly and respects later or refusal
   assert.ok(main.includes('liaQuietNow(quiet)'));
 });
 
-test('V0.294 birthday answer stays in the existing LIA voice lane with a playful but non-systematic tone',()=>{
+test('V0.294 birthday question stays simple, then LIA may joke only after the answer is saved',()=>{
   const guidance=fs.readFileSync(path.join(root,'src/services/liaContextualGuidance.ts'),'utf8');
+  const enrichment=fs.readFileSync(path.join(root,'src/services/liaProfileEnrichment.ts'),'utf8');
   const voice=fs.readFileSync(path.join(root,'src/services/liaAssistantVoiceExecution.ts'),'utf8');
   const orb=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
-  assert.ok(guidance.includes('Et le poids… non je plaisante 😏'));
-  assert.ok(guidance.includes('ne la répète pas systématiquement'));
+  assert.ok(guidance.includes('Ne fais pas encore la blague : attends d’abord la réponse.'));
+  assert.ok(!guidance.includes('Le jour et le mois me suffisent. Et le poids'));
+  assert.ok(enrichment.includes('Et le poids aussi ?… Non, je plaisante 😏'));
+  assert.ok(enrichment.includes('Et la couleur de ses cheveux aussi ?… Je plaisante 😏'));
+  assert.ok(enrichment.includes('const variant=sum%3'));
   assert.ok(voice.includes('liaProfileEnrichmentClarificationPending'));
   assert.ok(voice.includes('continueLiaProfileEnrichmentClarification'));
   assert.ok(orb.includes('liaProfileEnrichmentClarificationPending()'));
