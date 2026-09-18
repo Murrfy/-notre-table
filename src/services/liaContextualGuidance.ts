@@ -77,3 +77,45 @@ export function liaContextualGuidancePrompt(event:LiaContextualGuidanceEvent,lan
       ?`${prefix}${event.memberName} just checked “I’ll take care of everything” for this meal. Inform only the organizing customer: treat the meal as handled and avoid organization nudges for it while this remains active. Warm and lightly playful. You may occasionally joke about being invited to the table, but not every time.`
       :`${prefix}${event.memberName} just unchecked “I’ll take care of everything”. Briefly say the meal is no longer considered handled and organization can resume if needed.`;
 }
+
+
+function samePerson(a:string,b:string):boolean{return cleanName(a).toLocaleLowerCase()===cleanName(b).toLocaleLowerCase();}
+function stableJoke(event:LiaContextualGuidanceEvent):boolean{
+  const seed=event.kind==='family_take_charge_changed'?event.memberName+event.mealDate:event.kind;
+  let sum=0;for(const ch of seed)sum+=ch.charCodeAt(0);return sum%3===0;
+}
+
+export function liaContextualGuidanceFallback(event:LiaContextualGuidanceEvent,languageTag:string):string{
+  const fr=languageTag.toLowerCase().startsWith('fr');
+  const who=event.organizerName.trim();
+  const prefix=who?`${who}, `:'';
+  if(event.kind==='family_message_first_use'){
+    return fr
+      ?`${prefix}dans Message famille, choisis les options du repas et les personnes à qui tu veux demander. Envoie, et ensuite je m’occupe de suivre les réponses avec toi.`
+      :`${prefix}in Family Message, choose the meal options and who you want to ask. Send it, and then I’ll help you follow the replies.`;
+  }
+  if(event.kind==='family_message_help'){
+    if(event.step==='prepare')return fr?`${prefix}choisis d’abord les options du repas. Ensuite on choisira à qui envoyer.`:`${prefix}choose the meal options first. Then we’ll choose who to send it to.`;
+    return fr?`${prefix}la demande est prête. Choisis maintenant les personnes à qui l’envoyer, et je suis la suite avec toi.`:`${prefix}the request is ready. Choose who to send it to, and I’ll follow what happens with you.`;
+  }
+  if(event.kind==='family_choice_changed'){
+    if(event.desire!=='home')return'';
+    const self=samePerson(event.organizerName,event.memberName);
+    return fr
+      ?self
+        ?`J’ai vu que tu as choisi Plat fait maison 😏. Tu veux qu’on fasse facile ou qu’on épate la galerie ? On peut attendre de voir ce que veulent les autres et se lancer après, ou plus tard si tu préfères.`
+        :`J’ai vu que ${event.memberName} a choisi Plat fait maison 😏. On attend de voir ce que veulent les autres, et ensuite on se lance. Ou plus tard si tu préfères.`
+      :self
+        ?`I saw you chose Home-cooked 😏. Do you want to keep it easy or impress everyone? We can wait for the others and start together later if you prefer.`
+        :`I saw ${event.memberName} chose Home-cooked 😏. We can wait for the others, then get started together, or do it later if you prefer.`;
+  }
+  if(event.active){
+    const joke=stableJoke(event);
+    return fr
+      ?`${prefix}${event.memberName} prend les choses en main pour ce repas. Je le considère réglé pour l’instant et je ne vais pas vous relancer pour l’organisation.${joke?' Et n’oubliez pas de m’inviter à table 😏.':''}`
+      :`${prefix}${event.memberName} is taking care of this meal. I’ll treat it as handled for now and won’t keep nudging you about organizing it.${joke?' And don’t forget to invite me to the table 😏.':''}`;
+  }
+  return fr
+    ?`${prefix}${event.memberName} ne prend plus ce repas en charge. Si tu veux, on peut reprendre l’organisation.`
+    :`${prefix}${event.memberName} is no longer taking charge of this meal. We can pick the organization back up if you want.`;
+}
