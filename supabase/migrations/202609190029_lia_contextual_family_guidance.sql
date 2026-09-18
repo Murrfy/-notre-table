@@ -53,3 +53,68 @@ end; $$;
 
 revoke all on function public.get_light_meal_summary(uuid) from public;
 grant execute on function public.get_light_meal_summary(uuid) to authenticated;
+
+
+create or replace function public.get_light_family_decisions(p_token text)
+returns jsonb
+language plpgsql
+security definer
+set search_path=public as $$
+declare
+  v_hash text;
+  v_question_id uuid;
+  v_household_name text;
+  v_meal_date date;
+  v_meal_type text;
+  v_take_charge_name text;
+  v_responses jsonb;
+begin
+  if p_token is null or char_length(p_token)<>64 then return null; end if;
+  v_hash:=encode(digest(p_token,'sha256'),'hex');
+
+  select q.id,h.name,q.meal_date,q.meal_type
+    into v_question_id,v_household_name,v_meal_date,v_meal_type
+  from public.light_response_tokens t
+  join public.light_meal_questions q on q.id=t.question_id
+  join public.light_members target on target.id=t.light_member_id and target.household_id=q.household_id
+  join public.households h on h.id=q.household_id
+  where t.token_hash=v_hash
+    and t.expires_at>now()
+    and q.closed_at is null
+    and q.expires_at>now()
+    and target.active=true
+  limit 1;
+
+  if v_question_id is null then return null; end if;
+
+  select m.display_name into v_take_charge_name
+  from public.light_meal_responses r
+  join public.light_members m on m.id=r.light_member_id
+  where r.question_id=v_question_id and r.presence='take_charge'
+  order by r.responded_at asc
+  limit 1;
+
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'member_name',m.display_name,
+    'presence',r.presence,
+    'desire',r.desire,
+    'responded_at',r.responded_at
+  ) order by r.responded_at asc),'[]'::jsonb)
+    into v_responses
+  from public.light_meal_responses r
+  join public.light_members m on m.id=r.light_member_id
+  where r.question_id=v_question_id;
+
+  return jsonb_build_object(
+    'household_name',v_household_name,
+    'meal_date',v_meal_date,
+    'meal_type',v_meal_type,
+    'take_charge_name',v_take_charge_name,
+    'responses',v_responses
+  );
+end; $$;
+
+revoke all on function public.get_light_family_decisions(text) from public;
+revoke all on function public.get_light_family_decisions(text) from anon;
+revoke all on function public.get_light_family_decisions(text) from authenticated;
+grant execute on function public.get_light_family_decisions(text) to service_role;
