@@ -80,7 +80,7 @@ export async function executeLiaAssistantVoiceRequest(input:{text:string;languag
   }
   const actionPending=Boolean(input.awaitingPhoneName||input.awaitingPhoneClarification||input.awaitingMessageClarification||reminderPending||timerPending||navigationPending||alongRoutePending||calendarPending||pantryShoppingPending||pantryPlanningPending||pantryRecipeOpenPending||directActionPending||musicPending||cookingPending);
   if(cookingPending){
-    const cooking=runLiaCookingSessionVoiceCommand(request.directAddressed?request.cleanedText:input.text,input.languageTag);
+    const cooking=await runLiaCookingSessionVoiceCommand(request.directAddressed?request.cleanedText:input.text,input.languageTag);
     if(cooking.approximationRequest)return{status:'cooking_approximation_requested',request:cooking.approximationRequest};
     if(cooking.handled)return{status:'cooking_command',spokenReply:cooking.spokenReply??''};
   }
@@ -281,7 +281,7 @@ export async function executeLiaAssistantVoiceRequest(input:{text:string;languag
   }
   if(!request.directAddressed||request.intent==='listen_only')return{status:'not_assistant_request'};
   if(liaCookingSessionActive()){
-    const cooking=runLiaCookingSessionVoiceCommand(request.cleanedText,input.languageTag);
+    const cooking=await runLiaCookingSessionVoiceCommand(request.cleanedText,input.languageTag);
     if(cooking.approximationRequest)return{status:'cooking_approximation_requested',request:cooking.approximationRequest};
     if(cooking.handled)return{status:'cooking_command',spokenReply:cooking.spokenReply??''};
   }
