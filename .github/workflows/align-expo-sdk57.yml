@@ -8,6 +8,7 @@ on:
     paths:
       - '.github/workflows/align-expo-sdk57.yml'
       - 'scripts/environment-preflight.cjs'
+      - 'scripts/audit-project.cjs'
 
 permissions:
   contents: write
