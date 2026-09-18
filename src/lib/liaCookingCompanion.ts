@@ -125,7 +125,7 @@ export function liaHandsFreeCookingStepNumber(text:string):number|null{
 
 export function liaHandsFreeCookingServingTarget(text:string):number|null{
   const folded=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’]/g,"'").replace(/[?!.,;:]+/g,' ').replace(/\s+/g,' ').trim();
-  const wordMap:Record<string,number>={un:1,une:1,deux:2,trois:3,quatre:4,cinq:5,six:6,sept:7,huit:8,neuf:9,dix:10,onze:11,douze:12,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,uno:1,una:1,dos:2,tres:3,cuatro:4,cinco:5,seis:6,siete:7,ocho:8,nueve:9,diez:10,'אחד':1,'אחת':1,'שניים':2,'שתיים':2,'שלוש':3,'ארבע':4,'חמש':5,'שש':6,'שבע':7,'שמונה':8,'תשע':9,'עשר':10};
+  const wordMap:Record<string,number>={un:1,une:1,deux:2,trois:3,quatre:4,cinq:5,six:6,sept:7,huit:8,neuf:9,dix:10,onze:11,douze:12,one:1,two:2,three:3,four:4,five:5,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,uno:1,una:1,dos:2,tres:3,cuatro:4,cinco:5,seis:6,siete:7,ocho:8,nueve:9,diez:10,'אחד':1,'אחת':1,'שניים':2,'שתיים':2,'שלוש':3,'ארבע':4,'חמש':5,'שש':6,'שבע':7,'שמונה':8,'תשע':9,'עשר':10};
   const match=folded.match(/(?:\bpour\b|\bfor\b|\bpara\b|ל[- ]?)\s*([\p{L}\d'-]+)\s*(?:personnes?|portions?|people|servings?|personas?|porciones?|אנשים|מנות)\b/iu);
   if(!match)return null;
   const token=match[1].replace(/[-']/g,'');
@@ -135,6 +135,15 @@ export function liaHandsFreeCookingServingTarget(text:string):number|null{
 
 function stripCookingServingTarget(text:string):string{
   return text.replace(/\s+(?:pour|for|para|ל[- ]?)\s*[\p{L}\d'-]+\s*(?:personnes?|portions?|people|servings?|personas?|porciones?|אנשים|מנות)\s*[?!.,;:]*$/iu,'');
+}
+
+export type LiaCookingApproximationConsent='yes'|'no'|'unknown';
+
+export function liaCookingApproximationConsent(text:string):LiaCookingApproximationConsent{
+  const folded=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’']/g,' ').replace(/[!?.,;:]+/g,' ').replace(/\s+/g,' ').trim();
+  if(/^(?:oui|ok|d accord|vas y|tu peux|yes|yeah|yep|sure|go ahead|si|claro|dale|כן|בטח|אפשר)$/.test(folded))return'yes';
+  if(/^(?:non|pas la peine|laisse tomber|ne fais pas|no|nope|don t|do not|לא|עזוב)$/.test(folded))return'no';
+  return'unknown';
 }
 
 export function liaHandsFreeCookingIngredientQuery(text:string):string|null{
