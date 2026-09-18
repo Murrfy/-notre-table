@@ -5776,6 +5776,33 @@ test('V0.287 cooking screen answers from the recipe and refuses to invent or mer
 });
 
 
+test('V0.288 cooking extracts a bounded serving target without polluting the ingredient name',()=>{
+  assert.equal(liaCookingCompanion.liaHandsFreeCookingServingTarget('combien de farine pour 6 personnes ?'),6);
+  assert.equal(liaCookingCompanion.liaHandsFreeCookingServingTarget('how much milk for six people?'),6);
+  assert.equal(liaCookingCompanion.liaHandsFreeCookingServingTarget('cuanta harina para 8 personas?'),8);
+  assert.equal(liaCookingCompanion.liaHandsFreeCookingServingTarget('combien de farine pour 99 personnes ?'),null);
+  assert.equal(liaCookingCompanion.liaHandsFreeCookingIngredientQuery('combien de farine pour 6 personnes ?'),'farine');
+  const action=liaCookingCompanion.liaHandsFreeCookingAction('combien de farine pour 6 personnes ?');
+  assert.equal(action.kind,'ingredient_quantity');assert.equal(action.ingredientQuery,'farine');assert.equal(action.targetServings,6);
+});
+
+test('V0.288 serving scaling stays a pure proportion from the real recipe base',()=>{
+  const baseQuantity=250,baseServings=4,targetServings=6;
+  assert.equal(baseQuantity*targetServings/baseServings,375);
+  assert.equal(liaCookingCompanion.liaHandsFreeCookingIntent('combien de farine pour 6 personnes ?'),'ingredient_quantity');
+  assert.equal(liaCookingCompanion.liaHandsFreeCookingIntent("il reste combien d'étapes ?"),'step_status');
+  assert.equal(liaCookingCompanion.liaHandsFreeCookingIntent('il reste combien ?'),'timer_remaining');
+});
+
+test('V0.288 cooking screen scales only known quantities and fails closed without a serving base',()=>{
+  const source=fs.readFileSync(path.join(root,'src/screens/CookingModeScreen.tsx'),'utf8');
+  assert.ok(source.includes('ingredient.quantity*targetServings/recipe.portions'));
+  assert.ok(source.includes('recipe.portions<=0'));
+  assert.ok(source.includes('mais sans quantité précise à adapter.'));
+  assert.ok(source.includes('Pour ${targetServings} personnes, il faut ${scaledLabel} de ${ingredient.name}.'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
