@@ -74,7 +74,7 @@ export function routeLiaAssistantVoiceRequest(text:string,directNames:ReadonlyAr
   if(/\b(rappelle[- ]moi|rappelle nous|remind me|recuerdame|תזכיר)/.test(s))return{...addressed,intent:'reminder',target:null};
   if(/\b(minuteur|chrono|timer|temporizador|טיימר)\b/.test(s))return{...addressed,intent:'timer',target:null};
   if(/^(?:emmene[- ]?moi|amene[- ]?moi|guide[- ]?moi|conduis[- ]?moi|navigue)\b|^(?:take me|guide me|navigate|drive me)\b|^(?:llevame|guiame)\b|^(?:קחי אותי|קח אותי|נווטי|נווט)\b/.test(s))return{...addressed,intent:'navigation',target:null};
-  if(/^(?:(?:tu\s+me\s+)?(?:mets|met|lance|joue)|(?:peux\s+tu|est\s+ce\s+que\s+tu)\s+(?:me\s+)?(?:mettre|lancer|jouer))\s+(?:moi\s+)?(?:de\s+)?(?:la\s+)?musique\b|^(?:mets|met|lance|joue)\s+(?:moi\s+)?(?:la\s+chanson|le\s+morceau|l['’]album|la\s+playlist)\b|^(?:play)\s+(?:some\s+)?music\b|\b(?:spotify|apple music|musique apple|youtube music)\b/.test(s))return{...addressed,intent:'music',target:null};
+  if(/^(?:(?:tu\s+me\s+)?(?:mets|met|lance|joue)|(?:tu\s+peux|peux\s+tu|est\s+ce\s+que\s+tu)\s+(?:me\s+)?(?:mettre|lancer|jouer))\s+(?:moi\s+)?(?:de\s+)?(?:la\s+)?musique\b|^(?:mets|met|lance|joue)\s+(?:moi\s+)?(?:la\s+chanson|le\s+morceau|l['’]album|la\s+playlist)\b|^(?:play)\s+(?:some\s+)?music\b|\b(?:spotify|apple music|musique apple|youtube music)\b/.test(s))return{...addressed,intent:'music',target:null};
   if(/\b(cherche|recherche|trouve|verifie|vérifie|look up|search|busca|cherche sur internet)\b/.test(s))return{...addressed,intent:'research',target:null};
   if(/\b(prepare|prépare|ajoute|mets|garde|note|enregistre|planifie|prévois|prevois|programme|commande|reserve|réserve)\b/.test(s))return{...addressed,intent:'action',target:null};
   return{...addressed,intent:'answer',target:null};
