@@ -126,8 +126,8 @@ export function liaHandsFreeCookingStepNumber(text:string):number|null{
 export function liaHandsFreeCookingIngredientQuery(text:string):string|null{
   const folded=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’]/g,"'").replace(/[?!.,;:]+/g,' ').replace(/\s+/g,' ').trim();
   const patterns:RegExp[]=[
-    /^(?:lia\s+)?(?:il\s+faut\s+)?combien\s+(?:de|d')\s+(.+)$/i,
-    /^(?:lia\s+)?quelle\s+quantite\s+(?:de|d')\s+(.+)$/i,
+    /^(?:lia\s+)?(?:il\s+faut\s+)?combien\s+(?:de\s+|d'\s*)(.+)$/i,
+    /^(?:lia\s+)?quelle\s+quantite\s+(?:de\s+|d'\s*)(.+)$/i,
     /^(?:lia\s+)?how\s+(?:much|many)\s+(.+?)(?:\s+do\s+(?:i|we)\s+need)?$/i,
     /^(?:lia\s+)?cuant[oa]s?\s+(?:de\s+)?(.+?)(?:\s+necesit(?:o|amos))?$/i,
     /^(?:lia\s+)?כמה\s+(.+)$/u,
