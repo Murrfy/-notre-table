@@ -11,6 +11,7 @@ export type LiaContextualGuidanceEvent=
 type Listener=(event:LiaContextualGuidanceEvent)=>void;
 const listeners=new Set<Listener>();
 const pending:LiaContextualGuidanceEvent[]=[];
+const recentEventAt=new Map<string,number>();
 const SEEN_KEY='@notre-table/lia-contextual-guidance-seen-v1';
 
 function cleanName(value:string):string{return value.trim().replace(/\s+/g,' ').slice(0,80);}
@@ -18,7 +19,20 @@ function validSeen(value:unknown):value is Record<string,boolean>{
   return isRecord(value)&&Object.values(value).every(item=>typeof item==='boolean');
 }
 
+function eventKey(event:LiaContextualGuidanceEvent):string{
+  if(event.kind==='family_message_first_use')return event.kind+':'+event.householdId+':'+event.organizerName;
+  if(event.kind==='family_message_help')return event.kind+':'+event.householdId+':'+event.step;
+  if(event.kind==='family_choice_changed')return event.kind+':'+event.householdId+':'+event.mealDate+':'+event.mealType+':'+event.memberName+':'+event.desire;
+  return event.kind+':'+event.householdId+':'+event.mealDate+':'+event.mealType+':'+event.memberName+':'+String(event.active);
+}
+
 export function emitLiaContextualGuidance(event:LiaContextualGuidanceEvent):void{
+  const key=eventKey(event),now=Date.now(),last=recentEventAt.get(key)??0;
+  if(now-last<8_000)return;
+  recentEventAt.set(key,now);
+  if(recentEventAt.size>80){
+    for(const [candidate,at] of recentEventAt)if(now-at>10*60_000)recentEventAt.delete(candidate);
+  }
   if(listeners.size){for(const listener of listeners)listener(event);return;}
   pending.push(event);
   if(pending.length>8)pending.splice(0,pending.length-8);
