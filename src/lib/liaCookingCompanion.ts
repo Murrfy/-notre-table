@@ -1,3 +1,6 @@
+import {canonicalIngredientKey} from '../domain/ingredients';
+import type {RecipeIngredient} from '../types';
+
 export type LiaCookingCueKind='timed'|'salt'|'next_step'|'steady';
 export type LiaCookingCue={kind:LiaCookingCueKind;seconds:number|null};
 
@@ -108,7 +111,7 @@ export function chooseLiaCookingQuestion(input:{
 }
 
 
-export type LiaHandsFreeCookingIntent='start_timer'|'cancel_timer'|'timer_remaining'|'step_status'|'go_to_step'|'next_step'|'complete_step'|'finish_recipe'|'previous_step'|'repeat_step'|'show_ingredients'|'hide_ingredients'|'list_ingredients'|'music'|'stop_voice'|'unknown';
+export type LiaHandsFreeCookingIntent='start_timer'|'cancel_timer'|'timer_remaining'|'step_status'|'go_to_step'|'ingredient_quantity'|'next_step'|'complete_step'|'finish_recipe'|'previous_step'|'repeat_step'|'show_ingredients'|'hide_ingredients'|'list_ingredients'|'music'|'stop_voice'|'unknown';
 
 export function liaHandsFreeCookingStepNumber(text:string):number|null{
   const folded=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’]/g,"'");
@@ -118,6 +121,35 @@ export function liaHandsFreeCookingStepNumber(text:string):number|null{
   const words:Record<string,number>={un:1,une:1,deux:2,trois:3,quatre:4,cinq:5,six:6,sept:7,huit:8,neuf:9,dix:10,onze:11,douze:12,treize:13,quatorze:14,quinze:15,seize:16,dixsept:17,dixhuit:18,dixneuf:19,vingt:20,one:1,two:2,three:3,four:4,five:5,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,uno:1,una:1,dos:2,tres:3,cuatro:4,cinco:5,seis:6,siete:7,ocho:8,nueve:9,diez:10,once:11,doce:12,trece:13,catorce:14,quince:15,dieciseis:16,veinte:20,'אחד':1,'אחת':1,'שניים':2,'שתיים':2,'שלוש':3,'ארבע':4,'חמש':5,'שש':6,'שבע':7,'שמונה':8,'תשע':9,'עשר':10};
   const token=match[1].replace(/[-']/g,'');
   return words[token]??null;
+}
+
+export function liaHandsFreeCookingIngredientQuery(text:string):string|null{
+  const folded=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’]/g,"'").replace(/[?!.,;:]+/g,' ').replace(/\s+/g,' ').trim();
+  const patterns:RegExp[]=[
+    /^(?:lia\s+)?(?:il\s+faut\s+)?combien\s+(?:de\s+|d'\s*)(.+)$/i,
+    /^(?:lia\s+)?quelle\s+quantite\s+(?:de\s+|d'\s*)(.+)$/i,
+    /^(?:lia\s+)?how\s+(?:much|many)\s+(.+?)(?:\s+do\s+(?:i|we)\s+need)?$/i,
+    /^(?:lia\s+)?cuant[oa]s?\s+(?:de\s+)?(.+?)(?:\s+necesit(?:o|amos))?$/i,
+    /^(?:lia\s+)?כמה\s+(.+)$/u,
+  ];
+  for(const pattern of patterns){
+    const match=folded.match(pattern);if(!match)continue;
+    const target=match[1].replace(/^(?:du|de la|des|de l'|d'|the|la|le|les)\s+/i,'').trim();
+    if(!target)return null;
+    const blocked=canonicalIngredientKey(target);
+    if(['temps','time','minute','minutes','etape','etapes','step','steps','ingredient','ingredients'].includes(blocked))return null;
+    return target;
+  }
+  return null;
+}
+
+export function liaCookingIngredientMatches(query:string,items:RecipeIngredient[]):RecipeIngredient[]{
+  const key=canonicalIngredientKey(query);
+  if(!key)return[];
+  return items.filter(item=>{
+    const itemKey=item.ingredient_key?.trim()?canonicalIngredientKey(item.ingredient_key):canonicalIngredientKey(item.name);
+    return itemKey===key||canonicalIngredientKey(item.name)===key;
+  });
 }
 
 export function liaHandsFreeCookingIntent(text:string):LiaHandsFreeCookingIntent{
@@ -130,6 +162,7 @@ export function liaHandsFreeCookingIntent(text:string):LiaHandsFreeCookingIntent
   if(/(?:ou\s+(?:est[- ]?ce\s+qu['’]?|en\s+)?on\s+en\s+est|on\s+en\s+est\s+ou|(?:je\s+suis|on\s+est)\s+a\s+quelle\s+etape|quelle\s+etape|il\s+reste\s+combien\s+d['’]?etapes?|combien\s+d['’]?etapes?\s+(?:il\s+)?reste|combien\s+d['’]?etapes?\s+restent|recipe\s+progress|what\s+step\s+are\s+we\s+on)/i.test(folded))return'step_status';
   if(/\b(?:il\s+reste\s+combien|reste\s+combien)\b/i.test(value)||/\b(combien|reste|remaining|left)\b.*\b(min|minute|temps|time)\b/i.test(value))return'timer_remaining';
   if(/\b(lance|mets|d[eé]marre|start)\b.*\b(min|minute|timer|chrono)/i.test(value))return'start_timer';
+  if(liaHandsFreeCookingIngredientQuery(text))return'ingredient_quantity';
   if(/\b(r[eé]p[eè]te|redis|repeat)\b/i.test(value))return'repeat_step';
   if(/(?:(?:j['’]?ai|on\s+a)\s+(?:fini|termine)\s+(?:la\s+)?recette|(?:finis?|termine|ferme|quitte)\s+(?:la\s+)?recette|(?:quitte|ferme)\s+(?:le\s+)?mode\s+cuisine|finish\s+(?:the\s+)?recipe|exit\s+cooking\s+mode)/i.test(folded))return'finish_recipe';
   if(/(?:j['’]?ai\s+(?:fini|termine)\s+(?:(?:cette|l['’])\s*)?etape|(?:cette\s+)?etape\s+(?:est\s+)?(?:finie|terminee)|done\s+with\s+(?:this\s+)?step|this\s+step\s+is\s+done)/i.test(folded))return'complete_step';
@@ -158,6 +191,7 @@ export type LiaHandsFreeCookingAction={
   kind:LiaHandsFreeCookingIntent;
   timerSeconds:number|null;
   stepNumber?:number|null;
+  ingredientQuery?:string|null;
   needsStreamingIntegration:boolean;
   safeToExecuteLocally:boolean;
 };
@@ -171,8 +205,10 @@ export function liaHandsFreeCookingAction(text:string):LiaHandsFreeCookingAction
   const kind=liaHandsFreeCookingIntent(text);
   const timerSeconds=kind==='start_timer'?liaHandsFreeTimerSeconds(text):null;
   const stepNumber=kind==='go_to_step'?liaHandsFreeCookingStepNumber(text):null;
+  const ingredientQuery=kind==='ingredient_quantity'?liaHandsFreeCookingIngredientQuery(text):null;
   if(kind==='start_timer')return{kind,timerSeconds,needsStreamingIntegration:false,safeToExecuteLocally:timerSeconds!==null};
   if(kind==='go_to_step')return{kind,timerSeconds:null,stepNumber,needsStreamingIntegration:false,safeToExecuteLocally:stepNumber!==null};
+  if(kind==='ingredient_quantity')return{kind,timerSeconds:null,ingredientQuery,needsStreamingIntegration:false,safeToExecuteLocally:ingredientQuery!==null};
   if(kind==='music')return{kind,timerSeconds:null,needsStreamingIntegration:true,safeToExecuteLocally:false};
   if(kind==='next_step'||kind==='complete_step'||kind==='finish_recipe'||kind==='previous_step'||kind==='repeat_step'||kind==='timer_remaining'||kind==='step_status'||kind==='cancel_timer'||kind==='show_ingredients'||kind==='hide_ingredients'||kind==='list_ingredients'||kind==='stop_voice')return{kind,timerSeconds:null,needsStreamingIntegration:false,safeToExecuteLocally:true};
   return{kind:'unknown',timerSeconds:null,needsStreamingIntegration:false,safeToExecuteLocally:false};

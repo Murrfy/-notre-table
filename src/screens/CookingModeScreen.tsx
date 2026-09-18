@@ -6,7 +6,7 @@ import { Recipe } from '../types';
 import { useLocale } from '../context/LocaleContext';
 import { convertQuantity } from '../lib/units';
 import { normalizeUnit } from '../domain/catalog';
-import {formatCookingClock,liaCookingCue} from '../lib/liaCookingCompanion';
+import {formatCookingClock,liaCookingCue,liaCookingIngredientMatches} from '../lib/liaCookingCompanion';
 import {runLiaCookingCommand,type LiaCookingSpeechAdapter} from '../services/liaCookingRuntime';
 import {setLiaCookingSessionVoiceHandler} from '../services/liaCookingSession';
 
@@ -54,6 +54,16 @@ export function CookingModeScreen({recipe,onClose,speechAdapter}:{recipe:Recipe;
     }
     if(result.action.kind==='show_ingredients')return{handled:true,spokenReply:fr?'Je te les affiche.':'I’m showing the ingredients.'};
     if(result.action.kind==='hide_ingredients')return{handled:true,spokenReply:fr?'D’accord, je les masque.':'Okay, I’m hiding the ingredients.'};
+    if(result.action.kind==='ingredient_quantity'){
+      const query=result.action.ingredientQuery?.trim()??'';
+      const matches=query?liaCookingIngredientMatches(query,recipe.ingredients??[]):[];
+      if(!matches.length)return{handled:true,spokenReply:fr?`Je ne vois pas ${query||'cet ingrédient'} dans cette recette.`:`I don’t see ${query||'that ingredient'} in this recipe.`};
+      if(matches.length>1)return{handled:true,spokenReply:fr?`${matches[0].name} apparaît plusieurs fois dans la recette. Je préfère ne pas additionner des quantités qui pourraient avoir des usages différents.`:`${matches[0].name} appears more than once in the recipe. I won’t add quantities that may be used differently.`};
+      const ingredient=matches[0];
+      const quantity=quantityLabel(ingredient.quantity,ingredient.unit);
+      if(!quantity)return{handled:true,spokenReply:fr?`La recette mentionne ${ingredient.name}, mais sans quantité précise.`:`The recipe includes ${ingredient.name}, but no exact quantity is entered.`};
+      return{handled:true,spokenReply:fr?`Il faut ${quantity} de ${ingredient.name}.`:`You need ${quantity} of ${ingredient.name}.`};
+    }
     if(result.action.kind==='list_ingredients'){
       const items=recipe.ingredients?.filter(x=>x.name.trim()).map(x=>{const quantity=quantityLabel(x.quantity,x.unit);return quantity?`${x.name}, ${quantity}`:x.name;})??[];
       if(!items.length)return{handled:true,spokenReply:fr?'Aucun ingrédient n’est renseigné pour cette recette.':'No ingredients are entered for this recipe.'};
@@ -89,7 +99,7 @@ export function CookingModeScreen({recipe,onClose,speechAdapter}:{recipe:Recipe;
     }
     if(result.action.kind==='stop_voice')return{handled:true,spokenReply:null};
     return{handled:false,spokenReply:null};
-  }),[current,index,steps,timerEndsAt]);
+  }),[current,index,steps,timerEndsAt,recipe.ingredients,onClose,locale]);
 
   const toggleVoiceListening=async()=>{
     if(!speechAdapter?.available)return;
