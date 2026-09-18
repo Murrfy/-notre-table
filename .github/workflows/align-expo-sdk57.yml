@@ -2,6 +2,11 @@ name: Align Expo SDK 57 dependencies
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/align-expo-sdk57.yml'
 
 permissions:
   contents: write
