@@ -6,7 +6,7 @@ import { Recipe } from '../types';
 import { useLocale } from '../context/LocaleContext';
 import { convertQuantity } from '../lib/units';
 import { normalizeUnit } from '../domain/catalog';
-import {formatCookingClock,liaCookingApproximationConsent,liaCookingCue,liaCookingIngredientMatches,liaCookingServingFollowupTarget} from '../lib/liaCookingCompanion';
+import {formatCookingClock,liaCookingApproximationConsent,liaCookingCue,liaCookingIngredientFollowupQuery,liaCookingIngredientMatches,liaCookingServingFollowupTarget} from '../lib/liaCookingCompanion';
 import {runLiaCookingCommand,type LiaCookingSpeechAdapter} from '../services/liaCookingRuntime';
 import {markLiaCookingSessionFollowupWindow,setLiaCookingSessionVoiceHandler,type LiaCookingApproximationRequest} from '../services/liaCookingSession';
 
@@ -20,7 +20,7 @@ export function CookingModeScreen({recipe,onClose,speechAdapter}:{recipe:Recipe;
   const [clockNow,setClockNow]=useState(()=>Date.now());
   const [voiceListening,setVoiceListening]=useState(false);
   const approximationPendingRef=useRef<LiaCookingApproximationRequest|null>(null);
-  const lastServingQueryRef=useRef<{kind:'ingredient_quantity'|'scale_ingredients';ingredientQuery:string|null;atMs:number}|null>(null);
+  const lastServingQueryRef=useRef<{kind:'ingredient_quantity'|'scale_ingredients';ingredientQuery:string|null;targetServings:number|null;atMs:number}|null>(null);
   const current=steps[index]??locale.t('cooking.noStep');
   const cue=useMemo(()=>liaCookingCue(current,index,steps.length),[current,index,steps.length]);
   const remainingSeconds=timerEndsAt===null?0:Math.max(0,Math.ceil((timerEndsAt-clockNow)/1000));
@@ -56,25 +56,31 @@ export function CookingModeScreen({recipe,onClose,speechAdapter}:{recipe:Recipe;
     }
     const now=Date.now();
     const followupTarget=liaCookingServingFollowupTarget(text);
+    const followupIngredient=liaCookingIngredientFollowupQuery(text);
     const previousServingQuery=lastServingQueryRef.current;
     const previousFresh=previousServingQuery!==null&&now-previousServingQuery.atMs<=120_000;
     if(followupTarget!==null&&!previousFresh){
       return{handled:true,spokenReply:fr?'Tu veux adapter quel ingrédient, ou toute la liste ?':'Which ingredient do you want to scale, or the whole list?'};
     }
+    const realFollowupIngredient=followupIngredient&&previousFresh&&liaCookingIngredientMatches(followupIngredient,recipe.ingredients??[]).length>0?followupIngredient:null;
     const commandText=followupTarget!==null&&previousServingQuery
       ?previousServingQuery.kind==='scale_ingredients'
         ?`adapte les ingrédients pour ${followupTarget} personnes`
         :previousServingQuery.ingredientQuery
           ?`combien de ${previousServingQuery.ingredientQuery} pour ${followupTarget} personnes`
           :text
-      :text;
+      :realFollowupIngredient&&previousServingQuery
+        ?previousServingQuery.targetServings!==null
+          ?`combien de ${realFollowupIngredient} pour ${previousServingQuery.targetServings} personnes`
+          :`combien de ${realFollowupIngredient}`
+        :text;
     const result=handleHandsFreeCommand(commandText);
     if(result.action.kind==='ingredient_quantity'&&result.action.ingredientQuery){
       markLiaCookingSessionFollowupWindow();
-      lastServingQueryRef.current={kind:'ingredient_quantity',ingredientQuery:result.action.ingredientQuery,atMs:now};
+      lastServingQueryRef.current={kind:'ingredient_quantity',ingredientQuery:result.action.ingredientQuery,targetServings:result.action.targetServings??null,atMs:now};
     }else if(result.action.kind==='scale_ingredients'){
       markLiaCookingSessionFollowupWindow();
-      lastServingQueryRef.current={kind:'scale_ingredients',ingredientQuery:null,atMs:now};
+      lastServingQueryRef.current={kind:'scale_ingredients',ingredientQuery:null,targetServings:result.action.targetServings??null,atMs:now};
     }
     if(result.action.kind==='unknown'||result.action.kind==='music')return{handled:false,spokenReply:null};
     if(result.action.kind==='repeat_step')return{handled:true,spokenReply:current};
