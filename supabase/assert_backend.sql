@@ -22,9 +22,9 @@ declare
     'pantry_items','member_absences','shopping_responsibilities','recipe_feedback','household_access',
     'light_members','light_meal_questions','light_response_tokens','light_meal_responses','lia_memos','commander_favorites','lia_navigation_monthly_usage'
   ];
-  expected_realtime text[] := array['meal_plans','shopping_items','household_activity','member_absences','shopping_responsibilities','recipe_feedback','light_meal_responses'];
+  expected_realtime text[] := array['meal_plans','shopping_items','household_activity','member_absences','shopping_responsibilities','recipe_feedback','light_meal_questions','light_meal_responses'];
   expected_storage_policies text[] := array['profile_avatars_select','profile_avatars_insert','profile_avatars_delete'];
-  expected_migrations text[] := array['202609140001','202609140002','202609140003','202609140004','202609140005','202609140006','202609140007','202609140008','202609140009','202609140010','202609140011','202609150012','202609150013','202609160014','202609160015','202609160016','202609160017','202609160018','202609160019','202609160020','202609160021','202609170022','202609170023','202609170024','202609180025','202609180026','202609180027','202609180028'];
+  expected_migrations text[] := array['202609140001','202609140002','202609140003','202609140004','202609140005','202609140006','202609140007','202609140008','202609140009','202609140010','202609140011','202609150012','202609150013','202609160014','202609160015','202609160016','202609160017','202609160018','202609160019','202609160020','202609160021','202609170022','202609170023','202609170024','202609180025','202609180026','202609180027','202609180028','202609190029','202609190030'];
 begin
   foreach item in array expected_tables loop
     select c.relrowsecurity into rls_enabled
@@ -82,6 +82,7 @@ begin
     ('upsert_light_meal_question','uuid, date, text, text[], timestamp with time zone'),
     ('issue_light_response_token','uuid, uuid'),
     ('get_light_meal_summary','uuid'),
+    ('set_lia_family_birthday','uuid, text, uuid, integer, integer, integer'),
     ('can_write_household','uuid'),
     ('reserve_lia_navigation_trip','uuid')
   ) as v(routine_name,arg_types) loop
@@ -105,7 +106,8 @@ begin
   -- Public lightweight-response helpers are callable only from the trusted Edge Function.
   for rec in select * from (values
     ('get_light_response_context','text'),
-    ('submit_light_response','text, text, text, text')
+    ('get_light_family_decisions','text'),
+    ('submit_light_response','text, text, text, text, boolean')
   ) as v(routine_name,arg_types) loop
     fn_oid:=null; fn_owner:=null; fn_acl:=null;
     select p.oid,p.proowner,p.proacl into fn_oid,fn_owner,fn_acl
