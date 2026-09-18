@@ -1,3 +1,11 @@
+## V0.292 — Manquant naturel → liste de courses
+
+- « Il me manque du lait, ajoute-le aux courses » produit une action `shopping.add_item` existante.
+- « Je n’ai plus d’œufs, mets-les dans la liste de courses » résout l’ingrédient sans demander de le répéter.
+- Une simple phrase de manque sans verbe d’ajout ne déclenche aucune écriture.
+- L’exécution réutilise `executeLiaAssistantApprovedAction` ; aucun moteur shopping parallèle n’est créé.
+- Le comportement est disponible en cuisine comme ailleurs lorsque LIA est explicitement adressée.
+
 ## V0.291 — Suivi conversationnel d’ingrédient
 
 - Après une demande de quantité, « et le lait ? » réutilise le nombre de personnes récent.
