@@ -1,13 +1,4 @@
-# Vérifications techniques — état courant V0.291
-- Checkpoint V0.291 : suivi court d’ingrédient (« et le lait ? ») réutilisant la cible de portions récente uniquement pour un ingrédient réel de la recette.
-- `npm ci` : **PASS** sur runner GitHub avec Node 22.16.0 / npm 10.9.2.
-- `expo install --check` : **PASS**, dépendances SDK 57 à jour.
-- TypeScript installé (`tsc --noEmit`) : **PASS**.
-- `npm run verify` : **PASS**.
-- Régressions : **692/692 PASS**.
-- Gates EAS : **17/17 PASS**.
-- Matrice d’acceptation : **53 scénarios / 33 invariants critiques PASS**.
-- Audit TypeScript/TSX : **219 fichiers transpilés, 0 diagnostic**.
-- Expo Android : **export PASS**.
-- Expo iOS : **export PASS**.
-- Release evidence : **591 fichiers hashés**, contrat SHA-256 `dec4a971c744954206c40f5fbd96cc3b543de1519e655459432832ba846a0a9a`.
+# Vérifications techniques — état courant V0.292
+- Checkpoint V0.292 : formulation naturelle d’un ingrédient manquant suivie d’une demande explicite d’ajout aux courses.
+- Validation installée GitHub : à exécuter sur la branche V0.292 avant intégration dans `main`.
+- Base V0.291 : validation installée GitHub complète réussie, **692/692 régressions**, exports Expo Android/iOS réussis.
