@@ -5,6 +5,7 @@ import type {TranslationKey} from '../i18n';
 import type {MealType} from '../types';
 import {colors,radius} from '../theme';
 import {familyMessageCapabilities} from '../domain/familyMessageEligibility';
+import {emitLiaContextualGuidance,emitLiaFamilyMessageFirstUse} from '../services/liaContextualGuidance';
 import {
   createLightMember,fetchLightMealQuestion,fetchLightMealSummary,fetchLightMembers,issueLightResponseToken,
   lightResponseLink,LightDesire,LightMealQuestion,LightMealSummary,LightMember,saveLightMealQuestion,
@@ -26,7 +27,7 @@ function expiryForMealDate(mealDate:string){
   return end.toISOString();
 }
 
-export function LightParticipationScreen({householdId,householdName,mealDate,mealType,demo=false,onClose,onFamilyRequired}:{householdId:string;householdName:string;mealDate:string;mealType:MealType;demo?:boolean;onClose:()=>void;onFamilyRequired?:()=>void}){
+export function LightParticipationScreen({householdId,householdName,organizerName='',mealDate,mealType,demo=false,onClose,onFamilyRequired}:{householdId:string;householdName:string;organizerName?:string;mealDate:string;mealType:MealType;demo?:boolean;onClose:()=>void;onFamilyRequired?:()=>void}){
   const locale=useLocale();
   const rtl=locale.textDirection==='rtl';
   const [members,setMembers]=useState<LightMember[]>(demo?[{id:'demo-light-1',household_id:householdId,display_name:'Lina',phone_number:'+33 6 00 00 00 00',age:16,relation:'child',relation_label:null,active:true}]:[]);
@@ -39,9 +40,55 @@ export function LightParticipationScreen({householdId,householdName,mealDate,mea
   const [editingId,setEditingId]=useState<string|null>(null);
   const [busy,setBusy]=useState(false);
   const actionInFlight=useRef(false);
+  const previousRecipientStateRef=useRef<Map<string,{desire:LightDesire|null;takesCharge:boolean;responded:boolean}>|null>(null);
+  const helpedPrepareRef=useRef(false);
+  const helpedShareRef=useRef(false);
   const [message,setMessage]=useState('');
   const dateLabel=useMemo(()=>locale.formatDate(new Date(`${mealDate}T12:00:00`),{weekday:'long',day:'numeric',month:'long'}),[locale,mealDate]);
   const mealLabel=locale.t(`meal.${mealType}` as TranslationKey);
+
+  useEffect(()=>{
+    void emitLiaFamilyMessageFirstUse({householdId,organizerName});
+  },[householdId,organizerName]);
+
+  useEffect(()=>{
+    previousRecipientStateRef.current=null;
+    helpedPrepareRef.current=false;
+    helpedShareRef.current=false;
+  },[question?.id]);
+
+  useEffect(()=>{
+    const timer=setTimeout(()=>{
+      if(!question&&!helpedPrepareRef.current){
+        helpedPrepareRef.current=true;
+        emitLiaContextualGuidance({kind:'family_message_help',householdId,organizerName,step:'prepare'});
+        return;
+      }
+      if(question&&!summary.recipients.length&&!helpedShareRef.current){
+        helpedShareRef.current=true;
+        emitLiaContextualGuidance({kind:'family_message_help',householdId,organizerName,step:'share'});
+      }
+    },25_000);
+    return()=>clearTimeout(timer);
+  },[question,summary.recipients.length,householdId,organizerName]);
+
+  useEffect(()=>{
+    if(!question||dirty)return;
+    const current=new Map(summary.recipients.map(recipient=>[recipient.member_id,{desire:recipient.desire,takesCharge:recipient.takes_charge,responded:recipient.responded}]));
+    const previous=previousRecipientStateRef.current;
+    if(previous===null){previousRecipientStateRef.current=current;return;}
+    for(const recipient of summary.recipients){
+      const before=previous.get(recipient.member_id);
+      if(!recipient.responded)continue;
+      if(recipient.desire&&before?.desire!==recipient.desire){
+        emitLiaContextualGuidance({kind:'family_choice_changed',householdId,organizerName,memberName:recipient.member_name,mealDate,mealType,desire:recipient.desire});
+      }
+      if(Boolean(before?.takesCharge)!==recipient.takes_charge){
+        emitLiaContextualGuidance({kind:'family_take_charge_changed',householdId,organizerName,memberName:recipient.member_name,mealDate,mealType,active:recipient.takes_charge});
+      }
+    }
+    previousRecipientStateRef.current=current;
+  },[question,dirty,summary.recipients,householdId,organizerName,mealDate,mealType]);
 
   const refreshSummary=useCallback(async(qid?:string)=>{
     const id=qid??question?.id;if(!id)return;
