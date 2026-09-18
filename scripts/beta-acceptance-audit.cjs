@@ -19,9 +19,9 @@ const required=[
   'light_member.open_without_app',
   'light_member.presence_one_click',
   'light_member.desire_optional_two_click',
-  'light_member.surprise_one_click_yes',
+  'light_member.named_choice_board',
   'light_member.take_charge_single_winner',
-  'light_member.token_replay_rejected',
+  'light_member.response_editable_until_expiry',
   'light_member.organizer_realtime_summary',
 ];
 function fail(message){console.error(`BETA_ACCEPTANCE_FAIL: ${message}`);process.exit(1);}
