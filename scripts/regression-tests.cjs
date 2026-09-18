@@ -6058,6 +6058,42 @@ test('V0.294 contextual guidance uses the existing LIA voice and model lane, not
 });
 
 
+test('V0.294 progressive profile keeps birthdays out of mandatory onboarding and stores year only when provided',()=>{
+  const legacyForm=fs.readFileSync(path.join(root,'supabase','migrations','202609160016_family_roster_form.sql'),'utf8');
+  const progressive=fs.readFileSync(path.join(root,'supabase','migrations','202609190030_lia_progressive_profile_enrichment.sql'),'utf8');
+  assert.ok(!legacyForm.includes('birthday_month'));
+  assert.ok(progressive.includes('birthday_month smallint'));
+  assert.ok(progressive.includes('birthday_day smallint'));
+  assert.ok(progressive.includes('birth_year smallint'));
+  assert.ok(progressive.includes('p_year integer default null'));
+  assert.ok(progressive.includes("p_subject_kind not in ('profile','light_member')"));
+});
+
+test('V0.294 LIA enriches one family detail slowly and respects later or refusal instead of interrogating',()=>{
+  const enrichment=fs.readFileSync(path.join(root,'src/services/liaProfileEnrichment.ts'),'utf8');
+  const main=fs.readFileSync(path.join(root,'src/screens/MainScreen.tsx'),'utf8');
+  assert.ok(enrichment.includes('GLOBAL_GAP_MS=48*60*60*1000'));
+  assert.ok(enrichment.includes('TARGET_REASK_MS=14*24*60*60*1000'));
+  assert.ok(enrichment.includes('LATER_SNOOZE_MS=30*24*60*60*1000'));
+  assert.ok(enrichment.includes('plus tard'));
+  assert.ok(enrichment.includes('je ne veux pas'));
+  assert.ok(main.includes('90_000'));
+  assert.ok(main.includes('liaCookingSessionActive()'));
+  assert.ok(main.includes('liaQuietNow(quiet)'));
+});
+
+test('V0.294 birthday answer stays in the existing LIA voice lane with a playful but non-systematic tone',()=>{
+  const guidance=fs.readFileSync(path.join(root,'src/services/liaContextualGuidance.ts'),'utf8');
+  const voice=fs.readFileSync(path.join(root,'src/services/liaAssistantVoiceExecution.ts'),'utf8');
+  const orb=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
+  assert.ok(guidance.includes('Et le poids… non je plaisante 😏'));
+  assert.ok(guidance.includes('ne la répète pas systématiquement'));
+  assert.ok(voice.includes('liaProfileEnrichmentClarificationPending'));
+  assert.ok(voice.includes('continueLiaProfileEnrichmentClarification'));
+  assert.ok(orb.includes('liaProfileEnrichmentClarificationPending()'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
