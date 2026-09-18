@@ -1,13 +1,4 @@
-# Vérifications techniques — état courant V0.289
-- Checkpoint V0.289 : adaptation vocale de toute la liste d’ingrédients à un nombre de personnes, avec approximation uniquement après consentement explicite pour les données manquantes.
-- `npm ci` : **PASS** sur runner GitHub avec Node 22.16.0 / npm 10.9.2.
-- `expo install --check` : **PASS**, dépendances SDK 57 à jour.
-- TypeScript installé (`tsc --noEmit`) : **PASS**.
-- `npm run verify` : **PASS**.
-- Régressions : **686/686 PASS**.
-- Gates EAS : **17/17 PASS**.
-- Matrice d’acceptation : **53 scénarios / 33 invariants critiques PASS**.
-- Audit TypeScript/TSX : **219 fichiers transpilés, 0 diagnostic**.
-- Expo Android : **export PASS**.
-- Expo iOS : **export PASS**.
-- Release evidence : **589 fichiers hashés**, contrat SHA-256 `69cfb0946201df07aed84e1f53120f142240aca5eb181a23077e107872d1961e`.
+# Vérifications techniques — état courant V0.290
+- Checkpoint V0.290 : suivi court de portions (« et pour 8 ? ») après une demande récente d’ingrédient ou de liste complète.
+- Validation installée GitHub : à exécuter sur la branche V0.290 avant intégration dans `main`.
+- Base V0.289 : validation installée GitHub complète réussie, **686/686 régressions**, exports Expo Android/iOS réussis.
