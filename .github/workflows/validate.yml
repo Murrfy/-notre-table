@@ -48,5 +48,6 @@ jobs:
           name: notre-table-expo-exports-${{ github.sha }}
           path: .validation/
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 14
 
