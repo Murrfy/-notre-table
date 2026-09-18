@@ -1,4 +1,6 @@
 # Vérifications techniques — état courant V0.287
 - Checkpoint V0.287 : question vocale ciblée sur la quantité d’un ingrédient réel de la recette ouverte.
-- Validation installée GitHub (npm ci, TypeScript, audits, régressions, exports Expo Android/iOS) : à exécuter sur la branche de développement avant intégration dans main.
-- Base V0.286 précédente : validation installée GitHub complète réussie, 675/675 régressions et exports Expo Android/iOS réussis.
+- `npm ci` : PASS sur runner GitHub avec Node 22.16.0 / npm 10.9.2.
+- `expo install --check` : PASS, dépendances SDK 57 à jour.
+- TypeScript installé (`tsc --noEmit`) : PASS.
+- `npm run verify`NaN
