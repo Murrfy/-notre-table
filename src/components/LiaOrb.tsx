@@ -37,6 +37,7 @@ import {liaPersonalPresenceReply} from '../lib/liaPersonalPresence';
 import {liaNavigationLiveSessionActive} from '../services/liaNavigationLiveSession';
 import {clearLiaCalendarClarification,liaCalendarClarificationPending} from '../services/liaAssistantCalendarExecution';
 import {liaCookingSessionClarificationPending,liaCookingSessionFollowupActive} from '../services/liaCookingSession';
+import {addLiaContextualGuidanceListener,liaContextualGuidanceFallback,liaContextualGuidancePrompt} from '../services/liaContextualGuidance';
 
 export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommander,onOpenMemos,onOpenCalendar,onPantryVisionRequested,onPantryRecipeRequested,onNavigationRequested,commanderContextLabel='',onCommanderCommand,householdId,weekStart,demo=false,primaryAssistant=true}:{earlyReturnMessage?:string;onEarlyReturnDismiss?:()=>void;onOpenCommander?:()=>void;onOpenMemos?:()=>void;onOpenCalendar?:()=>void;onPantryVisionRequested?:()=>void;onPantryRecipeRequested?:(recipeId:string,startCooking:boolean)=>void;onNavigationRequested?:(destination:string)=>void;commanderContextLabel?:string;onCommanderCommand?:(command:string)=>boolean;householdId?:string;weekStart?:string;demo?:boolean;primaryAssistant?:boolean}={}){
   const locale=useLocale();
@@ -227,6 +228,33 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
     void getLiaNamingPreferences().then(value=>{if(active)setNaming(value);});
     return()=>{active=false;};
   },[]);
+
+  useEffect(()=>{
+    if(!primaryAssistant)return;
+    return addLiaContextualGuidanceListener(event=>{
+      if(!enabled||!appActive)return;
+      if(event.kind==='family_choice_changed'&&event.desire!=='home')return;
+      const generation=++tableResponseGenerationRef.current;
+      const fallback=liaContextualGuidanceFallback(event,locale.languageTag);
+      const prompt=liaContextualGuidancePrompt(event,locale.languageTag);
+      void (async()=>{
+        const result=await generateLiaTableResponse({
+          turn:{text:prompt,speakerTrackId:'foreground',memberId:null,identityConfidence:0,speechConfidence:1,mayUseMemberName:false},
+          context:{mode:'table',languageTag:locale.languageTag,topicKey:'contextual_app_guidance',memberId:null,mayUseMemberName:false,naming,householdId:event.householdId,weekStart,demo,confirmedFacts:[]},
+        });
+        if(generation!==tableResponseGenerationRef.current||!enabled||!appActive)return;
+        const reply=result.status==='ready'?result.text:fallback;
+        if(!reply.trim())return;
+        if(!liaMaySpeakDuringMusic({musicActive:musicPresenceRef.current.musicActive,directlyAddressed:false,userExplicitlyRequestedComment:false}))return;
+        await speakLia(reply,locale.languageTag,currentVoice?.identifier,{
+          onStart:()=>setVoiceSpeaking(true),
+          onDone:()=>setVoiceSpeaking(false),
+          onStopped:()=>setVoiceSpeaking(false),
+          onError:()=>setVoiceSpeaking(false),
+        });
+      })();
+    });
+  },[primaryAssistant,enabled,appActive,locale.languageTag,currentVoice?.identifier,naming,weekStart,demo]);
 
   useEffect(()=>{
     if(Platform.OS!=='ios')return;
