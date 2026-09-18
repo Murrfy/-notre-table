@@ -27,7 +27,7 @@ export function sanitizeLiaNickname(value:string):string|null{
 
 export function liaDirectAddressNames(liaNickname:string|null):string[]{
   const nickname=sanitizeLiaNickname(liaNickname??'');
-  const names=[LIA_CANONICAL_NAME];
+  const names:string[]=[LIA_CANONICAL_NAME];
   if(nickname&&fold(nickname)!==fold(LIA_CANONICAL_NAME))names.push(nickname);
   return names;
 }
