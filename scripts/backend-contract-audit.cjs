@@ -123,25 +123,25 @@ const lightResponseFunctionPath=path.join(root,'supabase','functions','light-res
 if(!fs.existsSync(lightResponseFunctionPath)) failures.push('Missing public light-response Edge Function.');
 else {
   const edge=fs.readFileSync(lightResponseFunctionPath,'utf8');
-  for(const marker of ["admin.rpc('get_light_response_context'","admin.rpc('submit_light_response'","verify_jwt = false","location.hash","history.replaceState","cache-control':'no-store","referrer-policy':'no-referrer'"]){
-    if(marker==='verify_jwt = false')continue;
+  for(const marker of ["admin.rpc('get_light_response_context'","admin.rpc('get_light_family_decisions'","admin.rpc('submit_light_response'","location.hash","history.replaceState","cache-control':'no-store","referrer-policy':'no-referrer'"]){
     if(!edge.includes(marker)) failures.push(`light-response Edge Function missing security/UX marker: ${marker}`);
   }
   if(/phone_number|p_household_id|light_member_id/.test(edge)) failures.push('Public light-response Edge Function must not expose phone, household ids or member ids.');
-  if(!edge.includes("o==='surprise'){submit('yes','surprise')")) failures.push('Surprends-moi must remain a one-click positive response.');
-  if(!edge.includes("p_presence:presence,p_desire:desire")) failures.push('Public response submission must pass only token + response choices to the trusted RPC.');
+  if(/surprise:'|data-choice=["']surprise|o===['"]surprise/.test(edge)) failures.push('Retired Surprends-moi choice must not remain in the active public response UI.');
+  if(!edge.includes("p_presence:presence,p_desire:desire,p_note:note,p_takes_charge:takesCharge")) failures.push('Public response submission must pass only token + explicit response fields to the trusted RPC.');
 }
 const supabaseConfigPath=path.join(root,'supabase','config.toml');
 const supabaseConfig=fs.existsSync(supabaseConfigPath)?fs.readFileSync(supabaseConfigPath,'utf8'):'';
 if(!/\[functions\.light-response\][\s\S]*verify_jwt\s*=\s*false/i.test(supabaseConfig)) failures.push('light-response must explicitly disable JWT verification because lightweight members have no account.');
 for(const role of ['public','anon','authenticated']){
   if(!new RegExp(String.raw`revoke\s+all\s+on\s+function\s+public\.get_light_response_context\(text\)\s+from\s+${role}`,'i').test(schema)) failures.push(`Light response context RPC must revoke execute from ${role}.`);
-  if(!new RegExp(String.raw`revoke\s+all\s+on\s+function\s+public\.submit_light_response\(text,text,text\)\s+from\s+${role}`,'i').test(schema)) failures.push(`Light response submit RPC must revoke execute from ${role}.`);
+  if(!new RegExp(String.raw`revoke\s+all\s+on\s+function\s+public\.get_light_family_decisions\(text\)\s+from\s+${role}`,'i').test(schema)) failures.push(`Light family board RPC must revoke execute from ${role}.`);
+  if(!new RegExp(String.raw`revoke\s+all\s+on\s+function\s+public\.submit_light_response\(text,text,text,text,boolean\)\s+from\s+${role}`,'i').test(schema)) failures.push(`Light response submit RPC must revoke execute from ${role}.`);
 }
-for(const fn of ['get_light_response_context','submit_light_response']) if(!new RegExp(String.raw`grant\s+execute\s+on\s+function\s+public\.${fn}\([^;]+?\)\s+to\s+service_role`,'i').test(schema)) failures.push(`Light response RPC must grant execute to service_role only: ${fn}`);
+for(const fn of ['get_light_response_context','get_light_family_decisions','submit_light_response']) if(!new RegExp(String.raw`grant\s+execute\s+on\s+function\s+public\.${fn}\([^;]+?\)\s+to\s+service_role`,'i').test(schema)) failures.push(`Light response RPC must grant execute to service_role only: ${fn}`);
 if(!/revoke\s+all\s+on\s+table\s+public\.light_response_tokens\s+from\s+anon,\s*authenticated/i.test(schema)) failures.push('Light response token hashes must not be readable by browser/mobile roles.');
 if(!/from\s+public\.light_meal_questions\s+where\s+id=v_token_row\.question_id\s+for\s+update/i.test(schema)) failures.push('Light response submission must lock the question before resolving take-charge concurrency.');
-if(!/presence='take_charge'/i.test(schema)||!schema.includes('QUESTION_TAKEN_OVER')) failures.push('Light response backend must enforce a single take-charge winner.');
+if(!/takes_charge\s*=\s*true/i.test(schema)||!schema.includes('QUESTION_TAKEN_OVER')||!/light_meal_responses_one_take_charge_idx/i.test(schema)) failures.push('Light response backend must enforce a single take-charge winner through the dedicated takes_charge state.');
 if(!/create\s+or\s+replace\s+function\s+public\.get_light_meal_summary\s*\(/i.test(schema)) failures.push('Light response backend must expose an organizer summary RPC.');
 
 const subscriptionService=fs.readFileSync(path.join(src,'services','subscription.ts'),'utf8');
@@ -187,6 +187,7 @@ const expectedRpcSignatures={
   upsert_light_meal_question:'uuid, date, text, text[], timestamp with time zone',
   issue_light_response_token:'uuid, uuid',
   get_light_meal_summary:'uuid',
+  set_lia_family_birthday:'uuid, text, uuid, integer, integer, integer',
 };
 for(const [name,args] of Object.entries(expectedRpcSignatures)){
   const marker=`('${name}','${args}')`;
