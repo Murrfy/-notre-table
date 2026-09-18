@@ -1,3 +1,12 @@
+## V0.289 — Liste complète adaptée au nombre de personnes
+
+- « Adapte les ingrédients pour 6 personnes » recalcule toute la liste depuis les quantités et portions réelles de la recette ouverte.
+- Les valeurs exactes sont calculées localement et ne modifient jamais la recette persistée.
+- Si certaines quantités manquent, LIA annonce d’abord les résultats exacts disponibles puis identifie les ingrédients incomplets.
+- Toute approximation des données manquantes reste bloquée jusqu’à un « oui » explicite.
+- Si les portions de base manquent, LIA l’explique et demande également l’autorisation avant approximation.
+- Même session cuisine, même micro global, aucun écran ou moteur parallèle.
+
 ## V0.288 — Quantité d’ingrédient adaptée aux portions
 
 - « Combien de farine pour 6 personnes ? » combine la quantité réelle de la recette avec une cible de portions explicite.
