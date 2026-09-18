@@ -162,6 +162,13 @@ begin
   where r.question_id=v_row.question_id and r.takes_charge=true
   order by r.responded_at asc limit 1;
 
+  select count(*) into v_expected_choice_count
+  from public.light_members m
+  where m.household_id=(select household_id from public.light_meal_questions where id=v_question_id)
+    and m.active=true
+    and nullif(trim(coalesce(m.phone_number,'')),'') is not null
+    and (m.relation<>'child' or (m.age is not null and m.age>=16));
+
   select coalesce(jsonb_agg(jsonb_build_object(
     'member_name',m.display_name,
     'responded',r.light_member_id is not null,
@@ -416,3 +423,69 @@ revoke all on function public.get_light_family_decisions(text) from public;
 revoke all on function public.get_light_family_decisions(text) from anon;
 revoke all on function public.get_light_family_decisions(text) from authenticated;
 grant execute on function public.get_light_family_decisions(text) to service_role;
+
+
+-- V0.294 remove legacy surprise choice from active meal-option flows.
+update public.light_meal_responses
+set desire='home'
+where desire='surprise';
+
+update public.light_meal_questions q
+set desire_options=coalesce((
+  select array_agg(option order by option)
+  from (
+    select distinct case when value='surprise' then 'home' else value end as option
+    from unnest(q.desire_options) as value
+    where value in ('home','pizza','pasta','sushi','chinese','surprise')
+  ) normalized
+),'{}'::text[]);
+
+create or replace function public.upsert_light_meal_question(
+  p_household_id uuid,
+  p_meal_date date,
+  p_meal_type text,
+  p_desire_options text[],
+  p_expires_at timestamptz
+)
+returns uuid
+language plpgsql
+security definer
+set search_path=public as $$
+declare
+  v_id uuid;
+  v_options text[];
+begin
+  if auth.uid() is null then raise exception 'AUTHENTICATION_REQUIRED'; end if;
+  if not public.is_household_admin(p_household_id) then raise exception 'ADMIN_REQUIRED'; end if;
+  if not public.family_feature_allowed(p_household_id) then raise exception 'FAMILY_PLAN_REQUIRED'; end if;
+  if p_meal_date is null then raise exception 'MEAL_DATE_REQUIRED'; end if;
+  if p_meal_type not in ('breakfast','lunch','dinner','snack') then raise exception 'INVALID_MEAL_TYPE'; end if;
+  if p_expires_at is null or p_expires_at<=now() then raise exception 'QUESTION_EXPIRY_REQUIRED'; end if;
+
+  select coalesce(array_agg(option order by ordinal),'{}'::text[]) into v_options
+  from (
+    select option,min(ordinal) as ordinal
+    from unnest(coalesce(p_desire_options,'{}'::text[])) with ordinality as x(option,ordinal)
+    where option in ('home','pizza','pasta','sushi','chinese')
+    group by option
+  ) s;
+  if cardinality(v_options)<>cardinality(coalesce(p_desire_options,'{}'::text[])) then
+    raise exception 'INVALID_DESIRE_OPTIONS';
+  end if;
+
+  insert into public.light_meal_questions(household_id,meal_date,meal_type,desire_options,expires_at,created_by)
+  values(p_household_id,p_meal_date,p_meal_type,v_options,p_expires_at,auth.uid())
+  on conflict (household_id,meal_date,meal_type) do update
+    set desire_options=excluded.desire_options,
+        expires_at=excluded.expires_at,
+        closed_at=null,
+        updated_at=now()
+  returning id into v_id;
+
+  delete from public.light_response_tokens where question_id=v_id;
+  delete from public.light_meal_responses where question_id=v_id;
+  return v_id;
+end; $$;
+
+revoke all on function public.upsert_light_meal_question(uuid,date,text,text[],timestamptz) from public;
+grant execute on function public.upsert_light_meal_question(uuid,date,text,text[],timestamptz) to authenticated;
