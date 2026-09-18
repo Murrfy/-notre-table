@@ -1,0 +1,20 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.notretable.lia'
+version = '0.162.0'
+
+android {
+  namespace "com.notretable.lia"
+  defaultConfig {
+    versionCode 1
+    versionName "0.162.0"
+  }
+}
+
+dependencies {
+  // On-device environmental audio classification. No family-room audio is uploaded.
+  implementation 'org.tensorflow:tensorflow-lite-task-audio:0.4.4'
+}

@@ -13,7 +13,7 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function applyAppearance(value: AppThemeMode) {
-  Appearance.setColorScheme(value === 'system' ? 'auto' : value);
+  Appearance.setColorScheme(value === 'system' ? 'unspecified' : value);
 }
 
 export function ThemeProvider({ children }:{children:React.ReactNode}) {

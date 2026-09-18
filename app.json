@@ -2,14 +2,24 @@
   "expo": {
     "name": "Notre Table",
     "slug": "notre-table",
-    "version": "0.155.0",
+    "version": "0.286.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.notretable.app",
       "infoPlist": {
-        "CFBundleAllowMixedLocalizations": true
+        "CFBundleAllowMixedLocalizations": true,
+        "NSMicrophoneUsageDescription": "Allow Notre Table to keep LIA ready to listen while the app is open, including voice commands, cooking, table mode, and music recognition.",
+        "NSSpeechRecognitionUsageDescription": "Allow LIA to recognize voice commands you address to her while Notre Table is open, and to transcribe details you explicitly dictate.",
+        "NSContactsUsageDescription": "Allow LIA to search your phone contacts only after you explicitly ask her to call someone.",
+        "UIBackgroundModes": [
+          "audio",
+          "location"
+        ],
+        "NSLocationWhenInUseUsageDescription": "Allow Notre Table to use your current location when you ask LIA to guide you somewhere.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow LIA to keep turn-by-turn navigation active when Notre Table is temporarily in the background during a trip.",
+        "NSMotionUsageDescription": "Allow LIA navigation to use motion sensors to improve altitude and routing accuracy during turn-by-turn guidance."
       },
       "config": {
         "usesNonExemptEncryption": false
@@ -47,8 +57,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos only when you choose a recipe image or profile photo.",
-          "cameraPermission": "Allow $(PRODUCT_NAME) to use the camera only when you choose to photograph a recipe.",
+          "photosPermission": "Allow $(PRODUCT_NAME) to access photos only when you choose a recipe, pantry/fridge image, or profile photo.",
+          "cameraPermission": "Allow $(PRODUCT_NAME) to use the camera only when you choose to photograph a recipe, fridge, or pantry.",
           "microphonePermission": false
         }
       ],

@@ -20,11 +20,11 @@ declare
     'recipe_favorites','recipe_translations','meal_plans','meal_participants','meal_guests',
     'shopping_items','member_preferences','meal_ideas','meal_idea_votes','household_activity',
     'pantry_items','member_absences','shopping_responsibilities','recipe_feedback','household_access',
-    'light_members','light_meal_questions','light_response_tokens','light_meal_responses'
+    'light_members','light_meal_questions','light_response_tokens','light_meal_responses','lia_memos','commander_favorites','lia_navigation_monthly_usage'
   ];
   expected_realtime text[] := array['meal_plans','shopping_items','household_activity','member_absences','shopping_responsibilities','recipe_feedback','light_meal_responses'];
   expected_storage_policies text[] := array['profile_avatars_select','profile_avatars_insert','profile_avatars_delete'];
-  expected_migrations text[] := array['202609140001','202609140002','202609140003','202609140004','202609140005','202609140006','202609140007','202609140008','202609140009','202609140010','202609140011','202609150012','202609150013'];
+  expected_migrations text[] := array['202609140001','202609140002','202609140003','202609140004','202609140005','202609140006','202609140007','202609140008','202609140009','202609140010','202609140011','202609150012','202609150013','202609160014','202609160015','202609160016','202609160017','202609160018','202609160019','202609160020','202609160021','202609170022','202609170023','202609170024','202609180025','202609180026','202609180027','202609180028'];
 begin
   foreach item in array expected_tables loop
     select c.relrowsecurity into rls_enabled
@@ -36,6 +36,12 @@ begin
       raise exception 'BACKEND_ASSERT_POLICY_MISSING: %',item;
     end if;
   end loop;
+
+  if not exists(select 1 from information_schema.columns where table_schema='public' and table_name='lia_memos' and column_name='link_kind') then raise exception 'BACKEND_ASSERT_LIA_MEMOS_LINK_KIND_MISSING'; end if;
+  if not exists(select 1 from information_schema.columns where table_schema='public' and table_name='lia_memos' and column_name='link_ref') then raise exception 'BACKEND_ASSERT_LIA_MEMOS_LINK_REF_MISSING'; end if;
+  if not exists(select 1 from information_schema.columns where table_schema='public' and table_name='lia_memos' and column_name='link_label') then raise exception 'BACKEND_ASSERT_LIA_MEMOS_LINK_LABEL_MISSING'; end if;
+  if not exists(select 1 from pg_constraint c join pg_class t on t.oid=c.conrelid join pg_namespace n on n.oid=t.relnamespace where n.nspname='public' and t.relname='lia_memos' and c.conname='lia_memos_link_kind_check') then raise exception 'BACKEND_ASSERT_LIA_MEMOS_LINK_KIND_CHECK_MISSING'; end if;
+  if not exists(select 1 from pg_constraint c join pg_class t on t.oid=c.conrelid join pg_namespace n on n.oid=t.relnamespace where n.nspname='public' and t.relname='lia_memos' and c.conname='lia_memos_link_shape_check') then raise exception 'BACKEND_ASSERT_LIA_MEMOS_LINK_SHAPE_CHECK_MISSING'; end if;
 
   foreach item in array expected_realtime loop
     if not exists(select 1 from pg_publication_tables p where p.pubname='supabase_realtime' and p.schemaname='public' and p.tablename=item) then
@@ -60,6 +66,9 @@ begin
 
   for rec in select * from (values
     ('create_household','text'),
+    ('complete_household_setup','uuid, text, integer'),
+    ('complete_household_family_setup','uuid, text, text, integer, text, jsonb'),
+    ('complete_household_family_setup_v2','uuid, text, text, integer, text, text, jsonb'),
     ('create_household_invitation','uuid'),
     ('join_household_by_code','text'),
     ('create_recipe_with_ingredients','uuid, text, integer, integer, numeric, text[], text[], jsonb, text, text, text, text'),
@@ -73,7 +82,8 @@ begin
     ('upsert_light_meal_question','uuid, date, text, text[], timestamp with time zone'),
     ('issue_light_response_token','uuid, uuid'),
     ('get_light_meal_summary','uuid'),
-    ('can_write_household','uuid')
+    ('can_write_household','uuid'),
+    ('reserve_lia_navigation_trip','uuid')
   ) as v(routine_name,arg_types) loop
     fn_oid:=null; fn_owner:=null; fn_acl:=null;
     select p.oid,p.proowner,p.proacl into fn_oid,fn_owner,fn_acl
@@ -95,7 +105,7 @@ begin
   -- Public lightweight-response helpers are callable only from the trusted Edge Function.
   for rec in select * from (values
     ('get_light_response_context','text'),
-    ('submit_light_response','text, text, text')
+    ('submit_light_response','text, text, text, text')
   ) as v(routine_name,arg_types) loop
     fn_oid:=null; fn_owner:=null; fn_acl:=null;
     select p.oid,p.proowner,p.proacl into fn_oid,fn_owner,fn_acl
@@ -176,7 +186,8 @@ begin
     ('premium_enforcement_enabled',''),
     ('household_has_active_family','uuid'),
     ('family_feature_allowed','uuid'),
-    ('can_write_household','uuid')
+    ('can_write_household','uuid'),
+    ('reserve_lia_navigation_trip','uuid')
   ) as v(routine_name,arg_types) loop
     if not exists(
       select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace

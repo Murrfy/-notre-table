@@ -1,2 +1,11 @@
 [functions.light-response]
 verify_jwt = false
+
+[functions.commander-search]
+verify_jwt = true
+
+[functions.lia-navigation-resolve]
+verify_jwt = true
+
+[functions.lia-navigation-along-route]
+verify_jwt = true

@@ -35,7 +35,7 @@ export function PresenceScreen({householdId,members,demo=false,onClose,onFamilyR
   },[householdId,todayDate,demo,locale,loadGate]);
   useEffect(()=>{void load();},[load]);
   useEffect(()=>()=>{invalidateRequests(loadGate);},[loadGate]);
-  useEffect(()=>{if(demo||!supabase)return;const channel=supabase.channel(`presence-${householdId}-${todayDate}`).on('postgres_changes',{event:'*',schema:'public',table:'member_absences',filter:`household_id=eq.${householdId}`},()=>{void load();}).subscribe();return()=>{void supabase.removeChannel(channel);};},[demo,householdId,todayDate,load]);
+  useEffect(()=>{const client=supabase;if(demo||!client)return;const channel=client.channel(`presence-${householdId}-${todayDate}`).on('postgres_changes',{event:'*',schema:'public',table:'member_absences',filter:`household_id=eq.${householdId}`},()=>{void load();}).subscribe();return()=>{void client.removeChannel(channel);};},[demo,householdId,todayDate,load]);
   const isAway=(userId:string,mealType:MealType)=>isMemberAwayForMeal(absences,userId,todayDate,mealType);
   const toggle=async(userId:string,mealType:MealType)=>{const key=`${userId}:${todayDate}:${mealType}`;if(busyKey||toggleInFlightRef.current)return;toggleInFlightRef.current=true;setBusyKey(key);setError('');try{await setMemberMealAway(householdId,userId,todayDate,mealType,!isAway(userId,mealType),demo);await load();}catch(e){if(classifyPremiumGateError(e)==='FAMILY_PLAN_REQUIRED')await onFamilyRequired?.();else setError(locale.t('presence.saveError'));}finally{toggleInFlightRef.current=false;setBusyKey('');}};
   const absenceCount=absences.length;

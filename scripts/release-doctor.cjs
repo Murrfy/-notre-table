@@ -37,6 +37,12 @@ async function registryReachable(){
   }catch{return false;}finally{clearTimeout(timer);}
 }
 function check(id,status,message){return {id,status,message};}
+function auditEvidence(scriptName,evidenceName){
+  const evidencePath=path.join(root,'.validation',evidenceName);
+  if(!fs.existsSync(evidencePath))return false;
+  const result=spawnSync(process.execPath,[path.join(root,'scripts',scriptName),evidencePath],{cwd:root,encoding:'utf8',timeout:5000});
+  return result.status===0;
+}
 function stage(name,checks){
   const hasBlock=checks.some(x=>x.status==='block');
   const hasManual=checks.some(x=>x.status==='manual');
@@ -97,6 +103,12 @@ function printStage(s){
     check('project-id',projectId?'pass':'block',projectId?'Real Expo/EAS projectId is configured.':'Expo/EAS projectId is intentionally not configured yet.'),
     check('expo-auth',envSet('EXPO_TOKEN')?'pass':'manual',envSet('EXPO_TOKEN')?'Non-interactive Expo authentication token is configured.':'EXPO_TOKEN absent; interactive login or CI secret is still required.'),
     check('preview-backend',envSet('EXPO_PUBLIC_SUPABASE_URL')&&envSet('EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY')?'pass':'block','Preview build requires real public Supabase URL + publishable key in the EAS preview environment.'),
+  ]));
+  const betaAcceptanceOk=auditEvidence('beta-acceptance-audit.cjs','beta-acceptance.json');
+  const featureBetaAcceptanceOk=auditEvidence('feature-beta-acceptance-audit.cjs','feature-beta-acceptance.json');
+  stages.push(stage('Physical beta evidence',[
+    check('beta-core',betaAcceptanceOk?'pass':'block',betaAcceptanceOk?'Core two-device beta evidence passes all 16 required scenarios.':'Core two-device beta evidence is not proven (16 required scenarios).'),
+    check('beta-commander-lia',featureBetaAcceptanceOk?'pass':'block',featureBetaAcceptanceOk?'Commander + LIA physical beta evidence passes all 53 required scenarios.':'Commander + LIA physical beta evidence is not proven (53 required scenarios).'),
   ]));
   stages.push(stage('Production billing / Stores',[
     check('android-audio',blockedAudio?'pass':'block',blockedAudio?'Android RECORD_AUDIO is explicitly blocked.':'Android RECORD_AUDIO is not explicitly blocked.'),

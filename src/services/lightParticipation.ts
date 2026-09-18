@@ -8,6 +8,9 @@ export type LightMember={
   household_id:string;
   display_name:string;
   phone_number:string;
+  age:number|null;
+  relation:'spouse'|'child'|'other';
+  relation_label?:string|null;
   active:boolean;
   created_at?:string;
   updated_at?:string;
@@ -27,6 +30,7 @@ export type LightMealSummary={
   presence:{yes:number;no:number;maybe:number;take_charge:number};
   desires:Record<LightDesire,number>;
   take_charge_name:string|null;
+  notes:Array<{member_name:string;note:string;responded_at:string}>;
 };
 
 function client(){
@@ -35,9 +39,9 @@ function client(){
 }
 
 export async function fetchLightMembers(householdId:string):Promise<LightMember[]>{
-  const {data,error}=await client().from('light_members').select('id,household_id,display_name,phone_number,active,created_at,updated_at').eq('household_id',householdId).order('created_at',{ascending:true});
+  const {data,error}=await client().from('light_members').select('id,household_id,display_name,phone_number,age,relation,relation_label,active,created_at,updated_at').eq('household_id',householdId).order('created_at',{ascending:true});
   if(error)throw error;
-  return (data??[]) as LightMember[];
+  return (data??[]).map((row:any)=>({...row,phone_number:typeof row.phone_number==='string'?row.phone_number:'',age:Number.isInteger(row.age)?Number(row.age):null,relation:row.relation==='spouse'||row.relation==='child'?row.relation:'other'})) as LightMember[];
 }
 
 export async function createLightMember(householdId:string,displayName:string,phoneNumber:string):Promise<string>{
@@ -81,6 +85,7 @@ export async function fetchLightMealSummary(questionId:string):Promise<LightMeal
     presence:{yes:Number(raw.presence?.yes??0),no:Number(raw.presence?.no??0),maybe:Number(raw.presence?.maybe??0),take_charge:Number(raw.presence?.take_charge??0)},
     desires:{home:Number(raw.desires?.home??0),pizza:Number(raw.desires?.pizza??0),pasta:Number(raw.desires?.pasta??0),sushi:Number(raw.desires?.sushi??0),chinese:Number(raw.desires?.chinese??0),surprise:Number(raw.desires?.surprise??0)},
     take_charge_name:typeof raw.take_charge_name==='string'?raw.take_charge_name:null,
+    notes:Array.isArray(raw.notes)?raw.notes.filter((x:any)=>x&&typeof x.member_name==='string'&&typeof x.note==='string').map((x:any)=>({member_name:x.member_name,note:x.note,responded_at:typeof x.responded_at==='string'?x.responded_at:''})):[],
   };
 }
 
@@ -91,7 +96,8 @@ export function lightResponseLink(token:string):string{
 }
 
 export function subscribeLightMealResponses(questionId:string,onChange:()=>void):()=>void{
-  if(!supabase)return()=>{};
-  const channel=supabase.channel(`light-meal-${questionId}`).on('postgres_changes',{event:'*',schema:'public',table:'light_meal_responses',filter:`question_id=eq.${questionId}`},onChange).subscribe();
-  return()=>{void supabase.removeChannel(channel);};
+  const client=supabase;
+  if(!client)return()=>{};
+  const channel=client.channel(`light-meal-${questionId}`).on('postgres_changes',{event:'*',schema:'public',table:'light_meal_responses',filter:`question_id=eq.${questionId}`},onChange).subscribe();
+  return()=>{void client.removeChannel(channel);};
 }

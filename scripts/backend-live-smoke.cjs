@@ -137,6 +137,8 @@ async function main(){
   if(createdHouse.error)throw createdHouse.error;
   const hA=trackHousehold(createdHouse.data);
   if(!hA?.id)throw new Error('Household A was not created.');
+  await callRpc(A.client,'complete_household_setup',{p_household_id:hA.id,p_display_name:'Smoke A',p_default_party_size:4},'complete_household_setup');
+  await callRpc(A.client,'complete_household_family_setup_v2',{p_household_id:hA.id,p_display_name:'Smoke A',p_salutation:'mr',p_age:44,p_phone_number:'+15550001001',p_relationship_status:'married',p_members:[{relation:'spouse',relation_label:null,salutation:'mrs',display_name:'Smoke Partner',age:43,phone_number:'+15550001002'},{relation:'child',relation_label:null,salutation:null,display_name:'Smoke Child',age:12,phone_number:null}]},'complete_household_family_setup_v2');
 
   if(originalPremiumEnforcement){
     const bootstrapAccess=await admin.from('household_access').upsert({
@@ -212,6 +214,18 @@ async function main(){
   await expectDenied(
     'Household premium client write guard',
     B.client.from('household_access').update({plan:'free'}).eq('household_id',hA.id).select('household_id'),
+    {emptyIsDenied:true},
+  );
+
+  // LIA navigation quota: one shared household counter, atomic server reservation, no client forgery.
+  const navQuotaA=await A.client.rpc('reserve_lia_navigation_trip',{p_household_id:hA.id});
+  if(navQuotaA.error||navQuotaA.data?.allowed!==true||Number(navQuotaA.data?.used)!==1||Number(navQuotaA.data?.remaining)!==29)throw navQuotaA.error??new Error('Navigation quota first reservation failed.');
+  const navQuotaB=await B.client.rpc('reserve_lia_navigation_trip',{p_household_id:hA.id});
+  if(navQuotaB.error||navQuotaB.data?.allowed!==true||Number(navQuotaB.data?.used)!==2||Number(navQuotaB.data?.remaining)!==28)throw navQuotaB.error??new Error('Navigation quota is not shared across household members.');
+  await expectDenied('Navigation quota outsider reservation guard',C.client.rpc('reserve_lia_navigation_trip',{p_household_id:hA.id}));
+  await expectDenied(
+    'Navigation quota client write guard',
+    B.client.from('lia_navigation_monthly_usage').update({trips_used:29}).eq('household_id',hA.id).select('household_id'),
     {emptyIsDenied:true},
   );
 
@@ -470,7 +484,7 @@ async function main(){
   const soloAuth=await admin.auth.admin.getUserById(C.user.id);
   if(!soloAuth.error&&soloAuth.data?.user)throw new Error('Solo-household account deletion left the Auth user active.');
 
-  console.log(`PASS backend live smoke: 15/15 client RPCs, light-response Edge end-to-end, invite guards, concurrent pantry/shopping merges, collaboration, cross-household read/write RLS, household subscription RLS, Premium downgrade/reactivation enforcement, avatar storage RLS, last-admin guard, deployed account deletion${expectRevenueCatDeletion?', RevenueCat erasure':''}.`);
+  console.log(`PASS backend live smoke: 17/17 client RPCs, light-response Edge end-to-end, invite guards, concurrent pantry/shopping merges, collaboration, cross-household read/write RLS, household subscription RLS, Premium downgrade/reactivation enforcement, avatar storage RLS, last-admin guard, deployed account deletion${expectRevenueCatDeletion?', RevenueCat erasure':''}.`);
 }
 async function run(){
   let primaryError=null;

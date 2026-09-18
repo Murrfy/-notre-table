@@ -31,6 +31,7 @@ const files=[
   ...fixed,
   'App.tsx','index.ts',
   ...listFiles('src'),
+  ...listFiles('modules'),
   ...listFiles('languages'),
   ...listFiles('docs'),
   ...listFiles('.github'),

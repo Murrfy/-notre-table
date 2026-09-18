@@ -1,0 +1,15 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.notretable.contacts'
+version = '0.243.0'
+
+android {
+  namespace "com.notretable.contacts"
+  defaultConfig {
+    versionCode 1
+    versionName "0.243.0"
+  }
+}

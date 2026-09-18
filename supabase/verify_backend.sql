@@ -8,7 +8,7 @@ with expected(table_name) as (
     ('recipe_favorites'),('recipe_translations'),('meal_plans'),('meal_participants'),('meal_guests'),
     ('shopping_items'),('member_preferences'),('meal_ideas'),('meal_idea_votes'),('household_activity'),
     ('pantry_items'),('member_absences'),('shopping_responsibilities'),('recipe_feedback'),
-    ('light_members'),('light_meal_questions'),('light_response_tokens'),('light_meal_responses')
+    ('light_members'),('light_meal_questions'),('light_response_tokens'),('light_meal_responses'),('lia_memos'),('commander_favorites')
 )
 select e.table_name,
        c.oid is not null as table_exists,
@@ -25,7 +25,7 @@ with expected(table_name) as (
     ('recipe_favorites'),('recipe_translations'),('meal_plans'),('meal_participants'),('meal_guests'),
     ('shopping_items'),('member_preferences'),('meal_ideas'),('meal_idea_votes'),('household_activity'),
     ('pantry_items'),('member_absences'),('shopping_responsibilities'),('recipe_feedback'),
-    ('light_members'),('light_meal_questions'),('light_response_tokens'),('light_meal_responses')
+    ('light_members'),('light_meal_questions'),('light_response_tokens'),('light_meal_responses'),('lia_memos'),('commander_favorites')
 )
 select e.table_name, count(p.policyname) as policy_count
 from expected e
@@ -62,6 +62,9 @@ order by e.policy_name;
 with expected(routine_name,arg_types) as (
   values
     ('create_household','text'),
+    ('complete_household_setup','uuid, text, integer'),
+    ('complete_household_family_setup','uuid, text, text, integer, text, jsonb'),
+    ('complete_household_family_setup_v2','uuid, text, text, integer, text, text, jsonb'),
     ('create_household_invitation','uuid'),
     ('join_household_by_code','text'),
     ('create_recipe_with_ingredients','uuid, text, integer, integer, numeric, text[], text[], jsonb, text, text, text, text'),
@@ -101,6 +104,9 @@ order by r.routine_name;
 with expected(routine_name,arg_types) as (
   values
     ('create_household','text'),
+    ('complete_household_setup','uuid, text, integer'),
+    ('complete_household_family_setup','uuid, text, text, integer, text, jsonb'),
+    ('complete_household_family_setup_v2','uuid, text, text, integer, text, text, jsonb'),
     ('create_household_invitation','uuid'),
     ('join_household_by_code','text'),
     ('create_recipe_with_ingredients','uuid, text, integer, integer, numeric, text[], text[], jsonb, text, text, text, text'),
@@ -147,7 +153,7 @@ from resolved r;
 
 -- 6c2) Lightweight public-link helpers are server-only; mobile roles never read bearer-token hashes.
 with expected(routine_name,arg_types) as (
-  values ('get_light_response_context','text'),('submit_light_response','text, text, text')
+  values ('get_light_response_context','text'),('submit_light_response','text, text, text, text')
 ), resolved as (
   select e.routine_name,e.arg_types,p.oid,p.proowner,p.proacl
   from expected e
@@ -173,10 +179,17 @@ join pg_namespace n on n.oid=t.relnamespace
 left join pg_constraint c on c.conrelid=t.oid and c.conname='households_created_by_fkey'
 where n.nspname='public' and t.relname='households' and a.attname='created_by' and not a.attisdropped;
 
+-- 6b) V0.179 optional structured Memo links.
+select
+  exists(select 1 from information_schema.columns where table_schema='public' and table_name='lia_memos' and column_name='link_kind') as link_kind_exists,
+  exists(select 1 from information_schema.columns where table_schema='public' and table_name='lia_memos' and column_name='link_ref') as link_ref_exists,
+  exists(select 1 from information_schema.columns where table_schema='public' and table_name='lia_memos' and column_name='link_label') as link_label_exists,
+  exists(select 1 from pg_constraint c join pg_class t on t.oid=c.conrelid join pg_namespace n on n.oid=t.relnamespace where n.nspname='public' and t.relname='lia_memos' and c.conname='lia_memos_link_shape_check') as link_shape_check_exists;
+
 -- 7) Applied migration versions visible to the Supabase migration history.
 -- Every expected row should show applied=true.
 with expected(version) as (
-  values ('202609140001'),('202609140002'),('202609140003'),('202609140004'),('202609140005'),('202609140006'),('202609140007'),('202609140008'),('202609140009'),('202609140010'),('202609140011'),('202609150012'),('202609150013')
+  values ('202609140001'),('202609140002'),('202609140003'),('202609140004'),('202609140005'),('202609140006'),('202609140007'),('202609140008'),('202609140009'),('202609140010'),('202609140011'),('202609150012'),('202609150013'),('202609160014'),('202609160015'),('202609160016'),('202609160017'),('202609160018'),('202609160019'),('202609160020'),('202609160021'),('202609170022'),('202609170023'),('202609170024'),('202609180025'),('202609180026'),('202609180027'),('202609180028')
 )
 select e.version,(m.version is not null) as applied
 from expected e
@@ -219,3 +232,14 @@ select e.routine_name,e.arg_types,
        ) as signature_exists
 from expected e
 order by e.routine_name;
+
+
+-- 10) LIA navigation quota is household-scoped, client-read-only and server-reserved.
+select c.relrowsecurity as rls_enabled,
+       has_table_privilege('authenticated','public.lia_navigation_monthly_usage','SELECT') as authenticated_can_select,
+       has_table_privilege('authenticated','public.lia_navigation_monthly_usage','INSERT') as authenticated_can_insert,
+       has_table_privilege('authenticated','public.lia_navigation_monthly_usage','UPDATE') as authenticated_can_update,
+       has_table_privilege('authenticated','public.lia_navigation_monthly_usage','DELETE') as authenticated_can_delete,
+       has_function_privilege('authenticated','public.reserve_lia_navigation_trip(uuid)','EXECUTE') as authenticated_can_reserve
+from pg_class c join pg_namespace n on n.oid=c.relnamespace
+where n.nspname='public' and c.relname='lia_navigation_monthly_usage' and c.relkind='r';

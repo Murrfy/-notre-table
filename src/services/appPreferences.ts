@@ -1,13 +1,16 @@
 import { isRecord, readStoredJson, readStoredString, writeStoredJson, writeStoredString } from '../lib/storage';
 
 const ONBOARDING_KEY = '@notre-table/onboarding-seen-v1';
+const LANGUAGE_CHOSEN_KEY = '@notre-table/language-chosen-v1';
 const NOTIFICATIONS_KEY = '@notre-table/notification-preferences-v2';
 const LOCALE_KEY = '@notre-table/locale-preferences-v1';
 const THEME_KEY = '@notre-table/theme-preference-v1';
+const LIA_SECOND_INTRO_KEY = '@notre-table/lia-second-intro-seen-v1';
 
 export type NotificationPreferences = {
   planningChanges: boolean;
   shoppingChecks: boolean;
+  liaNoonReminder: boolean;
   dinnerReminder: boolean;
   dinnerReminderTime: string;
   weekendReminder: boolean;
@@ -18,6 +21,7 @@ export type NotificationPreferences = {
 export const defaultNotificationPreferences: NotificationPreferences = {
   planningChanges: false,
   shoppingChecks: false,
+  liaNoonReminder: true,
   dinnerReminder: true,
   dinnerReminderTime: '17:00',
   weekendReminder: true,
@@ -33,6 +37,23 @@ export async function markOnboardingSeen(): Promise<void> {
   await writeStoredString(ONBOARDING_KEY, '1');
 }
 
+
+export async function hasSeenLiaSecondIntro(): Promise<boolean> {
+  return (await readStoredString(LIA_SECOND_INTRO_KEY, '0', ['0', '1'] as const)) === '1';
+}
+
+export async function markLiaSecondIntroSeen(): Promise<void> {
+  await writeStoredString(LIA_SECOND_INTRO_KEY, '1');
+}
+
+export async function hasChosenLanguage(): Promise<boolean> {
+  return (await readStoredString(LANGUAGE_CHOSEN_KEY, '0', ['0', '1'] as const)) === '1';
+}
+
+export async function markLanguageChosen(): Promise<void> {
+  await writeStoredString(LANGUAGE_CHOSEN_KEY, '1');
+}
+
 export async function getNotificationPreferences(): Promise<NotificationPreferences> {
   const stored = await readStoredJson<Record<string, unknown>>(NOTIFICATIONS_KEY, {}, isRecord);
   return {
@@ -40,6 +61,7 @@ export async function getNotificationPreferences(): Promise<NotificationPreferen
     // persisted fields false so old preview settings cannot imply a working server push.
     planningChanges: false,
     shoppingChecks: false,
+    liaNoonReminder: typeof stored.liaNoonReminder === 'boolean' ? stored.liaNoonReminder : defaultNotificationPreferences.liaNoonReminder,
     dinnerReminder: typeof stored.dinnerReminder === 'boolean' ? stored.dinnerReminder : defaultNotificationPreferences.dinnerReminder,
     dinnerReminderTime: typeof stored.dinnerReminderTime === 'string' ? stored.dinnerReminderTime : defaultNotificationPreferences.dinnerReminderTime,
     weekendReminder: typeof stored.weekendReminder === 'boolean' ? stored.weekendReminder : defaultNotificationPreferences.weekendReminder,

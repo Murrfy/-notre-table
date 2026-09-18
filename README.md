@@ -1,4 +1,420 @@
-# Notre Table — V0.155
+# Notre Table — V0.286
+
+
+## V0.286 — Aller directement à une étape précise
+
+V0.286 reprend V0.285 sans modifier la navigation séquentielle déjà validée. LIA comprend maintenant des demandes explicites comme « va à l’étape 4 », « reviens à l’étape deux » ou « go to step three » et ouvre directement l’étape réelle correspondante.
+
+Le numéro peut être dicté en chiffres ou avec les nombres courants reconnus en français, anglais, espagnol et hébreu. Une étape hors limites n’est jamais rabattue silencieusement sur la première ou la dernière : l’état reste inchangé et LIA annonce le nombre réel d’étapes de la recette.
+
+
+## V0.285 — Le mode cuisine peut se terminer entièrement à la voix
+
+V0.285 reprend V0.284 et ajoute une sortie mains libres explicite du mode cuisine. LIA comprend « j’ai fini la recette », « termine la recette », « ferme la recette » ou « quitte le mode cuisine », puis ferme la surface existante et confirme la fin.
+
+La fermeture n’est jamais déclenchée par un vague « j’ai fini » : le mot recette ou l’expression mode cuisine reste nécessaire afin d’éviter une sortie accidentelle au milieu d’une préparation. Aucun état de recette n’est inventé et aucune nouvelle surface n’est créée.
+
+
+## V0.284 — « J’ai fini cette étape » devient une vraie commande mains libres
+
+V0.284 reprend V0.283 sans modifier le moteur cuisine existant. Pendant une recette ouverte, LIA comprend maintenant des formulations explicites comme « j’ai fini cette étape », « étape terminée » ou « done with this step ». La commande avance uniquement vers l’étape réelle suivante et LIA lit immédiatement cette instruction.
+
+La navigation reste strictement bornée : si l’utilisateur est déjà sur la dernière étape, aucun index supplémentaire n’est créé et LIA indique simplement qu’il s’agissait de la dernière étape. Aucun nouvel écran, aucun second pipeline vocal et aucun état persistant ne sont ajoutés.
+
+
+## V0.283 — LIA sait dire exactement où vous en êtes dans la recette
+
+V0.283 reprend V0.282 sans reconstruire le mode cuisine. LIA comprend maintenant « on en est où ? », « je suis à quelle étape ? » et « il reste combien d’étapes ? ». Elle répond à partir de l’index réel de la recette ouverte et relit l’instruction courante.
+
+La question sur le nombre d’étapes est volontairement prioritaire sur le raccourci « il reste combien ? » du minuteur : « il reste combien d’étapes ? » ne peut donc plus être interprété comme une demande de temps restant. Aucun nouvel état n’est créé.
+
+## V0.282 — Les ingrédients deviennent réellement mains libres
+
+V0.282 reprend V0.281 sans reconstruire le mode cuisine. Pendant une recette ouverte, LIA comprend désormais « montre-moi les ingrédients », « cache les ingrédients » et « lis-moi les ingrédients ». L’affichage utilise le panneau d’ingrédients déjà présent ; aucune nouvelle surface ni aucun second pipeline vocal n’est créé.
+
+Quand l’utilisateur demande la liste oralement, LIA lit uniquement les ingrédients réellement enregistrés dans la recette, avec les quantités disponibles. Si la recette n’a aucun ingrédient renseigné, elle le dit au lieu d’inventer une liste. Les commandes restent locales au mode cuisine et continuent de passer par la session LIA globale.
+
+## V0.281 — Le mode cuisine comprend mieux les commandes naturelles
+
+V0.281 reprend V0.280 sans reconstruire l’application. Dans une recette ouverte, LIA comprend maintenant « étape précédente », « il reste combien ? » et « annule / arrête le minuteur ». Ces commandes passent par le même handler de session cuisine déjà raccordé au micro global.
+
+L’annulation d’un minuteur de recette est volontairement traitée avant l’ordre générique « arrête / silence » : LIA annule donc bien le chrono demandé au lieu de simplement cesser de parler. Le retour à l’étape précédente reste borné à la première étape et ne crée aucun état parallèle.
+
+## V0.280 — Le mode cuisine utilise enfin le micro global de LIA
+
+V0.280 reprend V0.279 sans reconstruire l’application. Lorsqu’une recette est en mode cuisine, les commandes directes « LIA, répète », « étape suivante », « il reste combien ? » ou « mets 5 minutes » sont désormais exécutées par le moteur mains libres déjà présent, via le micro global de LIA. Aucun second micro ni second bouton d’assistante n’est nécessaire.
+
+Les commandes restent locales et bornées : navigation d’étapes et minuteur de recette. Une demande musique non gérée par le moteur cuisine retombe vers le moteur musique global. « Silence / tais-toi » ne provoque pas une réponse supplémentaire.
+
+## V0.279 — LIA ouvre ou lance directement la recette ciblée
+
+V0.279 reprend V0.278 sans reconstruire l’application. Après un scan, « ouvre cette recette » ouvre directement la fiche de la recette ciblée et « lance / commence cette recette » démarre son mode cuisine. La recette est résolue depuis le contexte visuel confirmé ; si plusieurs recettes restent possibles, LIA demande laquelle.
+
+La navigation reste entièrement interne à Notre Table. Le flux ferme proprement la surface « Avec ce que j’ai », sélectionne la recette déjà chargée et ne dépend d’aucun lien externe.
+
+## V0.278 — Une recette vue peut être planifiée par pronom
+
+V0.278 reprend V0.277 sans reconstruire l’application. Après un scan et une recette ciblée, LIA comprend désormais des demandes comme « mets-la au dîner demain » ou « planifie cette recette ce soir ». Le pronom est résolu uniquement depuis le contexte visuel confirmé de la session.
+
+Si plusieurs recettes restent possibles et qu’aucune n’a été ciblée, LIA demande laquelle. Une fois la recette résolue, la demande est transmise au moteur de planning existant, qui conserve ses clarifications minimales sur le jour ou le repas. Aucun nouveau moteur de planning parallèle n’est créé.
+
+## V0.277 — Les manquants d’une recette vue peuvent aller directement aux courses
+
+V0.277 reprend V0.276 sans reconstruire l’application. Après un scan et une proposition de recette, une demande explicite comme « ajoute ce qui manque aux courses » ajoute les ingrédients manquants à la liste de courses de la semaine active. Si LIA vient de détailler une recette, elle devient la référence de session. Sinon, plusieurs recettes possibles déclenchent une seule clarification ciblée au lieu d’un choix silencieux.
+
+L’écriture passe par la même frontière d’actions approuvées que les autres actes Notre Table. Les ajouts sont bornés, normalisés par rayon et une réussite partielle est annoncée comme telle. Si rien ne manque pour la recette, LIA le dit et n’écrit rien.
+
+## V0.276 — Un scan peut devenir le stock seulement sur ordre explicite
+
+V0.276 reprend V0.275 sans reconstruire l’application. Après un scan frigo/placard, une demande explicite comme « LIA, garde ça dans mon stock » enregistre les produits confirmés dans le stock du foyer. Le scan seul ne déclenche toujours aucune écriture persistante.
+
+L’écriture passe par la frontière d’actions approuvées de LIA. Les produits incertains sont exclus avant l’action ; une quantité visuelle n’est conservée que si sa confiance atteint le seuil déjà utilisé par le moteur de recettes. En cas d’échec partiel, LIA annonce combien de produits ont réellement été ajoutés au lieu de prétendre que toute l’opération a réussi.
+
+## V0.275 — LIA comprend le résultat du scan sans envoyer la photo au modèle
+
+V0.275 reprend V0.274 sans reconstruire l’application. Après une analyse frigo/placard, LIA conserve en mémoire de session uniquement les produits confirmés et les trois meilleures correspondances de recettes. La photo brute n’entre pas dans ce contexte et n’est pas transmise au moteur conversationnel général.
+
+Une demande directe comme « qu’est-ce que tu vois ? », « qu’est-ce que je peux cuisiner avec ça ? » ou « il manque quoi ? » est résolue localement à partir de ce contexte réel. Les réponses n’inventent aucun produit ni aucune recette et expirent automatiquement après 30 minutes. Les produits encore incertains ne sont pas utilisés comme faits confirmés.
+
+## V0.274 — LIA peut ouvrir directement la caméra pour regarder le frigo ou le placard
+
+V0.274 reprend V0.273 sans reconstruire l’application. Une demande directe comme « LIA, regarde ce que j’ai dans le frigo », « scanne le placard » ou « je te montre mes ingrédients » devient maintenant une vraie intention d’assistante. LIA ouvre la surface « Avec ce que j’ai » de Notre Table et déclenche directement la caméra, sans obliger l’utilisateur à parcourir les écrans ou à appuyer une seconde fois sur « Photographier ».
+
+Le flux réutilise intégralement le moteur de vision déjà présent : permission caméra native, reconnaissance configurée, fusion de plusieurs vues, confirmation des éléments incertains et classement de recettes. Aucun produit n’est inventé et aucun stock persistant n’est modifié silencieusement. Si la reconnaissance photo n’est pas configurée ou échoue, l’erreur existante reste affichée honnêtement.
+
+La demande visuelle reste distincte des actions d’écriture et des autres clarifications vocales. Elle peut interrompre proprement une clarification d’action en cours lorsqu’elle est adressée explicitement à LIA.
+
+## V0.273 — Le calendrier devient proactif sans devenir envahissant
+
+V0.273 reprend V0.272 sans reconstruire l’application. Lorsque Notre Table revient au premier plan, LIA peut désormais afficher discrètement un rappel calendrier privé si un rendez-vous se trouve entre 10 minutes et 3 heures. Ce rappel ne pose aucune question et ne parle pas à voix haute : il utilise la bulle privée déjà prévue pour les retours LIA.
+
+La proactivité est strictement bornée : maximum deux rappels calendrier par jour, jamais deux fois pour le même rendez-vous, jamais pendant une navigation active, jamais lorsque LIA est en pause et jamais à la place d’un retour plus important déjà sélectionné par le moteur de réengagement. Les horaires de nuit sont exclus.
+
+## V0.272 — LIA fait le point sur la journée et alimente son moteur Right Hand
+
+V0.272 reprend V0.271 sans reconstruire l’application. Les demandes « fais-moi le point sur ma journée », « qu’est-ce que j’ai cette semaine ? » et « c’est quoi mon prochain rendez-vous ? » sont maintenant résolues localement depuis le calendrier Notre Table. Aucun appel à un modèle général n’est nécessaire pour lire ou résumer ces événements.
+
+Le calendrier alimente aussi le moteur Right Hand déjà présent dans le projet : les rendez-vous réels deviennent des fils de journée avec heure, caractère récurrent et sensibilité personnelle. Cette classification empêche leur exposition spontanée à table tout en donnant à LIA une base réelle pour prioriser ce qui compte ensuite. Les réponses restent concises et n’ajoutent pas automatiquement une question retour.
+
+## V0.271 — LIA gère la portée d’une série récurrente
+
+V0.271 reprend V0.270 sans reconstruire l’application. Lorsqu’une demande de suppression vise un rendez-vous récurrent, LIA distingue désormais une occurrence d’une série. Une demande explicite « supprime toute la série » annule les occurrences à venir de cette série ; les occurrences passées restent dans l’historique du calendrier.
+
+Si la demande reste ambiguë (« supprime mon rendez-vous dentiste » alors que plusieurs occurrences futures appartiennent à la même série), LIA ne récite plus toutes les occurrences : elle demande simplement « le prochain rendez-vous ou toute la série ? ». Les rappels liés aux occurrences supprimées sont annulés avant la suppression. La suppression de la série utilise une seule frontière de stockage et reste limitée aux occurrences futures.
+
+## V0.270 — Rendez-vous récurrents bornés et sûrs
+
+V0.270 reprend V0.269 sans reconstruire l’application. LIA comprend les séries hebdomadaires explicites comme « tous les lundis à 10 h pendant 6 semaines » ou « chaque mardi à 9 h, 4 fois ». Une série n’est jamais infinie : si l’utilisateur ne donne pas de limite, LIA demande combien de semaines ou combien de fois. Le premier garde-fou est fixé à 24 occurrences maximum.
+
+Chaque occurrence est un vrai événement du calendrier, relié par un identifiant de série et un index. En production, toute la série est insérée en une seule opération backend afin d’éviter une création partielle. Avant l’écriture, LIA vérifie la fenêtre complète en une seule lecture ; si une occurrence entre en conflit, elle annonce le premier conflit et demande si toute la série doit quand même être créée. Le calendrier marque visuellement les occurrences récurrentes.
+
+## V0.269 — Durées réelles et chevauchements fiables dans le calendrier
+
+V0.269 reprend V0.268 sans reconstruire l’application. LIA comprend désormais les rendez-vous avec plage horaire (« de 10 h à 11 h ») et les durées explicites (« à 10 h pendant 2 heures »). L’heure de fin réelle est stockée dans l’événement ; aucune durée par défaut n’est inventée si le client ne la donne pas.
+
+La détection de conflits utilise maintenant un vrai chevauchement d’intervalles dès qu’une fin est connue. Lorsqu’un rendez-vous avec durée est déplacé, sa durée est conservée et son heure de fin suit le déplacement. Les rendez-vous sans fin explicite restent des événements ponctuels pour la détection : LIA ne transforme jamais silencieusement un rendez-vous en créneau d’une heure.
+
+## V0.268 — LIA protège le calendrier contre les conflits horaires certains
+
+V0.268 reprend V0.267 sans reconstruire l’application. Avant de créer ou déplacer un rendez-vous par la voix, LIA vérifie le calendrier du jour. Si un conflit est certain — même heure de départ, ou nouvelle heure située dans un événement dont la fin est connue — elle n’écrit rien silencieusement et demande simplement si l’utilisateur veut maintenir ce choix. Un « oui » exécute l’action malgré le conflit ; un « non » l’abandonne proprement.
+
+LIA ne fabrique aucune durée pour les anciens rendez-vous qui n’ont pas d’heure de fin. Deux événements sans durée ne sont donc considérés en conflit que s’ils commencent réellement à la même heure. Les clarifications habituelles du calendrier, les rappels liés aux événements et les commandes d’annulation restent prioritaires et inchangés.
+
+## V0.267 — Un rendez-vous devient directement une destination LIA
+
+V0.267 reprend V0.266 sans reconstruire l’application. Lorsqu’un rendez-vous du calendrier contient un lieu, l’utilisateur peut lancer **En route avec LIA** directement depuis sa carte calendrier, sans recopier l’adresse. La commande vocale « LIA, emmène-moi à mon rendez-vous dentiste » résout d’abord le rendez-vous dans le calendrier privé puis transmet uniquement son lieu au moteur de navigation existant.
+
+LIA ne devine jamais : rendez-vous introuvable, plusieurs correspondances ou adresse manquante = réponse claire et aucun guidage lancé. « Mon prochain rendez-vous » désigne explicitement le prochain événement à venir ; sinon une ambiguïté reste une ambiguïté. Le calendrier reste interne à Notre Table et le moteur Navigation existant conserve ses protections, son quota et sa résolution Google.
+
+
+## V0.266 — LIA modifie oralement les rappels des rendez-vous existants
+
+V0.266 reprend V0.265 sans reconstruire l’application. Une demande directe comme « LIA, rappelle-moi 30 minutes avant mon rendez-vous dentiste » reste dans la voie Calendrier, retrouve l’événement concerné et modifie son rappel sans recréer le rendez-vous. LIA peut également retirer le rappel d’un événement existant. En cas d’ambiguïté, elle ne choisit jamais un événement au hasard.
+
+Le calendrier visuel affiche maintenant la présence du rappel et annule aussi l’alarme liée lorsqu’un rendez-vous est supprimé depuis l’écran. Un rappel ordinaire sans référence à un rendez-vous continue d’utiliser le moteur de rappels général : les deux fonctions restent distinctes.
+
+## V0.265 — Les rappels appartiennent aux rendez-vous
+
+V0.265 ajoute `reminder_minutes_before` aux événements du calendrier. Une phrase unique comme « mets dentiste demain à 10 h dans mon calendrier et rappelle-moi 30 minutes avant » crée le rendez-vous et son rappel comme une seule intention. Le rappel utilise l’identifiant stable de l’événement ; lorsqu’un rendez-vous est déplacé, il est reprogrammé, et lorsqu’il est supprimé, il est annulé.
+
+Si les notifications sont refusées ou si l’heure du rappel est déjà passée, LIA conserve le rendez-vous mais l’annonce honnêtement au lieu de prétendre que l’alerte a été programmée.
+
+## V0.264 — Le calendrier personnel vit dans Notre Table et LIA commence à le piloter
+
+V0.264 reprend V0.263 sans reconstruire l’application. Notre Table possède maintenant un calendrier personnel privé par utilisateur, stocké côté backend avec RLS et une sauvegarde locale en mode démo. Le calendrier est accessible depuis les raccourcis LIA et permet de consulter les événements à venir, ajouter un rendez-vous et le supprimer sans ouvrir Apple Calendar ou Google Calendar.
+
+LIA peut désormais comprendre les demandes directes liées au calendrier : ouvrir l’agenda, ajouter un rendez-vous avec date/heure, lire ce qui est prévu un jour donné, déplacer un événement et supprimer un événement identifiable. Une demande explicite est exécutée sans confirmation redondante ; si le titre, le jour ou l’heure manque, LIA demande uniquement l’information manquante. Les recherches ambiguës échouent proprement au lieu de choisir un rendez-vous au hasard.
+
+## V0.263 — LIA contrôle le trajet et ajoute un arrêt réellement situé sur la route
+
+V0.263 reprend V0.262 sans reconstruire l’application. Pendant un guidage actif, une demande directe comme « LIA, arrête le guidage » coupe réellement la navigation et ferme proprement le mode route. Une nouvelle destination explicite continue de passer par le flux de navigation existant : LIA peut donc changer de destination sans créer un second système parallèle.
+
+LIA sait désormais aussi traiter des demandes telles que « trouve-moi une station-service sur la route », « un parking sur la route » ou « une pharmacie sur la route ». La recherche reste côté serveur : Notre Table calcule la route restante avec Google Routes API, transmet uniquement la polyline encodée à Places Text Search (New) avec Search Along Route, puis récupère jusqu’à trois candidats avec leur résumé de routage. LIA choisit le candidat avec le détour estimé le plus faible, l’annonce et demande simplement si le client veut l’ajouter au trajet. Rien n’est ajouté silencieusement.
+
+Après accord, la vue native Google Navigation reçoit l’arrêt intermédiaire et la destination finale. À l’arrivée à l’arrêt, `GMSNavigator` avance vers la destination suivante et réactive le guidage. La destination finale reste le contexte principal de LIA pour les questions ETA/distance. Les données de recherche ne sont pas persistées dans un historique GPS.
+
+Le checkpoint reste fail-closed : pas de trajet actif, position indisponible, backend absent, Routes/Places en échec ou résultat non fiable = aucun arrêt inventé. Cette fonction utilise des appels Google supplémentaires (Routes + Places, et des destinations Navigation SDK lorsqu’un arrêt est réellement ajouté) ; elle devra donc être incluse dans le suivi de coût réel avant production, sans modifier le quota utilisateur de 30 trajets validé à ce stade.
+
+## V0.262 — LIA connaît le trajet en cours et reste disponible sans bavarder
+
+V0.262 reprend V0.261 et ajoute un **contexte de navigation vivant** partagé avec l’assistante. Dès que Google Navigation confirme le départ, Notre Table conserve en mémoire de session uniquement les données utiles du trajet : destination, ETA, distance restante, prochaine instruction, distance avant la manœuvre et état de reroutage. Cet état est effacé à l’arrivée, à l’échec ou à la fermeture du mode route.
+
+Pendant le trajet, une demande directe comme « LIA, on arrive quand ? », « il reste combien de kilomètres ? » ou « je tourne où ? » est répondue localement à partir des données natives réelles, sans envoyer la question vers un modèle générique et sans inventer de chiffre. En cas de reroutage, LIA dit simplement qu’elle recalcule et attend la nouvelle route.
+
+La conduite devient aussi un contexte social particulier : les rires/réactions spontanées et la conversation sociale automatique de table/cuisine sont suspendus pendant une navigation active. LIA reste néanmoins disponible via son écoute directe de premier plan lorsqu’on l’appelle par son prénom ou son surnom accepté.
+
+## V0.261 — Instructions virage par virage réelles dans « En route avec LIA »
+
+V0.261 reprend V0.260 sans modifier la résolution de destination, le quota ni les règles LIA déjà validées. Le flux natif Google Navigation remonte maintenant vers Notre Table la **prochaine instruction réelle**, la distance avant la manœuvre, l’état de navigation (`enroute`, reroutage, arrêt), le nom de voie, l’ETA, la distance restante et les changements de route.
+
+L’écran **En route avec LIA** affiche l’instruction courante en grand au-dessus de la carte, avec la distance avant la prochaine manœuvre, et remplace proprement l’instruction par « Je recalcule l’itinéraire… » pendant un reroutage au lieu de laisser une consigne périmée. La carte reste native et intégrée à Notre Table.
+
+Le `GMSNavigator` est explicitement configuré avec le guidage vocal Google **alertes + indications**, sortie Bluetooth lorsqu’elle existe et volume normal. Ce checkpoint fournit donc un vrai guidage vocal de navigation dans l’expérience LIA. Il ne prétend pas encore remplacer la voix Google de navigation par la voix personnelle choisie de LIA : cette personnalisation devra être validée séparément pour ne pas dégrader le timing ni la sécurité du guidage.
+
+Comme les checkpoints précédents, tout reste fail-closed : sans SDK Google réel, clé/API, conditions, localisation, résolution de destination et quota disponible, aucun faux guidage n’est affiché ou annoncé.
+
+## V0.260 — Destination réelle et démarrage du guidage natif
+
+V0.260 reprend V0.259 et ferme le maillon qui manquait entre la phrase de l’utilisateur et la carte native. Une destination formulée naturellement est maintenant résolue côté serveur par **Google Places Text Search (New)** via l’Edge Function authentifiée `lia-navigation-resolve`. La clé Google reste exclusivement côté serveur ; le mobile ne reçoit que les trois candidats maximum nécessaires au guidage.
+
+Notre Table ne choisit pas silencieusement une destination ambiguë : un résultat unique ou une correspondance exacte est accepté, sinon LIA présente les possibilités afin que le client précise. Une fois le préflight Google Navigation réellement prêt, le quota du foyer est réservé puis la vue native reçoit latitude, longitude, Place ID et titre. Côté iOS, `GMSNavigator.setDestinations(...)` calcule alors la route et `isGuidanceActive = true` démarre le guidage. ETA et distance restantes reviennent vers React Native via les événements natifs du navigateur.
+
+Le guidage reste **fail-closed** : absence de backend, clé/API, SDK, conditions Google, localisation Always ou destination fiable = aucun trajet inventé et aucun départ silencieux. La facturation Google n’est toujours pas activée artificiellement dans le projet ; le code est prêt à l’utiliser lorsqu’elle sera réellement configurée.
+
+## V0.259 — Carte native Google dans « En route avec LIA »
+
+V0.259 reprend V0.258 sans modifier les permissions, le quota ni les comportements LIA déjà validés. Le module iOS `lia-navigation` expose maintenant une vraie **vue native Expo** destinée à héberger `GMSMapView` directement dans Notre Table. La vue est enregistrée via Expo Modules API et peut remonter explicitement `onReady` lorsque Google Navigation est réellement présent, ou `sdk_unavailable` lorsque le package n'est pas lié.
+
+Côté Swift, la carte reste protégée par `#if canImport(GoogleMaps) && canImport(GoogleNavigation)`. Lorsque le SDK est réellement lié et les conditions acceptées, elle active les capacités de navigation du `GMSMapView`, le suivi de caméra, la localisation utilisateur et les contrôles essentiels. Sans SDK, aucun faux fond de carte ni faux guidage n'est rendu.
+
+Ce checkpoint crée donc la **surface native réelle** qui vivra dans l'écran « En route avec LIA ». Le calcul de destination et `navigator.setDestinations(...)` restent l'étape suivante ; ils ne sont pas simulés dans V0.259.
+
+## V0.258 — Préparation native du vrai Google Navigation iPhone
+
+V0.258 reprend V0.257 sans modifier le quota ni les comportements déjà validés. Le projet prépare maintenant explicitement les exigences natives du vrai Google Navigation SDK sur iPhone : configuration centralisée d’une clé iOS Google Navigation, détection conditionnelle du SDK natif, autorisation de localisation « Toujours » demandée uniquement lorsqu’un vrai guidage doit démarrer, conditions d’utilisation Google obligatoires, capteur de mouvement et mode de localisation en arrière-plan.
+
+La navigation normale de Notre Table ne demande donc pas l’autorisation « Toujours » à l’ouverture de l’application. Cette autorisation reste cantonnée au flux **En route avec LIA**. Si la clé API est absente, le SDK non lié, les conditions refusées ou la localisation permanente refusée, le flux échoue proprement et n’invente aucun guidage.
+
+Le module Swift utilise des imports conditionnels `GoogleMaps`/`GoogleNavigation`, ce qui permet au projet de continuer à se compiler tant que le package Swift Google n’est pas encore installé. Une fois le package réel ajouté au build iOS, le même module pourra enregistrer la clé et présenter les conditions sans réécrire la couche React Native.
+
+Le vrai `GMSMapView` et le démarrage `GMSNavigator.setDestinations(...)` restent volontairement l’étape suivante : V0.258 prépare les permissions et le contrat natif mais ne prétend pas encore afficher une carte Google ni guider virage par virage.
+
+Validation locale finale : **591/591 régressions PASS**, **17/17 gates EAS PASS**, audits continuité/hygiène/backend/release/acceptation/projet PASS, **200 fichiers TS/TSX transpilés sans diagnostic** par l’audit projet. Le vrai build iPhone et le guidage Google restent à valider après liaison effective du package Swift, de la clé API et de la facturation.
+
+## V0.257 — En route avec LIA : quota mensuel partagé et contrôle de coût
+
+V0.257 reprend V0.256 sans reconstruire l’application. Le mode **En route avec LIA** intègre maintenant la règle commerciale validée de lancement : **30 trajets de navigation par mois et par abonnement/foyer**. Le quota n’est pas stocké uniquement sur l’iPhone : en production, il est réservé atomiquement côté Supabase à l’échelle du foyer afin que plusieurs appareils partageant le même abonnement ne puissent pas chacun consommer 30 trajets.
+
+Un trajet n’est jamais décompté tant que le moteur de navigation réel n’est pas disponible dans le build. Quand le moteur est disponible, Notre Table réserve le trajet avant l’appel au fournisseur afin de bloquer proprement une 31e demande et d’éviter une dépense Google non contrôlée. En production, la réservation passe par un RPC `security definer`, vérifie l’appartenance au foyer et l’accès Family, et refuse les écritures directes du client mobile sur le compteur.
+
+Le quota reste volontairement discret : aucun compteur permanent n’est affiché dans l’interface. LIA n’en parle qu’à des seuils utiles (5, 2 puis 1 trajet restant) avec son ton naturel ; à épuisement, elle explique que les 30 trajets du mois ont été utilisés. Les builds demo/preview disposent d’un compteur local séparé pour tester le comportement sans toucher à la consommation de production.
+
+Le branchement du **Google Navigation SDK** réel reste l’étape native suivante. V0.257 ne simule toujours aucun guidage tant que le SDK, sa clé API et la facturation ne sont pas réellement activés dans le build iPhone.
+
+## V0.256 — « En route avec LIA » et présence conversationnelle plus naturelle
+
+V0.256 reprend V0.255 sans reconstruire l’application. Une demande directe comme « LIA, emmène-moi à l’aéroport » ou « LIA, guide-moi vers Tel Aviv » devient une intention locale de navigation, distincte des actions Notre Table ordinaires. Si la destination manque, LIA demande uniquement où aller et conserve le contexte de clarification ; une demande complète ouvre directement la surface interne **En route avec LIA** sans envoyer l’utilisateur vers une autre application.
+
+Le checkpoint ajoute une première frontière native iOS de localisation basée sur Core Location. La position n’est demandée qu’au moment où l’utilisateur sollicite un guidage. L’écran route ne fabrique jamais un itinéraire : tant qu’un moteur de navigation intégré (par exemple Google Navigation SDK) n’est pas réellement enregistré dans le build, il annonce honnêtement que le moteur doit encore être relié. L’architecture expose un adaptateur `liaNavigationEngine` afin de connecter ce moteur ultérieurement sans réécrire le flux vocal ni l’interface LIA.
+
+V0.256 renforce aussi la présence conversationnelle validée : les petits échanges comme « LIA, comment ça va ? » reçoivent des réponses courtes, variables et généralement sans question retour. Quand on demande ses limites, LIA ne récite pas une fiche technique : elle exprime ses limites physiques de façon vivante et changeante — pas de mains pour faire les lacets, pas de corps pour toucher des cheveux, pas d’odorat pour sentir un parfum ou un café — tout en restant honnête sur ses capacités. Le provider reçoit la même règle : réponse d’abord, relance seulement si elle apporte réellement quelque chose.
+
+Validation finale : **583/583 régressions PASS**, **17/17 gates EAS PASS**, audits continuité/hygiène/backend/release/acceptation/projet PASS, **198 fichiers TS/TSX transpilés sans diagnostic par l’audit projet (201 dans le balayage élargi incluant les modules natifs TS)**. Le `tsc --noEmit` complet ne peut pas être revendiqué dans cet environnement car les dépendances Expo/React ne sont pas installées (`expo/tsconfig.base`, React Native, etc.). Le guidage virage-par-virage réel reste à valider après branchement du moteur natif et build appareil.
+
+## V0.255 — LIA disponible dès l’ouverture : micro et commandes directes de premier plan
+
+V0.255 reprend V0.254 sans reconstruire l’application. Lorsque Notre Table est ouverte et active, le LIA principal démarre automatiquement l’écoute locale autorisée : analyse sonore, contexte musical et reconnaissance des commandes directement adressées à « LIA » (ou à son surnom accepté). La première activation reste soumise aux permissions micro et reconnaissance vocale du téléphone ; un refus laisse LIA silencieuse et fail-closed.
+
+Sur iOS, la reconnaissance vocale directe partage maintenant le même flux micro que Sound Analysis et ShazamKit afin qu’une commande adressée à LIA ne désactive pas la reconnaissance musicale. Les paroles ambiantes non adressées à LIA restent ignorées hors d’une vraie session table/cuisine. Une clarification déjà engagée peut continuer sans répéter « LIA ». Pendant la propre parole de LIA, sa reconnaissance directe est suspendue pour éviter l’auto-écoute, puis réarmée.
+
+Les règles d’interruption existantes restent prioritaires : appel téléphonique actif = parole et écoute suspendues ; reprise après fin réelle de l’appel. Les handoffs téléphone/musique explicitement initiés par LIA conservent leur continuité V0.251. Une pause volontaire de LIA ou de l’écoute reste possible. Android conserve son état fail-closed pour la reconnaissance vocale globale tant que RECORD_AUDIO + runtime speech ne sont pas validés.
+
+Validation locale : **579/579 régressions PASS**, **17/17 gates EAS PASS**, audits continuité/hygiène/backend/release/projet et matrice d’acceptation PASS, **193 fichiers TS/TSX transpilés sans diagnostic** par l’audit projet. Le comportement natif de reconnaissance directe reste à valider sur un iPhone physique.
+
+## V0.254 — Minuteurs globaux et initiative créative de LIA
+
+V0.254 reprend V0.253 sans reconstruire l’application. Les minuteurs deviennent un acte général de LIA, utilisable en dehors d’une recette : une demande comme « LIA, mets un minuteur de 12 minutes » démarre un minuteur persistant et notifié ; « il reste combien ? » interroge le temps restant ; « arrête le minuteur » l’annule. Si plusieurs minuteurs sont actifs, LIA demande lequel au lieu de deviner. Une fin de minuteur au premier plan n’interrompt jamais une personne qui parle.
+
+Le checkpoint renforce aussi un principe central de personnalité : LIA ne doit pas être seulement correcte et fonctionnelle, elle doit parfois surprendre intelligemment dans ses démarches et ses questions. Lorsqu’une alternative réellement utile existe, elle peut proposer un angle inattendu ou un choix ludique — par exemple « Tu veux faire classique ou épater la galerie ? » — adapté au contexte et à la langue. Cette initiative reste occasionnelle, non mécanique et disparaît dans les moments sensibles, urgents ou lorsqu’une exécution stricte a été demandée. La surprise concerne les idées et les questions ; elle n’autorise jamais une action externe ou destructive non demandée.
+
+Validation locale : **572/572 régressions PASS** avant verrouillage final du checkpoint. Les validations de release complètes sont régénérées lors de l’archivage V0.254.
+
+## Historique conservé
+
+# Notre Table — V0.253
+
+## V0.253 — Rapport exportable du test iPhone LIA
+
+V0.253 reprend V0.252 sans modifier les règles validées de LIA. Le diagnostic iPhone devient exportable sous forme d’un rapport JSON local contenant l’état courant et une trace bornée des transitions audio observées : permission micro, moteur d’écoute, ShazamKit, état de l’app, interruption système, état d’appel, résultat de reprise et dernier morceau reconnu.
+
+Le rapport est strictement observationnel : il ne peut ni démarrer/arrêter l’écoute, ni lancer un appel, ni parler à la place de LIA. Il n’intègre ni contacts, ni numéros de téléphone, ni données du foyer. Son but est de rendre le premier essai physique iPhone exploitable sans deviner ce qui s’est passé côté iOS.
+
+La carte « Test audio iPhone » expose maintenant un bouton explicite de partage du rapport. La trace est limitée à 80 états et reste locale jusqu’à une action volontaire de partage par l’utilisateur.
+
+ShazamKit reste un App Service à activer pour l’App ID `com.notretable.app` avant le build physique ; aucun entitlement iOS ShazamKit ne doit être inventé dans le projet.
+
+Validation locale : **566/566 régressions PASS**, **17/17 gates EAS PASS**, audits continuité/hygiène/backend/release/projet et matrice d’acceptation PASS, **190 fichiers TS/TSX transpilés sans diagnostic**. Le test iPhone physique reste requis pour valider ShazamKit et la continuité audio réelle.
+
+## V0.252 — Test iPhone natif : diagnostic audio et suspension complète pendant les appels
+
+V0.252 reprend V0.251 sans revenir sur les règles existantes. Le checkpoint prépare le premier test réel iPhone de la continuité LIA + ShazamKit en rendant l’état audio natif observable : permission micro, moteur d’écoute, disponibilité Shazam, morceau reconnu, interruption système et résultat de reprise sont exposés dans un diagnostic iPhone interne.
+
+La gestion des appels téléphoniques est maintenant explicite au niveau natif iOS avec CallKit. Dès qu’un appel apparaît — sonnerie entrante, appel sortant, appel connecté ou en attente — LIA suspend complètement sa parole, son analyse sonore et sa reconnaissance vocale. Une notification audio indiquant qu’une reprise serait possible ne suffit jamais à relancer LIA tant que CallKit voit encore un appel actif. La session n’est réarmée qu’après la fin réelle du dernier appel. Si une reconnaissance vocale était active avant l’appel, V0.252 tente de la reprendre ; sinon elle réarme l’écoute/identification musicale qui était demandée.
+
+Cette règle ne change pas le comportement musique validé en V0.251 : LIA reste silencieuse pendant un morceau tant que l’utilisateur ne l’interpelle pas. Le diagnostic V0.252 sert à vérifier sur appareil réel que l’écoute survit aux handoffs autorisés, que ShazamKit identifie effectivement un titre et que la suspension/reprise autour d’un appel est correcte.
+
+ShazamKit reste un service App ID à activer dans Apple Developer avant le build appareil. Aucun nouveau texte de présentation, aucune règle relationnelle et aucune logique d’action LIA existante ne sont modifiés par ce checkpoint.
+
+Validation locale : **563/563 régressions PASS**, **17/17 gates EAS PASS**, audits continuité/hygiène/backend/release/projet et matrice d’acceptation PASS, **190 fichiers TS/TSX transpilés sans diagnostic**. Le test iPhone physique reste l’étape suivante et n’est pas encore revendiqué comme réussi.
+
+
+## V0.251 — LIA lance la musique, reste disponible et reconnaît ce qui joue sans parler par-dessus
+
+V0.251 reprend V0.250 et ajoute la première vraie couche musique du comportement d’assistante. Une demande directe comme « LIA, mets de la musique » ou « LIA, joue la chanson Imagine sur Spotify » est maintenant routée comme un acte local. Le service musical explicitement choisi est mémorisé pour les prochaines demandes ; si aucun service n’a encore été choisi, LIA demande uniquement lequel utiliser. Après ouverture réelle du service, LIA confirme ce qu’elle a lancé.
+
+Les ouvertures externes Téléphone/Musique ne détruisent plus automatiquement la session LIA : un handoff explicitement déclenché par l’assistante préserve l’écoute logique et la session est réarmée au retour dans Notre Table. Sur iOS, le checkpoint déclare le mode audio d’arrière-plan nécessaire à cette continuité. Les arrière-plans ordinaires continuent au contraire de couper l’écoute, la voix et les clarifications comme avant.
+
+Quand une session d’écoute est active sur iOS, le module natif utilise maintenant ShazamKit pour identifier un morceau réellement entendu. Le titre et l’artiste deviennent un contexte de session confirmé ; aucune identification n’est inventée côté JavaScript. Tant qu’un morceau est détecté comme actif, LIA bloque ses interventions spontanées et reste silencieuse. Si l’utilisateur l’interpelle directement, elle peut répondre. Après la fin, le morceau reste disponible pour une conversation. Une demande d’anecdote ou d’information sur l’artiste passe par la route de recherche vérifiée afin d’éviter les histoires inventées.
+
+Le mode cuisine utilise désormais le même flux de demandes directes que le mode table, mais garde `contributionUseful:false` pour les tours ambiants : LIA peut être appelée en cuisine sans se mettre à commenter spontanément tout ce qu’elle entend.
+
+Limite connue : la reconnaissance ShazamKit doit être validée sur un vrai build iOS avec le service ShazamKit activé pour l’App ID Apple. Android conserve son état natif antérieur dans ce checkpoint ; la continuité micro d’arrière-plan Android nécessite un foreground service microphone conforme aux restrictions du système et n’est pas revendiquée comme terminée ici.
+
+Validation locale : **560/560 régressions PASS**, **17/17 gates EAS PASS**, audits continuité/hygiène/backend/release/projet et matrice d’acceptation PASS, **189 fichiers TS/TSX transpilés sans diagnostic** par l’audit projet. Le préflight confirme Node 22.16.0/npm 10.9.2, mais `node_modules` est absent : aucun build Expo/Xcode/Android installé n’est revendiqué dans cet environnement.
+
+# Notre Table — V0.250
+
+## V0.250 — LIA agit directement dans Notre Table : courses, planning et Mémos
+
+V0.250 reprend V0.249 et raccorde enfin l’exécuteur interne de LIA au flux vocal principal. Une commande explicite comme « LIA, ajoute du lait aux courses », « LIA, mets des lasagnes demain soir au planning » ou « LIA, mets appeler le plombier dans Mémos » est maintenant traitée localement comme un vrai acte Notre Table, puis LIA confirme oralement uniquement après le retour de l’action réelle.
+
+L’ordre explicite adressé à LIA matérialise l’accord : elle ne redemande pas un « oui » artificiel. Si un élément indispensable manque, elle demande seulement ce qui manque et conserve le reste en mémoire de session. Les clarifications restent annulables et une nouvelle commande explicite remplace l’ancienne. « Mets ça dans Mémos » ne devine jamais ce que « ça » désigne : LIA demande le contenu au lieu d’inventer.
+
+La couche historique d’actions confirmées reste la frontière d’écriture : les commandes directes structurées y entrent avec `confirmed:true`, tandis qu’une simple proposition du moteur ne devient toujours pas une écriture sans acte utilisateur explicite. Les appels, SMS et rappels déjà branchés restent inchangés.
+
+Validation locale : **553/553 régressions PASS**, **17/17 gates EAS PASS**, audits continuité/hygiène/backend/release et matrice d’acceptation PASS, **184 fichiers TS/TSX transpilés sans diagnostic**.
+
+## V0.249 — LIA exécute les rappels vocaux explicites et confirme ses actions
+
+V0.249 reprend V0.248 et fait avancer le comportement d’assistante vocale de LIA. Une demande directe et suffisamment précise comme « LIA, rappelle-moi demain à 10 h d’acheter du pain » est maintenant traitée comme une instruction explicite : LIA programme le rappel local puis confirme oralement ce qu’elle a pris en charge. Elle ne demande pas une seconde autorisation pour répéter l’ordre déjà donné.
+
+Si une information indispensable manque, LIA demande uniquement cette information et conserve le reste de la demande pendant la session : heure manquante, moment manquant ou contenu du rappel. Une nouvelle commande explicite remplace cette clarification, et « annule » nettoie le rappel en attente. En cas de refus de permission ou d’échec du planificateur natif, LIA l’annonce au lieu de prétendre que le rappel existe. Un appel lancé avec succès reçoit également une confirmation vocale courte (« J’appelle … »).
+
+Validation locale : **546/546 régressions PASS**, **17/17 gates EAS PASS**, audits continuité/hygiène/backend/release et matrice d’acceptation PASS, **182 fichiers TS/TSX transpiles sans diagnostic**.
+
+# Notre Table — V0.248
+
+## V0.248 — LIA peut préparer un vrai message famille sans l’envoyer
+
+V0.248 reprend exactement V0.247 et ferme le trou entre l’objectif `family.prepare_message` déjà reconnu par l’assistante et son exécution réelle. Lorsqu’une demande vise à prévenir la famille, LIA peut maintenant lire la liste des membres utiles en contexte, sans transmettre leurs numéros au modèle, puis préparer une action structurée avec les destinataires explicitement choisis et le texte du message.
+
+La frontière de confirmation reste obligatoire. Après accord, l’exécuteur recharge les membres réels du foyer, vérifie qu’ils sont actifs, joignables et autorisés à recevoir un message selon les règles familiales existantes, puis ouvre le composeur SMS natif avec tous les destinataires. **LIA ne peut pas appuyer sur Envoyer** et ne présente l’action comme `prepared` que si le composeur s’est réellement ouvert. Un destinataire absent, inactif, sans numéro ou ambigu fait échouer l’action fermée au lieu d’être ignoré silencieusement.
+
+Validation locale : **539/539 régressions PASS**, **17/17 gates EAS PASS**, audits continuité/hygiène/backend/release et matrice d’acceptation PASS, **180 fichiers TS/TSX transpiles sans diagnostic**.
+
+# Notre Table — V0.247
+
+## V0.247 — Les deux présentations validées de LIA ont la même voix
+
+V0.247 reprend exactement V0.246 et relie la seconde présentation validée de LIA, affichée après la fiche famille, à la même couche vocale que sa première présentation. Aucun nouveau texte d’introduction n’est inventé : la voix prononce `lia.secondIntro`, déjà validé. La voix préférée de LIA est réutilisée, la lecture peut être écoutée ou arrêtée manuellement, s’arrête avant de poursuivre, et l’auto-lecture reste désactivée si VoiceOver/TalkBack est actif.
+
+Validation locale : **535/535 régressions PASS**, **17/17 gates EAS PASS**, audits continuité/hygiène/backend/release et matrice d’acceptation PASS, **180 fichiers TS/TSX transpiles sans diagnostic**. La qualité perceptive de la voix reste à valider sur un appareil natif réel.
+
+## V0.246 — Les actions de LIA passent par une frontière de confirmation unique
+
+V0.246 reprend exactement V0.245 et ajoute le pont d’exécution sécurisé de l’assistante. Une action proposée par LIA ne peut plus devenir une écriture Notre Table sans passer par un contrat structuré et un contrôle final de confirmation. Trois écritures natives sont préparées : ajouter un article aux courses, inscrire un repas au planning et créer un Mémo. Les paramètres incomplets ou incohérents échouent fermés ; le moteur ne complète jamais silencieusement un foyer, une date, un repas ou un contenu manquant.
+
+Le pont réutilise uniquement les services existants de Notre Table (`shopping`, `planning`, `memos`). Un résultat `completed` n’est produit qu’après retour réel du service ; une exception devient `failed` et ne peut pas être présentée comme un succès. Cette couche n’autorise toujours aucune exécution automatique depuis une simple proposition du modèle : l’accord utilisateur doit être matérialisé dans l’action structurée avant l’écriture.
+
+Validation locale de ce checkpoint : **532/532 régressions PASS**, **17/17 gates EAS PASS**, audits continuité/hygiène/backend/release et matrice d’acceptation PASS, **180 fichiers TS/TSX transpiles sans erreur**. Le build Metro natif complet n’est pas revendiqué sans dépendances installées dans l’archive.
+
+# Notre Table — V0.245
+
+## V0.245 — LIA comprend un objectif et va chercher le contexte utile dans Notre Table
+
+V0.245 reprend exactement V0.244 et ajoute la première orchestration concrète du mode **assistante IA**. LIA peut maintenant reconnaître localement qu'une demande concerne les placards, les recettes, le planning, la liste de courses ou les Mémos, puis rassembler automatiquement les données utiles de Notre Table avant de formuler sa réponse. Une demande multi-étapes comme « organise le dîner de demain avec ce qu'on a » est conservée comme **un seul objectif** : LIA peut consulter le planning, le stock et les recettes, calculer les meilleures correspondances stock/recettes et identifier les étapes suivantes utiles.
+
+Cette couche est volontairement séparée des écritures : la lecture du contexte peut être automatique, mais modifier le planning, ajouter les ingrédients manquants aux courses, créer un Mémo ou préparer un message famille reste une **action proposée avec confirmation**. Une source de données qui échoue est omise ; LIA ne la remplace jamais par une supposition. L'identité, les surnoms, l'humour, la confidentialité et les garde-fous V0.239–V0.244 restent inchangés.
+
+Validation locale de ce checkpoint : **528/528 régressions PASS**, **17/17 gates EAS PASS**, audits continuité/hygiène/backend/release et matrice d’acceptation PASS, **178 fichiers TS/TSX transpiles sans erreur**. Le build Metro natif complet n’est pas revendiqué sans dépendances installées dans l’archive.
+
+# Notre Table — V0.244
+
+## V0.244 — LIA garde son identité, accepte les surnoms et renforce son rôle d’assistante
+
+V0.244 reprend exactement V0.243 et ajoute une couche relationnelle sans retirer aucune règle existante. LIA sait toujours qu’elle s’appelle **LIA** et répond ainsi quand on lui demande son prénom. Un surnom explicitement proposé peut être accepté et mémorisé comme alias d’appel, sans jamais remplacer son identité LIA. L’utilisateur peut aussi autoriser un surnom pour lui-même. Le contrat conversationnel autorise une répartie légère en miroir quand son prénom est taquiné, tout en bloquant l’escalade, les humiliations et l’usage de sujets sensibles comme matière à plaisanterie.
+
+La même politique précise que LIA doit se comporter comme une assistante IA active : comprendre les demandes multi-étapes, relier le contexte utile de Notre Table, proposer l’étape suivante et utiliser les actions/outils disponibles plutôt que rester dans une conversation générique. Les protections V0.239–V0.243 sur les outils, preuves, actions externes, confidentialité et pannes restent inchangées.
+
+Validation exécutable dans cet environnement : **521/521 régressions PASS**. Le typecheck/Metro complet n’est pas revendiqué ici car l’archive de travail ne contient pas les dépendances installées et leur restauration n’a pas abouti dans cet environnement.
+
+# Notre Table — V0.243
+
+## V0.243 — LIA ne laisse plus une demande directe sans réponse
+
+V0.243 transforme les pannes contrôlées de V0.242 en réponses humaines et honnêtes. Si Walter ou un membre appelle directement LIA et que la réponse tarde, manque de preuve ou échoue, elle le dit brièvement sans jargon et sans inventer. Une conversation ambiante n’est jamais interrompue pour annoncer une panne, et un sujet sensible reste silencieux à table. Les réponses existent en français, anglais, espagnol et hébreu.
+
+Validation locale : 514/514 régressions, 17/17 gates EAS, TypeScript strict et audits PASS, exports Metro Android/iOS réussis avec 908 modules chacun.
+
+## V0.242 — LIA ne reste pas bloquée sur un fournisseur
+
+V0.242 borne chaque appel IA : 8 secondes pour une conversation simple, 15 pour un raisonnement complexe et 20 pour une recherche avec outils. À expiration, le fournisseur reçoit un signal d’annulation ; une panne devient un état contrôlé plutôt qu’une erreur qui casse la conversation. Un tour ne provoque jamais de relance payante automatique, et une action locale n’attend aucun modèle.
+
+Validation locale : 508/508 régressions, 17/17 gates EAS, TypeScript strict et audits PASS, exports Metro Android/iOS réussis avec 907 modules chacun.
+
+## V0.241 — contrat fournisseur sûr et réponses prouvées
+
+V0.241 prépare chaque requête IA avec l’identité immuable de LIA et seulement le contexte confirmé réellement utile. Les identifiants techniques de locuteur ne partent pas chez le fournisseur. Les sujets sensibles restent limités à la session sans Web. Le contrat interdit à LIA de prétendre qu’une action a réussi sans résultat d’outil, et une recherche actuelle non accompagnée de preuves vérifiées est rejetée avant d’être prononcée.
+
+Validation locale : 502/502 régressions, 17/17 gates EAS, TypeScript strict et audits PASS, exports Metro Android/iOS réussis avec 906 modules chacun.
+
+## V0.240 — LIA reconnaît elle-même le niveau d’aide nécessaire
+
+V0.240 relie le routage agentique au texte réellement entendu. Une recherche actuelle exige automatiquement une source vérifiée ; une analyse, une comparaison ou une décision peut atteindre le raisonnement renforcé ; la conversation ordinaire reste économique. Les sujets privés de santé, couple, finance ou droit coupent le Web, limitent la mémoire à la session et forcent une réponse silencieuse même si un futur fournisseur omet son propre marquage de confidentialité.
+
+Validation locale : 496/496 régressions, 17/17 gates EAS, TypeScript strict et audits PASS, exports Metro Android/iOS réussis avec 905 modules chacun.
+
+## V0.239 — notre LIA, puissance d’agent et coût maîtrisé
+
+V0.239 ajoute le contrat de routage du futur moteur IA sans inventer de fournisseur connecté. Les actions déterministes de Notre Table restent locales ; la conversation ordinaire utilise le niveau économique ; le raisonnement complexe n’emploie un moteur renforcé que lorsque nécessaire ; une recherche actuelle exige des outils de vérification et ne retombe jamais sur une réponse non vérifiée. Les sujets sensibles interdisent le Web et restent limités au contexte privé de session. Le garde économique V0.157 continue de réduire les routes non essentielles avant toute aide essentielle.
+
+Validation locale : 490/490 régressions, 17/17 gates EAS, TypeScript strict et audits PASS, exports Metro Android/iOS réussis avec 904 modules chacun.
+
+## V0.238 — une nouvelle commande remplace l’ancienne
+
+V0.238 empêche une clarification d’appel ou de SMS de capturer une nouvelle commande explicite. Si LIA attend un prénom ou un texte et que l’utilisateur dit « LIA, appelle David », « LIA, envoie un SMS à Myriam… », demande un rappel ou lance une recherche, l’ancienne action est effacée et la nouvelle prend immédiatement sa place. Une réponse courte comme « oui », « portable » ou un prénom continue cependant de répondre à la clarification en cours. Validation locale : 484/484 régressions, 17/17 gates EAS, TypeScript strict et audits PASS, exports Metro Android/iOS réussis avec 902 modules chacun.
+
+## V0.237 — annulation vocale et fin de session propre
+
+V0.237 permet d’abandonner immédiatement un appel ou un SMS en clarification avec « annule », « laisse tomber » ou « oublie ça ». LIA répond simplement qu’elle annule, efface les choix en attente et ne transforme jamais cette phrase en nom de contact ou en contenu de message. Les brouillons vocaux temporaires sont également supprimés à l’arrêt de l’écoute, au passage en arrière-plan et à la fermeture de la surface LIA. Validation locale : 481/481 régressions, 17/17 gates EAS, TypeScript strict et audits PASS, exports Metro Android/iOS réussis avec 902 modules chacun.
+
+## V0.236 — clarification d’appel sans recommencer
+
+V0.236 conserve uniquement pendant la session le choix d’appel en attente. Quand plusieurs contacts ou plusieurs numéros existent, LIA prononce les options réelles et l’utilisateur répond seulement par le nom complet, « oui », « portable » ou « travail », sans répéter « LIA, appelle… ». Les libellés natifs anglais des contacts (`mobile`, `work`, `home`) comprennent maintenant leurs réponses françaises équivalentes, pour les appels comme pour les SMS. Aucune ambiguïté ne déclenche un choix silencieux. Validation locale : 478/478 régressions, 17/17 gates EAS, TypeScript strict et audits PASS, exports Metro Android/iOS réussis avec 902 modules chacun.
+
+## V0.235 — SMS incomplet, une seule question utile
+
+V0.235 évite de faire recommencer une commande SMS incomplète. Si le destinataire est compris mais que le texte manque, LIA demande uniquement ce qu’il faut écrire. Si le texte est compris mais que le destinataire manque, elle demande uniquement à qui l’envoyer. La partie déjà comprise reste en mémoire de session jusqu’à la réponse, puis rejoint le flux sûr de résolution du contact et d’ouverture du composeur. Validation locale : 474/474 régressions, 17/17 gates EAS, TypeScript strict et audits PASS, exports Metro Android/iOS réussis avec 902 modules chacun.
+
+## V0.234 — clarification SMS sans recommencer
+
+V0.234 conserve temporairement la commande SMS pendant une clarification. Après un contact ambigu, une confirmation ou plusieurs numéros, l’utilisateur répond seulement par le nom complet, « oui » ou le libellé du numéro ; le destinataire et le texte initial restent attachés au même tour de dialogue. Cet état reste uniquement en mémoire de session, disparaît à la résolution et n’autorise toujours aucun envoi automatique. Validation locale : 471/471 régressions, 17/17 gates EAS et exports Metro Android/iOS réussis.
+
+## V0.233 — préparation SMS réelle, envoi toujours humain
+
+V0.233 raccorde les demandes explicites de message de LIA au composeur SMS natif iOS/Android. LIA extrait un destinataire et un texte réellement prononcés, résout le contact sans deviner, puis ouvre Messages avec le numéro et le corps préremplis. Le dernier geste reste obligatoirement humain : Notre Table ne clique jamais sur Envoyer et ne présente jamais un composeur ouvert comme un message envoyé. Demande incomplète, contact absent, ambigu ou doté de plusieurs numéros : clarification, jamais de choix silencieux. Validation locale : 468/468 régressions, 17/17 gates EAS, prébuild Expo et exports Metro Android/iOS réussis.
+
+## V0.232 — continuité vocale des appels et construction stricte
+
+V0.232 avance depuis V0.231 sans modifier les règles validées. Si LIA ne comprend pas le prénom demandé pour un appel, elle demande d’abord de le répéter. Après une deuxième incompréhension consécutive, elle utilise la relance humoristique validée « Tu peux arrêter de bafouiller ? Allez, redis-moi le prénom. », puis reste en attente d’une prononciation exploitable. Aucun contact n’est choisi et aucun appel n’est ouvert par supposition. Le contrôle TypeScript installé est désormais propre ; les fonctions Supabase/Deno restent contrôlées par leur chaîne dédiée et ne sont pas faussement compilées comme du React Native. Validation locale : 464/464 régressions, 17/17 gates EAS et exports Metro Android/iOS réussis.
+
+## V0.231 — assistant vocal, Contacts téléphone et appels réels
+
+V0.231 reprend exactement V0.230 et ajoute la couche assistant vocal devant la conversation normale. Les commandes directes adressées à LIA sont routées par intention ; les appels utilisent uniquement les Contacts locaux du téléphone, ne devinent jamais une identité ambiguë et ouvrent le composeur système via `tel:` après résolution sûre. Les demandes de message restent fail-closed tant qu’aucun fournisseur réel n’est connecté. La parole ambiante ne peut jamais déclencher un appel. Cette récupération a été reconstruite sur l’archive V0.230 authentifiée par SHA-256 puis validée par **461/461 régressions**.
+
+## V0.230 — conversation de table raccordable en conditions réelles
+
+V0.230 raccorde le mode Table de LIA au LiaOrb existant : frontière STT/diarisation réelle, suivi multi-locuteurs, appels directs, rythme d'intervention, suivi de sujet, questions ouvertes, intentions et commandes typées, bridges vers rappels et Mémos, frontière du moteur de réponse et gate final avant synthèse vocale. Aucun STT/LLM fictif n'est déclaré disponible : les adaptateurs doivent être réellement enregistrés. Les tours vocaux bruts et pistes locuteurs restent uniquement en mémoire de session et sont effacés à l'arrêt.
 
 
 
@@ -16,6 +432,612 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## V0.229 — Conversation familiale et orchestration repas
+- LIA relie réponses famille, habitudes, décisions repas et prochaine action.
+- Les interventions sont courtes, dédupliquées et exploitables par voix/UI.
+- Les habitudes établies évitent les questions inutiles sans transformer une supposition en confirmation.
+- Une action externe engageante conserve une validation finale.
+- Une réponse tardive ne modifie jamais silencieusement une commande déjà confirmée.
+
+## V0.228 — LIA participe réellement à la table
+- LIA peut rejoindre spontanément un sujet familial ordinaire quand elle a une contribution concrète et fiable.
+- Elle attend une ouverture naturelle et ne parle jamais par-dessus une personne.
+- Elle peut proposer une aide pratique à un parent, faire la recherche acceptée puis proposer de ranger les résultats dans Mémos avec accord.
+- Elle peut poursuivre un sujet sur un ton léger si l’ambiance et la personne s’y prêtent.
+- Elle peut apporter une connaissance quotidienne brève ; en cas d’ambiguïté elle demande une précision au lieu d’inventer.
+- Aucune transmission automatique de confidence ou sous-entendu à un conjoint.
+
+## V0.227 — Fin nette de la session LIA hors premier plan
+- Si l’application passe en arrière-plan alors que la surface LIA est ouverte, cette surface se ferme.
+- Cela garantit que l’état « LIA active » et le keep-awake ne peuvent pas rester accrochés à une ancienne session.
+- Au retour, LIA reste disponible via son Orb mais ne reprend ni fenêtre, ni micro, ni voix automatiquement.
+
+## V0.226 — LIA libère proprement le téléphone en arrière-plan
+- Dès que l’application quitte le premier plan, l’écoute explicite et la voix LIA sont arrêtées.
+- Le keep-awake V0.225 est alors automatiquement libéré par le même état d’écoute.
+- Le retour au premier plan ne redémarre jamais le micro sans action explicite de l’utilisateur.
+
+## V0.225 — LIA active maintient l’écran éveillé
+- Quand la surface LIA est ouverte ou que son écoute explicite est active, l’auto-extinction de l’écran est suspendue.
+- Dès que LIA n’est plus active, le comportement normal du téléphone est restauré.
+- Aucun verrouillage manuel de l’utilisateur n’est contourné.
+
+## V0.224 — Frontière vocale réelle du mode cuisine
+- Un contrat `LiaCookingSpeechAdapter` relie désormais une future reconnaissance vocale native au contrôleur cuisine V0.223.
+- Le bouton mains-libres n’apparaît que lorsqu’un adaptateur réel déclare être disponible.
+- Sans moteur STT installé, l’application ne simule ni micro ni écoute.
+
+## V0.223 — Contrôleur cuisine réutilisable
+- Le traitement d’une commande cuisine est extrait dans `liaCookingRuntime`.
+- L’écran cuisine utilise ce même contrôleur ; une future couche de reconnaissance vocale pourra l’appeler sans dupliquer la logique métier.
+- Les limites locales existantes restent inchangées : pas de faux streaming musical, pas d’action non reconnue.
+
+## V0.222 — Le moteur mains-libres agit sur la vraie session cuisine
+- `CookingModeScreen` relie maintenant les intentions V0.205–V0.208 à son vrai index d’étape et à son vrai minuteur.
+- Navigation et minuteur restent bornés par le moteur existant.
+- Aucun faux micro/STT n’est annoncé : cette version prépare le point d’entrée réel pour la couche vocale native suivante.
+
+## V0.221 — Une notification non ouverte ralentit réellement LIA
+- Un pending non ouvert depuis 24 h devient un `ignored` une seule fois, puis son pending est effacé.
+- La réconciliation se fait avant la sélection suivante : la politique existante peut donc ralentir naturellement les relances.
+- Aucun callback de rejet fictif n’est utilisé.
+
+## V0.220 — Une relance envoyée reste identifiable jusqu’à son ouverture
+- L’historique mémorise maintenant l’open-loop et l’heure d’une notification réellement envoyée.
+- Une ouverture efface ce pending et remet le compteur d’ignorés à zéro.
+- Le schéma reste compatible avec l’historique V0.213 existant : les nouveaux champs sont optionnels.
+
+## V0.219 — Relance in-app réellement affichée, sans double moteur
+- `MainScreen`, déjà propriétaire du retour au premier plan et de l’Orb LIA, utilise désormais le runtime unique V0.217.
+- Le corps décidé par le runtime est affiché dans l’Orb uniquement pour une livraison `in-app`.
+- Le chemin parallèle historique et le second listener ajouté au niveau `App` ont été supprimés : une seule sélection, un seul comptage de surface.
+
+## V0.218 — Le runtime vit dans l’application
+- Le runtime de réengagement est maintenant appelé quand un foyer est actif puis à chaque retour réel de Notre Table au premier plan.
+- Un verrou empêche deux exécutions concurrentes lors des transitions rapides de l’application.
+- Comme l’app est au premier plan, la politique existante garde la relance dans l’app au lieu de produire une notification OS inutile.
+
+## V0.217 — Orchestration réelle des relances
+- Un service unique relie maintenant état de silence réel → sélection persistée → politique V0.201 → livraison → comptage de surface.
+- Aucun compteur parallèle ni nouvelle règle de notification : si rien n’est livré, le fil n’est pas marqué comme montré.
+
+## V0.216 — Un vrai envoi démarre le cooldown
+- Une relance n’est maintenant marquée `sent` qu’après programmation réussie de la notification réelle.
+- Un refus de permission ou une décision `none`/`in_app` ne falsifie donc pas la date du dernier envoi et ne déclenche pas artificiellement le cooldown de 12 h.
+
+## V0.215 — Une notification ouverte ferme réellement la boucle
+- Le cycle de vie principal détecte maintenant l’ouverture d’une notification de réengagement LIA et l’enregistre comme `opened`.
+- Cela remet réellement à zéro le compteur d’ignorées via l’historique V0.212–V0.214, sans confondre les notifications privées déjà existantes.
+
+## V0.214 — Le moteur consomme son historique tout seul
+- Le sélecteur réel de réengagement lit maintenant automatiquement l’historique persisté de V0.213.
+- Les appelants n’ont plus à lui transmettre manuellement le nombre de relances ignorées ni la date du dernier envoi ; les valeurs explicites restent possibles pour les tests/contrôles.
+
+## V0.213 — Historique de réengagement persisté
+- L’état envoi/ouverture/ignorée de V0.212 est maintenant réellement persisté dans le stockage existant de l’application.
+- Le compteur survit donc aux réouvertures de Notre Table et peut alimenter la règle « deux relances ignorées = LIA ralentit/se tait » sans nouvelle table backend.
+
+## V0.212 — Mémoire des relances
+- Le moteur dispose maintenant d’un historique déterministe des relances : envoi, ouverture et relance ignorée.
+- Une ouverture remet le compteur d’ignorées à zéro ; une relance ignorée l’incrémente. Ce compteur alimente directement la règle déjà validée qui coupe les relances après deux ignorées.
+
+## V0.211 — Livraison réelle du réengagement
+- Le canal décidé par la politique V0.201/V0.210 est maintenant consommé par le runtime de notifications : `none` ne fait rien, `in_app` reste dans l’application et `notification` passe par Expo Notifications.
+- Aucune demande surprise d’autorisation : sans permission existante, la relance n’est pas envoyée.
+- Le contenu utilisé est celui déjà filtré par la politique de confidentialité ; le runtime ne réinterprète pas le sujet.
+
+## V0.210 — Reconnexion du réengagement aux vrais fils persistés
+- La politique de V0.201 n’est plus seulement une règle de bibliothèque : le service réel des fils LIA peut maintenant sélectionner un fil persisté dû et produire le canal/corps de réengagement correspondant.
+- Aucun fil réel = aucune relance. Les règles de pause, confidentialité, cooldown et relances ignorées restent celles déjà validées.
+
+## V0.209 — Fin de minuteur respectueuse de la conversation
+- LIA peut annoncer la fin d’un minuteur actif, mais jamais par-dessus une personne ni pendant qu’elle parle déjà.
+- Une session terminée ou un minuteur non arrivé à zéro reste silencieux.
+
+## V0.208 — Réponses vocales liées à l’état réel de la recette
+- « Répète » renvoie l’étape réellement affichée ; « combien de temps reste ? » lit le minuteur réellement actif.
+- Sans minuteur actif, LIA ne fabrique aucun temps restant.
+- La dernière étape est reconnue afin que « suivante » ne fasse pas sortir de la recette.
+
+## V0.207 — Exécution locale bornée en cuisine
+- Les actions vocales sûres peuvent maintenant modifier un état d’exécution cuisine borné : lancer le minuteur, avancer d’une étape et arrêter la voix.
+- La navigation est plafonnée à la dernière étape et une action externe/non disponible (ex. musique sans intégration) ne modifie rien localement.
+
+## V0.206 — De la phrase vocale à l’action cuisine
+- Les intentions mains libres de V0.205 produisent maintenant un plan d’action borné : minuteur local, navigation de recette, répétition, temps restant ou arrêt vocal.
+- Un minuteur n’est exécutable que si une durée explicite a été extraite.
+- Une demande de musique est marquée comme nécessitant une vraie intégration de streaming et n’est jamais présentée comme déjà exécutée.
+
+## V0.205 — Commandes mains libres en cuisine
+- Le noyau cuisine reconnaît maintenant les intentions vocales essentielles : lancer un minuteur avec durée explicite, demander le temps restant, prochaine étape, répéter, musique et arrêt de la voix.
+- Un minuteur n’est jamais inventé : sans durée réellement prononcée, aucune durée n’est créée.
+- La musique reste une intention à router vers une intégration disponible ; cette version ne prétend pas disposer d’un service de streaming inexistant.
+
+## V0.204 — Tour de parole vocal
+- LIA possède maintenant une politique vocale déterministe : **une voix humaine gagne toujours** et une réponse déjà en attente est annulée si quelqu’un recommence à parler.
+- Lorsqu’on s’adresse directement à LIA, elle peut répondre après une courte pause ; spontanément, elle attend davantage à table qu’en cuisine.
+- Fin de session ou retrait du consentement micro = arrêt immédiat.
+
+## V0.203 — LIA ferme les boucles après les événements
+- Après un rendez-vous ou une tâche terminée, LIA peut demander une seule fois comment cela s’est passé.
+- Si tout va bien ou si l’événement est annulé, le fil se ferme ; s’il reste une action, LIA peut proposer un prochain pas et éventuellement un Mémo, sans agir silencieusement.
+- Un refus ferme la relance au lieu de créer du harcèlement.
+
+## V0.202 — LIA sait ce qui compte ensuite dans la journée
+- Les événements ouverts sont maintenant arbitrés en un **brief de journée** : LIA choisit le prochain fil utile au lieu d’énumérer une liste de tâches.
+- Un rendez-vous proche, un suivi dû ou une heure manquante remonte naturellement ; l’action proposée réutilise la politique bras droit existante et exige toujours confirmation lorsqu’elle agit.
+- Les fils personnels/sensibles restent exclus de la table familiale.
+
+## V0.201 — LIA donne une vraie raison de revenir
+- Les relances hors application partent uniquement d’un **fil ouvert réel et arrivé à échéance** : aucun « ouvre-moi » artificiel pour fabriquer de l’engagement.
+- Un sujet ordinaire peut produire une notification contextuelle ; un sujet personnel/sensible n’affiche qu’un aperçu générique et ne surgit jamais sur une surface principale potentiellement visible par la famille.
+- Deux relances ignorées suffisent à faire ralentir LIA ; un cooldown de douze heures empêche les répétitions rapprochées et le mode pause garde le silence absolu.
+
+## V0.200 — LIA à table : présence sociale sans envahir
+- LIA à table reste explicitement activée et laisse la famille au centre : parole humaine, tension, détresse ou sujet sensible imposent le silence.
+- Deux interventions maximum sur vingt minutes ; même un long silence peut rester un vrai silence sans que LIA cherche à le remplir.
+- Les blagues exigent un contexte réel, ordinaire, sûr pour le foyer et déjà bien reçu par la personne visée ; poids, corps et santé sont exclus.
+- Une anecdote doit correspondre à un événement réel avec un détail concret : aucune anecdote vague, reconstruite ou inventée.
+
+## V0.199 — LIA apprend puis sait revenir dessus
+- La curiosité relationnelle est désormais pilotée par des **lacunes de connaissance** : LIA choisit une seule question utile, ne redemande pas un fait connu et abandonne immédiatement en contexte tendu.
+- Une réponse significative passe par la politique mémoire existante : les faits sensibles exigent toujours un consentement explicite avant conservation.
+- Un souvenir peut ensuite produire un rappel naturel, une aide concrète ou un clin d’œil familial ; les faits personnels/sensibles sont interdits comme matière de table.
+
+## V0.198 — LIA curieuse pendant les temps morts de cuisson
+- Ajout d’un arbitre de temps mort : LIA ne lance une intervention que pendant une vraie attente de cuisson, sans parole humaine, sans moment sensible et avec un plafond d’interventions.
+- Ajout d’une première banque structurée de curiosité (journée, famille, nutrition, goûts, congés) : ce n’est jamais un questionnaire et une information déjà connue n’est pas redemandée.
+- Les questions sensibles (ex. allergie) sont exclues hors contexte privé ; LIA peut choisir le silence ou une proposition de musique plutôt que d’interroger.
+- Validation locale V0.198 : **278/278 régressions**, **17/17 gates EAS**, **132 TS/TSX**, **958 clés EN**, audits continuité/hygiène/backend/release/feature/accessibilité PASS ; hygiène source **392 fichiers** ; backend **24 tables client / 17 RPC / 7 Realtime**, migrations **001 → 024**.
+
+## V0.197 — LIA bras droit : proposer puis agir
+- Nouveau moteur d’actions quotidiennes : rendez-vous, récupération d’un enfant, course, achat, travail ou sujet familial peuvent produire jusqu’à trois aides concrètes.
+- LIA peut demander l’heure manquante sans formalité, mais une alarme, un rappel récurrent, une recherche, un Mémo ou un suivi ne s’exécute qu’après confirmation.
+- Pour un rendez-vous sensible, préparation des notes, alarme et suivi restent marqués privés.
+- Ajout d’un vrai canal d’alarme LIA audible, séparé des rappels historiques silencieux.
+- Une alarme unique ou hebdomadaire peut être créée sur des jours sélectionnés ; reprogrammer le même identifiant remplace l’ancien horaire au lieu de dupliquer les rappels.
+- Aucun `SCHEDULE_EXACT_ALARM` Android n’est demandé ; LIA reste sur les déclencheurs de notifications supportés.
+- Une alarme personnelle/sensible affiche uniquement un texte générique sur l’écran verrouillé.
+- Validation locale V0.197 : **276/276 régressions**, **17/17 gates EAS**, **132 TS/TSX**, **958 clés EN**, audits continuité/hygiène/backend/release/feature/accessibilité PASS ; hygiène source **391 fichiers** ; backend **24 tables client / 17 RPC / 7 Realtime**, migrations **001 → 024**.
+
+## V0.196 — fils ouverts de LIA / bras droit quotidien
+- LIA peut désormais conserver un sujet structuré à reprendre plus tard : rappel, suivi ou proposition d’aide.
+- Chaque fil possède une échéance, une confidentialité, une action possible, une expiration facultative et un historique de relance.
+- La sélection privilégie les rappels réellement dus et limite les relances : minimum 4 h entre deux surfaces et maximum 3 relances ignorées.
+- Pause LIA, parole humaine et contexte social restent prioritaires ; un fil personnel ou sensible ne surgit jamais dans une surface familiale partagée.
+- Les fils sont privés par RLS (`lia_open_loops`) et ne stockent pas de transcript de conversation, uniquement le résumé structuré nécessaire à la continuité.
+- Une notification de fil ouvert ne demande jamais une permission système par surprise ; un sujet personnel/sensible exige le canal privé.
+- À la réouverture de Notre Table, LIA peut reprendre un fil ordinaire arrivé à échéance et noter qu’elle l’a déjà relancé pour éviter la répétition.
+- Validation locale V0.196 : **273/273 régressions**, **17/17 gates EAS**, **131 TS/TSX**, **958 clés EN**, audits continuité/hygiène/backend/release/feature/accessibilité PASS ; hygiène source **389 fichiers** ; backend **24 tables client / 17 RPC / 7 Realtime**, migrations **001 → 024**.
+
+## V0.195 — LIA relationnelle + fiche protégée + famille par âge + cuisine accompagnée
+- Ajout de la situation personnelle à cocher : Célibataire / Marié(e) / Divorcé(e) / En couple.
+- Les informations relationnelles manquantes deviennent des lacunes souples : elles ne bloquent pas la fiche ; LIA peut revenir dessus avec tact.
+- LIA ne peut jamais parler de couple, divorce, partenaire, enfant ou contact en l’inférant : ces références doivent venir de la fiche structurée.
+- Ajout de la dictée assistée de fiche sur iOS : LIA prépare les champs entendus et n’écrit rien sans confirmation explicite.
+- L’âge et les numéros manquants restent non bloquants ; une valeur fournie mais invalide ou un numéro dupliqué reste signalé.
+- Messagerie adaptée automatiquement à chaque enfant : <16 petit mot seulement ; 16 ans choix repas + petit mot ; 17+ présence + choix + « Je m’en charge » + petit mot. Sans téléphone, aucun lien n’est envoyé.
+- Le petit mot familial libre remonte à l’organisateur sans devenir automatiquement un Mémo LIA.
+- Le mode cuisson affiche désormais LIA à côté de l’étape : durée explicite → chrono lançable ; sel → conseil prudent ; aucune durée n’est inventée.
+- Android reste fail-closed pour la dictée tant que l’autorisation micro native actuelle reste bloquée par configuration.
+- Validation locale V0.195 : **269/269 régressions**, **17/17 gates EAS**, **129 TS/TSX**, **958 clés EN**, audits continuité/hygiène/backend/release/feature/accessibilité PASS ; backend **23 tables client / 17 RPC / 7 Realtime**, migrations **001 → 023**.
+
+## V0.194 — notification privée → message privé
+- Un tap sur une notification LIA privée ouvre explicitement le message privé référencé dans l’application.
+- Le payload système reste limité à `screen: lia-private` + `messageId`; aucun texte sensible n’est ajouté.
+- L’ouverture relit le message avec `ownerId + messageId`, donc un identifiant d’un autre compte ne peut pas révéler son contenu.
+- Le dernier tap système est effacé après traitement pour éviter de rouvrir le même message au prochain lancement.
+- L’onboarding et la fiche famille gardent la priorité : l’écran privé ne s’affiche qu’une fois la session/foyer prêts.
+- Validation locale V0.194 : **263/263 régressions**, **17/17 gates EAS**, **122 TS/TSX**, **925 clés EN**, audits continuité/hygiène/backend/release/feature PASS ; hygiène source **375 fichiers** ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 021**.
+
+## V0.193 — orchestration LIA privée
+- Le détail sensible est d’abord enregistré dans l’inbox privée du propriétaire.
+- Si l’app est ouverte, LIA reste sur l’écran privé sans créer de notification inutile.
+- Si le canal choisi est `private_notification`, la notification reçoit uniquement l’identifiant du message privé et l’aperçu générique validé ; jamais le texte sensible.
+- Une permission notification absente ou refusée reste un refus silencieux : aucune demande surprise n’est déclenchée par un message privé.
+- Le mode pause/silence reste prioritaire et peut empêcher toute livraison proactive.
+- Validation locale V0.193 : **261/261 régressions**, **17/17 gates EAS**, **120 TS/TSX**, **922 clés EN**, audits continuité/hygiène/backend/release/feature PASS ; hygiène source **372 fichiers** ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 021**.
+
+## V0.192 — panne sponsorisée isolée
+- Les recherches organiques et sponsorisées se résolvent séparément.
+- Une panne du provider sponsorisé donne simplement zéro carte sponsorisée et ne masque jamais les restaurants organiques valides.
+- Une panne du provider organique continue, elle, d’afficher l’erreur Commander normale : aucune disponibilité n’est inventée.
+- Aucun changement du classement naturel, du rayon 10 km ou des règles de livraison.
+- Validation locale V0.192 : **259/259 régressions**, **17/17 gates EAS**, **119 TS/TSX**, **922 clés EN**, audits continuité/hygiène/backend/release/feature PASS ; hygiène source **370 fichiers** ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 021**.
+
+## V0.191 — choix explicite « ici ou à la maison »
+- Si une adresse courante autorisée diffère de l’adresse du foyer, Commander demande explicitement quelle destination utiliser.
+- Tant que le choix n’est pas fait, aucun provider restaurant/livraison n’est interrogé.
+- Sans consentement de localisation précise, ou sans adresse courante fiable, aucun choix n’est affiché et l’adresse du foyer reste le fallback normal.
+- Une adresse manuelle de session reste possible et ne modifie toujours pas l’adresse du foyer.
+- Validation locale V0.191 : **258/258 régressions**, **17/17 gates EAS**, **119 TS/TSX**, **922 clés EN**, audits continuité/hygiène/backend/release/feature PASS ; hygiène source **369 fichiers** ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 021**.
+
+## V0.190 — impressions sponsorisées visibles uniquement
+- Charger une carte sponsorisée ne crée jamais une impression.
+- Une impression n’est enregistrée qu’après interaction réelle avec le carrousel lorsque la carte sponsorisée est la carte visible, ou lorsqu’elle est ouverte explicitement.
+- Une même campagne/carte n’est comptée qu’une fois par ouverture de l’écran Commander, par prudence contre le gonflement artificiel.
+- La mesure reste séparée du provider restaurant et reste soumise au consentement analytics pour la télémétrie produit.
+- Validation locale V0.190 : **256/256 régressions**, **17/17 gates EAS**, **119 TS/TSX**, **918 clés EN**, audits continuité/hygiène/backend/release/feature PASS ; hygiène source **368 fichiers** ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 021**.
+
+## V0.189 — session Commander anti-répétition
+- « Autre chose » cherche d’abord une carte encore non vue dans le carrousel actif de la session.
+- Les cartes vues sont mémorisées uniquement pendant l’ouverture courante de Commander ; rien n’est envoyé en profil, Mémos ou télémétrie.
+- Quand toutes les cartes utiles ont été vues, le carrousel peut recommencer normalement.
+- Les commandes suivant/précédent et les ouvertures explicites continuent d’utiliser le même classement existant.
+- Validation locale V0.189 : **255/255 régressions**, **17/17 gates EAS**, **119 TS/TSX**, **918 clés EN**, audits continuité/hygiène/backend/release/feature PASS ; hygiène source **367 fichiers** ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 021**.
+
+## V0.188 — LIA pilote le carrousel Commander actif
+- LIA peut comprendre les commandes contextuelles déjà décidées : « suivant », « précédent », « ouvre celui-là », « le troisième » et « autre chose ».
+- Le carrousel actif est celui que l’utilisateur vient réellement de toucher ; l’auto-défilement ne change pas ce contexte.
+- Une commande LIA déplace uniquement l’index visible ou ouvre explicitement une carte existante : aucun classement, rayon, résultat, statut de livraison ou placement sponsorisé n’est recalculé.
+- Le même parseur accepte les formulations principales en français, anglais, espagnol et hébreu.
+- La saisie contextuelle est intégrée dans le contrôle LIA existant afin de ne pas ajouter une nouvelle navigation.
+- Validation locale V0.188 : **254/254 régressions**, **17/17 gates EAS**, **119 TS/TSX**, **918 clés EN**, audits continuité/hygiène/backend/release/feature PASS ; hygiène source **366 fichiers** ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 021**.
+
+## V0.187 — « Voir tout » dans Commander
+- Chaque carrousel conserve son aperçu limité à 8 cartes maximum.
+- Lorsqu’un carrousel contient davantage de résultats pertinents, un bouton **Voir tout** ouvre sa liste complète.
+- Le retour conserve le contexte Commander : adresse, filtres, position verticale et index des carrousels.
+- Aucun changement du classement naturel, du rayon 10 km, de la vérité livraison ou des règles sponsorisées.
+- Validation locale V0.187 : **252/252 régressions**, **17/17 gates EAS**, **118 TS/TSX**, **914 clés EN**, audits continuité/hygiène/backend/release/feature PASS.
+
+## V0.186 — release doctor avec preuve bêta physique
+- Le release doctor expose maintenant un stage séparé **Physical beta evidence**.
+- Il exige deux preuves indépendantes avant de considérer la bêta prouvée : 16 scénarios historiques + 53 scénarios Commander/LIA.
+- Une preuve absente, incomplète ou liée à une autre version reste **BLOCK** ; aucun contenu sensible de preuve n’est affiché par le doctor.
+- Aucun changement de règle produit ni de comportement runtime.
+
+## V0.185 — preuve bêta des 53 scénarios
+- Ajout d’un générateur de fichier de preuve pour la matrice Commander + LIA.
+- Ajout d’un audit distinct `feature:beta:audit` qui exige build réel, révision source, au moins deux appareils physiques et 53/53 scénarios PASS avec référence de preuve.
+- Ce gate reste volontairement hors de `verify` afin qu’une validation locale ne puisse jamais être confondue avec une bêta réelle.
+- Aucun changement de règle produit ni de comportement runtime.
+- Validation locale V0.185 : **248/248 régressions**, **17/17 gates EAS**, **118 TS/TSX**, **913 clés EN**, audits continuité/hygiène/backend/release/feature PASS.
+
+## V0.184 — matrice d’acceptation Commander + LIA
+- 53 scénarios versionnés couvrent localisation, livraison, carrousels, sponsorisation, LIA privée, Mémos/Favoris, réseau, RTL et accessibilité.
+- 33 invariants sont marqués critiques.
+- `npm run verify` contrôle désormais aussi la structure et la couverture de cette matrice.
+- Ce gate ne prétend jamais remplacer une vraie validation sur appareils.
+- Aucun comportement utilisateur existant n’est modifié.
+- Validation locale V0.184 : **246/246 régressions**, **17/17 gates EAS**, **118 TS/TSX** sans erreur de transpilation, **913 clés EN** avec parité, **53/53 scénarios** de matrice présents dont **33 critiques**, audits continuité/hygiène/backend/release/feature-acceptance PASS ; hygiène source **358 fichiers** ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 021**.
+
+## V0.183 — consentement et localisation non bloquants
+- Analytics, personnalisation publicitaire et localisation précise démarrent sans consentement accordé.
+- La localisation précise ne peut être utilisée qu’après accord explicite.
+- Refuser la localisation précise ne bloque pas Commander : l’adresse du foyer reste le fallback normal.
+- Aucune permission native n’est demandée automatiquement par ce checkpoint.
+- La télémétrie V0.182 exige désormais à la fois un provider explicite et un consentement analytics accordé.
+- Validation locale V0.183 : **244/244 régressions**, **17/17 gates EAS**, **118 TS/TSX** sans erreur de transpilation, **913 clés EN** avec parité, audits continuité/hygiène/backend/release PASS ; hygiène source **354 fichiers** ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 021**.
+
+## V0.182 — télémétrie commerciale minimale et privée
+- Le provider de télémétrie est désactivé par défaut et doit être branché explicitement.
+- Commander mesure uniquement des actions commerciales explicites : ouverture, fiche restaurant, clic sponsorisé et sortie vers une commande vérifiée.
+- Les métadonnées suivent une allowlist stricte ; les champs inconnus sont supprimés.
+- Aucun contenu de LIA, Mémo, confidence ou donnée sensible n’entre dans cette télémétrie.
+- Les impressions sponsorisées restent volontairement non branchées tant qu’une vraie mesure de visibilité n’existe pas.
+- Validation locale V0.182 : **241/241 régressions**, **17/17 gates EAS**, **116 TS/TSX** sans erreur de transpilation, **913 clés EN** avec parité, audits continuité/hygiène/backend/release PASS ; hygiène source **351 fichiers** ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 021**.
+
+## V0.181 — états Commander sans ambiguïté
+- Sans adresse active, Commander demande une adresse au lieu de lancer une recherche incomplète.
+- Hors ligne, Commander affiche un état explicite et ne présente aucune disponibilité ancienne comme actuelle.
+- Le retour de la connexion déclenche une nouvelle vérification provider automatiquement.
+- L’adresse du foyer reste inchangée : la règle de session V0.170 est conservée.
+- Aucun changement des règles de rayon 10 km, de livraison, de Favoris, de Mémos ou de sponsorisation.
+- Validation locale V0.181 : **239/239 régressions**, **17/17 gates EAS**, **115 TS/TSX** sans erreur de transpilation, **913 clés EN** avec parité, audits continuité/hygiène/backend/release PASS ; hygiène source **349 fichiers** ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 021**.
+
+## V0.180 — retour explicite depuis un Mémo vers son contexte
+- Un Mémo lié peut proposer **Ouvrir l’espace lié** uniquement après une action explicite de l’utilisateur.
+- Restaurant/Commander réutilisent Commander ; recette réutilise Recettes ; repas réutilise Planning ; courses réutilisent Courses ; famille réutilise Foyer.
+- Aucun nouveau flux parallèle n’est créé et aucun Mémo ne navigue automatiquement.
+- Les liens `other` restent informatifs uniquement.
+- Favori ≠ Mémo reste inchangé.
+- Validation locale V0.180 : **237/237 régressions**, **17/17 gates EAS**, **115 TS/TSX** sans erreur de transpilation, **909 clés EN** avec parité, audits continuité/hygiène/backend/release PASS ; hygiène source **348 fichiers** ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 021**.
+
+## V0.179 — Mémos liés sans confondre mémoire, Favoris et actions
+- Un Mémo peut conserver facultativement un lien structuré vers un restaurant, une recette, un repas, les courses, Commander, la famille ou un autre élément identifié.
+- Le lien conserve uniquement `kind`, `ref` et un libellé court ; aucun transcript de conversation ni confidence n’est ajouté aux Mémos.
+- Un Mémo sans lien reste parfaitement valide.
+- Le lien est affiché comme contexte informatif et ne lance aucune action automatiquement.
+- **Favori ≠ Mémo** reste strict : aucun Favori restaurant ne crée de Mémo et aucun Mémo ne crée de Favori.
+- Migration additive `202609160021_lia_memo_links.sql` ; RLS propriétaire existante inchangée.
+- Validation locale V0.179 : **235/235 régressions**, **17/17 gates EAS**, **115 TS/TSX** sans erreur de transpilation, **908 clés EN** avec parité, audits continuité/hygiène/backend/release PASS ; hygiène source **347 fichiers** ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 021**.
+
+## V0.178 — confidentialité contextuelle LIA
+- Un routeur dédié choisit entre voix, écran privé, notification privée et silence sans modifier la personnalité de LIA.
+- Une information sensible n’est jamais prononcée, y compris lorsque LIA est explicitement en mode table/social.
+- Hors écran, LIA peut envoyer un signal privé dont l’aperçu reste générique ; le texte sensible n’entre jamais dans le contenu de la notification.
+- L’inbox privée locale est séparée par propriétaire et bornée ; ouvrir le message révèle le détail dans l’app, pas sur l’écran verrouillé.
+- Une pause demandée continue à bloquer toute initiative proactive ; une interaction volontaire de l’utilisateur reste possible.
+- Aucune donnée privée/confidentielle n’est transmise au moteur publicitaire Commander.
+- Validation locale V0.178 : **232/232 régressions**, **17/17 gates EAS**, **115 TS/TSX** sans erreur de transpilation, **907 clés EN** avec parité, audits continuité/hygiène/backend/release PASS ; hygiène source **345 fichiers** ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 020**.
+
+## V0.177 — moteur commercial local désactivé par défaut
+- Un contrat de campagne sponsorisée locale est ajouté sans activer de régie ni campagne réelle.
+- L’éligibilité commerciale ne reçoit que des signaux Commander non sensibles : catégorie demandée, distance, calendrier de campagne et historique d’exposition sponsorisée.
+- Rayon campagne limité à **10 km maximum** ; budget, planning complexe et plafond global restent des décisions du provider/serveur de confiance.
+- Une campagne expirée, hors budget, hors rayon, hors fréquence ou non explicitement `sponsored=true` est rejetée.
+- Un moteur d’intercalage garantit qu’un sponsor n’est pas la première carte et qu’il est séparé par au moins deux cartes naturelles.
+- Une impression n’est enregistrée que par un appel explicite après visibilité réelle ; rien n’est compté au simple chargement des données.
+- Aucun contenu de confidence, Mémos, santé, relation ou donnée sensible n’entre dans ce moteur.
+- Validation locale V0.177 : **228/228 régressions**, **17/17 gates EAS**, **113 TS/TSX** sans erreur de transpilation, **905 clés EN** avec parité, audits continuité/hygiène/backend/release PASS ; hygiène source **342 fichiers** ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 020**.
+
+## V0.176 — abstraction multi-fournisseurs Commander
+- Plusieurs providers organiques peuvent être interrogés en parallèle sans mélanger l’inventaire sponsorisé au classement naturel.
+- Une panne isolée n’annule pas les autres sources ; si toutes échouent, l’échec reste explicite.
+- Dédoublonnage prudent par identité forte : source/id, téléphone exact normalisé ou nom+adresse normalisés.
+- La première source reste canonique ; les suivantes peuvent compléter des informations manquantes et des chemins de commande sans écraser silencieusement la vérité de livraison.
+- Plusieurs providers de livraison peuvent être configurés ; seuls les restaurants encore `unknown` passent au provider suivant.
+- Les chemins de commande peuvent conserver officiel / plateforme / téléphone avec la priorité déjà décidée, sans activer de service réel à ce checkpoint.
+- Validation locale V0.176 : **225/225 régressions**, **17/17 gates EAS**, **111 TS/TSX** sans erreur de transpilation, **905 clés EN** avec parité, audits continuité/hygiène/backend/release PASS ; hygiène source **339 fichiers** ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 020**.
+
+## V0.175 — fiche restaurant complète et retour Commander conservé
+- La fiche restaurant reste strictement fondée sur des données vérifiées : aucun lien de commande, numéro, frais, minimum ou image n’est inventé.
+- ETA en fourchette, frais de livraison et minimum de commande sont affichés uniquement lorsqu’ils sont fournis avec une devise explicite.
+- Un bouton **Appeler** n’apparaît que lorsqu’un numéro existe ; le bouton **Commander** reste conditionné à un `orderUrl` vérifié.
+- Les médias restent facultatifs ; aucune photo Google supplémentaire n’est demandée par ce checkpoint.
+- Au retour de la fiche, Commander conserve l’adresse active, la recherche, la catégorie, la position verticale et l’index de chaque carrousel.
+- Favoris, Mémos, classement naturel, sponsorisés et vérité de livraison restent inchangés.
+- Validation locale V0.175 : **221/221 régressions**, **17/17 gates EAS**, **110 TS/TSX** sans erreur de transpilation, **905 clés EN** avec parité, audits continuité/hygiène/backend/release PASS ; hygiène source **337 fichiers** ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 020**.
+
+## V0.174 — distance réelle et carrousel « À moins de 3 km »
+- Le provider de découverte calcule maintenant la distance réelle entre l’adresse active géocodée et chaque restaurant retourné.
+- Cette distance est transportée comme donnée facultative `distanceKm` et affichée sur les cartes, carrousels et fiches restaurant lorsqu’elle est disponible.
+- Commander ajoute le carrousel déjà décidé **« À moins de 3 km »**, trié par distance réelle.
+- La distance reste strictement distincte de la livraison : être proche ne transforme jamais `delivery=unknown` en `confirmed`.
+- Les providers sans distance restent compatibles ; aucun faux kilométrage n’est fabriqué côté UI.
+
+## V0.173 — vérification de livraison séparée de la découverte
+- Commander possède une troisième frontière provider dédiée à la **livraison réelle vers l’adresse active**.
+- La découverte d’un restaurant ne suffit jamais à confirmer sa livraison : le provider de livraison doit répondre explicitement `confirmed`, `unknown` ou `unavailable`.
+- Un résultat `unavailable` est retiré ; une réponse absente ou un provider indisponible ne devient jamais `confirmed`.
+- Le provider de livraison ne peut pas créer de nouveaux restaurants : il enrichit uniquement les établissements déjà découverts par leur identifiant.
+- ETA, frais, minimum de commande et lien de commande peuvent être ajoutés uniquement par une réponse de livraison vérifiée ou conservés s’ils étaient déjà fournis par une source vérifiée.
+- Aucun service de livraison réel n’est branché à ce checkpoint : la nouvelle frontière reste inactive par défaut.
+- Validation locale V0.173 : **215/215 régressions**, **17/17 gates EAS**, **110 TS/TSX** sans erreur de transpilation, **897 clés EN** avec parité, audits continuité/hygiène/backend/release PASS ; hygiène source **335 fichiers** ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 020**.
+
+## V0.172 — découverte restaurants réelle prête côté serveur
+- Commander possède maintenant un provider **Google Places API (New)** derrière l’Edge Function authentifiée `commander-search`, tout en gardant le provider sponsorisé dans une frontière séparée.
+- La clé Google reste exclusivement côté serveur (`GOOGLE_MAPS_API_KEY`) ; le mobile ne reçoit qu’un interrupteur de provider `EXPO_PUBLIC_COMMANDER_LIVE_PROVIDER=supabase-edge`.
+- Le provider est **désactivé par défaut** : sans activation Supabase + Edge déployée/configurée, Commander continue de ne rien inventer.
+- Le serveur géocode l’adresse active puis recherche uniquement des restaurants, avec rayon reclampé à **10 km maximum** côté serveur.
+- Google sert uniquement à la **découverte** : chaque résultat reste `delivery=unknown`, `orderUrl=null`, et aucun restaurant n’est présenté comme livrable sans source dédiée.
+- Les résultats Google affichent l’attribution **Google Maps** ; aucune photo ni review Google n’est demandée à ce checkpoint.
+- Les Favoris Google conservent seulement l’identité provider/Place ID ; la migration `202609160020_google_place_favorite_storage.sql` empêche le stockage durable du nom/catégories Google.
+- Le classement naturel et l’inventaire sponsorisé passent par deux providers distincts ; aucun sponsor n’apparaît sans provider commercial vérifié.
+- Validation locale V0.172 : **212/212 régressions**, **17/17 gates EAS**, **110 TS/TSX** sans erreur de transpilation, **897 clés EN** avec parité, audits continuité/hygiène/backend/release PASS ; hygiène source **334 fichiers** ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 020**. Aucun appel Google réel, déploiement Edge, secret distant, build Expo installé ou appareil physique n’est revendiqué.
+
+## V0.171 — Favoris restaurants privés dans Commander
+- Un restaurant vérifié peut être ajouté ou retiré des **Favoris** depuis sa fiche Commander.
+- **Favori ≠ Mémo** : les favoris restent un état restaurant privé et ne créent jamais un Mémo LIA.
+- En mode démo, les favoris restent locaux ; avec Supabase, la migration `202609160019_commander_favorites.sql` applique une RLS strictement propriétaire (`user_id = auth.uid()`).
+- Le bouton Favori annonce correctement ses états `selected`, `disabled` et `busy`, et toute erreur est annoncée comme alerte accessible.
+- Aucune donnée restaurant n’est inventée : la fonction ne s’applique qu’à une fiche issue du provider Commander.
+- Validation locale V0.171 : **206/206 régressions**, **17/17 gates EAS**, **108 TS/TSX** sans erreur de transpilation, **897 clés EN** avec parité, audits continuité/hygiène/backend/release PASS ; backend **22 tables client / 17 RPC / 7 Realtime**, migrations **001 → 019**. Le build installé, Supabase distant et les appareils physiques ne sont pas revendiqués.
+
+## V0.170 — changer l’adresse dans Commander sans toucher au foyer
+- Commander affiche l’adresse active et permet de la remplacer pour la **session courante**.
+- Le changement de session ne réécrit jamais silencieusement `households.delivery_address`.
+- Une adresse vide ne peut pas être appliquée ; l’éditeur est accessible et expose son état ouvert/fermé.
+- Changer l’adresse recharge immédiatement le contexte du provider tout en conservant le plafond de 10 km.
+- Validation locale V0.170 : **204/204 régressions**, **17/17 gates EAS**, **107 TS/TSX** sans erreur de transpilation, **892 clés EN** avec parité, audits continuité/hygiène/backend/release PASS ; hygiène source **326 fichiers** ; backend **21 tables client / 17 RPC / 7 Realtime**, migrations **001 → 018**. Le build installé, Supabase distant et les appareils physiques ne sont pas revendiqués.
+
+## V0.169 — adresse de livraison du foyer pour Commander
+- Lors de la création du foyer, l’organisateur peut enregistrer une **adresse de livraison facultative** ; elle ne bloque jamais l’onboarding si elle reste vide.
+- L’adresse est persistée sur le foyer par la migration additive `202609160018_household_delivery_address.sql` et rechargée avec le foyer.
+- Commander reçoit cette adresse comme destination par défaut et conserve son plafond absolu de **10 km**.
+- Une interface de provider réelle est prête ; sans provider vérifié ou sans adresse, Commander retourne toujours zéro résultat plutôt que d’inventer une disponibilité.
+- Les règles famille, Mémos, LIA et la navigation historique restent inchangées.
+- Validation locale : **202/202 régressions**, **17/17 gates EAS**, **107 TS/TSX**, **883 clés EN**, audits continuité/hygiène/backend/release PASS ; hygiène source **325 fichiers**.
+
+## V0.168 — Commander devient navigable sans inventer de données
+- Le cœur V0.167 reste inchangé ; cette version complète uniquement la surface Commander déjà validée.
+- Les résultats vérifiés de 3 éléments ou plus peuvent être présentés en **carrousels horizontaux** avec swipe, points de pagination et auto-défilement lent.
+- Toute interaction tactile arrête l'auto-défilement ; la préférence système de réduction des animations le désactive aussi.
+- Avec seulement 1 ou 2 résultats utiles, Commander affiche une liste courte plutôt qu'un faux carrousel.
+- Une **fiche restaurant** affiche uniquement les informations effectivement disponibles et n'ouvre une commande que si un `orderUrl` vérifié est fourni.
+- Tant qu'aucun provider réel n'est connecté, `loadCommanderPlaces()` reste vide : aucun restaurant, horaire ou lien de commande n'est inventé.
+- Aucun onglet historique, règle famille, règle LIA ou logique métier antérieure n'est modifié.
+
+## V0.167 — LIA ajoute Mémos et Commander sans toucher au cœur existant
+- V0.166 reste la base fonctionnelle : aucun onglet historique ni flux métier existant n’est supprimé ou remplacé.
+- **Âge enfant facultatif** : laisser l’âge vide ne bloque plus la fiche famille ; si un âge est renseigné mais impossible, LIA le signale toujours. Un message LIA explique que connaître les âges aide simplement à situer les enfants dans la hiérarchie familiale.
+- Après la fiche famille, l’administrateur voit **une seule fois** la seconde présentation de LIA déjà validée ; son affichage est mémorisé localement.
+- **Mémos** devient un espace privé explicite : rien n’est enregistré automatiquement ; création, statut Réglé/Actif et suppression sont disponibles, avec stockage local en démo et table Supabase privée en production.
+- **Commander** est ajouté comme surface LIA indépendante, avec règle de rayon maximum **10 km**, catégories et comportement honnête : aucune disponibilité de restaurant n’est inventée tant qu’aucune source locale n’est connectée.
+- Commander et Mémos s’ouvrent depuis le panneau LIA ; le TabBar historique Planning / Recettes / Courses / Foyer reste inchangé.
+- Migration additive `202609160017_lia_memos_child_age_optional.sql` : table `lia_memos` avec RLS privée + remplacement contrôlé du RPC de fiche famille pour accepter un âge enfant nul.
+- Validation locale : **198/198 régressions**, **17/17 gates EAS**, **105 TS/TSX**, **858 clés EN**, audits continuité/hygiène/backend/release PASS ; hygiène source **320 fichiers**. Backend statique : **21 tables client / 17 RPC / 7 Realtime**, migrations **001 → 017**. Le build installé et les appareils physiques restent à prouver séparément.
+
+## V0.166 — LIA ouvre la fiche famille, veille à midi et respecte le silence
+- La création du foyer n'est plus un interrogatoire : LIA ouvre une **fiche famille unique** à remplir, avec organisateur, conjoint, enfants et autres personnes du foyer.
+- La fiche demande les informations structurées utiles : civilité, prénom, âge et téléphone ; le téléphone reste facultatif pour un enfant qui n'en a pas.
+- Avant validation, LIA signale obligatoirement les champs manquants, âges impossibles, numéros invalides, doublons de téléphone et liens familiaux manquants.
+- Une seule opération serveur transactionnelle `complete_household_family_setup` enregistre le profil et reconstruit le roster léger du nouveau foyer ; la migration 016 reste additive.
+- Si l'organisateur n'ouvre pas Notre Table, LIA peut envoyer un rappel local vers midi pour le déjeuner et le soir. Ouvrir l'app annule le rappel du jour et reprogramme les suivants.
+- L'organisateur peut mettre LIA en silence pour aujourd'hui, plusieurs jours ou jusqu'à nouvel ordre. **Aucune blague n'est faite au moment où le silence est demandé.**
+- L'humour n'est autorisé que lors d'un **retour volontaire avant la fin d'une pause minutée** ; une pause jusqu'à nouvel ordre n'entraîne pas de remarque comique.
+- La politique conversationnelle distingue la **confidente**, la **ménagère** et le mode combiné : un problème personnel peut déboucher sur une aide concrète ou un dîner pour recréer du lien seulement si cela aide réellement et si l'utilisateur ne l'a pas refusé.
+- Validation locale : **196/196 régressions**, **17/17 gates EAS**, **99 TS/TSX**, **818 clés EN**, audits continuité/hygiène/backend/release PASS ; hygiène source **312 fichiers**.
+- Backend statique : **20 tables client / 17 RPC / 7 Realtime**, migrations **001 → 016**.
+- Le vrai `tsc` installé, les bundles Expo, Supabase distant et les tests multi-appareils restent à prouver ; `node_modules` est absent de cet environnement.
+
+## V0.165 — LIA configure le foyer sans questionnaire
+- Les foyers déjà existants restent considérés comme configurés ; aucun ancien utilisateur n’est renvoyé dans l’onboarding.
+- Un nouveau foyer passe par deux questions seulement : le prénom de l’organisateur puis le nombre habituel de personnes à table.
+- Aucun abonnement n’est requis pour cette configuration et aucun membre premium n’est créé artificiellement avant paiement.
+- Le prénom et la taille habituelle du repas sont enregistrés côté serveur dans une opération contrôlée réservée à l’administrateur du foyer.
+- La taille habituelle devient immédiatement la base des portions du premier repas, même si les autres personnes n’ont pas encore de compte.
+- Migration additive `202609160015_household_lia_setup.sql` ; nouveaux foyers `setup_completed=false`, anciens foyers protégés par défaut `true`.
+- Validation locale : **193/193 régressions**, **17/17 gates EAS**, **96 TS/TSX**, **767 clés EN**, audits continuité/hygiène/backend/release PASS ; hygiène source **307 fichiers**.
+- Backend statique : **20 tables client / 16 RPC / 7 Realtime**, migrations **001 → 015**.
+- Le vrai build installé Expo/Supabase distant et les tests multi-appareils restent à prouver ; `node_modules` est absent de cet environnement.
+
+## V0.164 — LIA prend la parole après le choix de langue
+- Le premier écran reste le choix explicite de langue ; aucun compte, foyer ou paywall ne passe avant.
+- À l’étape suivante, LIA peut se présenter oralement avec la voix native locale du téléphone, donc sans coût TTS cloud obligatoire.
+- La présentation automatique est tentée une seule fois après le choix de langue et reste silencieuse si VoiceOver/TalkBack est actif ; un bouton visible permet toujours Écouter/Arrêter.
+- LIA annonce clairement la suite : création du compte puis du foyer. Le paiement n’est pas placé dans ce premier contact.
+- Quitter l’onboarding ou continuer coupe immédiatement la parole de LIA pour éviter tout son orphelin.
+- Validation locale : **191/191 régressions**, **17/17 gates EAS**, **95 TS/TSX**, **751 clés EN**, audits continuité/hygiène/backend/release PASS ; hygiène source **304 fichiers**.
+- Le vrai build natif et l’écoute sur appareil physique restent à prouver ; `node_modules` est absent de cet environnement.
+
+## V0.163 — laboratoire d’identité vocale de LIA
+
+- Le panneau LIA propose maintenant **trois voix candidates A / B / C** parmi les meilleures voix réellement disponibles sur l’appareil dans la langue courante.
+- Les trois candidates utilisent exactement la même phrase d’essai pour permettre une comparaison honnête.
+- Chaque candidate permet d’écouter les trois réactions prévues : sourire vocal, petit rire et rire bref.
+- Changer de voix révoque automatiquement toute validation précédente du rire.
+- Les réactions de rire sociales restent **désactivées par défaut** et ne peuvent être utilisées à table qu’après validation explicite dans le laboratoire vocal.
+- Les essais de rire actuels sont des prototypes rendus par le moteur vocal natif du téléphone ; ils ne sont pas présentés comme des rires studio définitifs.
+- Aucun coût TTS cloud supplémentaire n’est introduit.
+- Le vrai choix final dépend d’une écoute sur appareil physique ; ce checkpoint construit le mécanisme, il ne prétend pas avoir choisi la voix à la place de l’utilisateur.
+- Validation locale : **189/189 régressions**, **17/17 gates EAS**, **95 TS/TSX**, **745 clés EN**, audits continuité/hygiène/backend/release PASS ; hygiène source **303 fichiers**.
+
+## V0.162 — oreille Android YAMNet prête, activation encore fail-closed
+
+- Le module Android de LIA intègre maintenant le chemin réel de classification audio locale avec **TensorFlow Lite Task Audio 0.4.4** et **YAMNet LiteRT/TFLite**.
+- YAMNet classifie localement les événements audio ; le runtime ne remonte à LIA que `label + score + timestamp`, jamais le flux audio de la pièce.
+- Le modèle attendu est verrouillé par provenance : `google/yamnet` `classification-tflite` v1, **4 126 810 octets**, SHA-256 `10c95ea3eb9a7bb4cb8bddf6feb023250381008177ac162ce169694d05c317de`, licence Apache-2.0.
+- Nouveau script `npm run vendor:yamnet -- /chemin/vers/1.tflite` : il refuse tout modèle dont la taille ou le SHA diffère avant copie dans les assets Android.
+- **Fail-closed volontaire** : le fichier modèle n'a pas pu être téléchargé dans cet environnement ; Android conserve donc `RECORD_AUDIO` bloqué et `isSoundAnalysisAvailable()` reste faux tant que modèle + permission finale ne sont pas réellement packagés.
+- La voix Android `TextToSpeech` reste indépendante et disponible dans le contrat natif.
+- Aucun upload cloud n'est ajouté au chemin d'écoute sociale.
+- Contrat détaillé : `docs/LIA_ANDROID_AUDIO_V0162.md`.
+- Validation locale : **187/187 régressions**, **17/17 gates EAS**, **95 TS/TSX**, **728 clés EN**, audits continuité/hygiène/backend/release PASS ; hygiène source **302 fichiers**.
+- Le vrai build Gradle/Expo/EAS et les tests sur Android physique restent à faire avant toute activation du micro Android.
+
+## V0.161 — LIA a une voix native et une oreille locale sur iPhone
+
+- Nouveau module Expo local `modules/lia-sound-analysis` : aucun service TTS cloud obligatoire pour faire parler LIA.
+- iOS utilise `AVSpeechSynthesizer`; Android utilise `TextToSpeech`. LIA peut tester et changer parmi les voix installées compatibles avec la langue de l'appareil.
+- iOS ajoute une oreille sociale locale avec `SNAudioStreamAnalyzer` + `SNClassifySoundRequest` : le rire et la reprise de parole sont classifiés sur l'appareil, sans fichier audio ambiant envoyé au cloud.
+- L'écoute reste strictement opt-in : Cuisine/À table puis bouton explicite puis permission micro système. Elle ne démarre jamais automatiquement.
+- Si un humain reprend la parole pendant que LIA parle, sa voix est coupée immédiatement. Un rire isolé ne suffit pas à déclencher une réaction.
+- Android sait déjà faire parler LIA, mais son classificateur local de rire n'est pas encore intégré : `RECORD_AUDIO` y reste bloqué.
+- Contrat détaillé : `docs/LIA_AUDIO_V0161.md`.
+- Le code natif n'est pas encore prouvé sur appareil : vrai prebuild/build iOS/Android et tests physiques obligatoires avant de déclarer la fonction matériellement validée.
+- Validation locale : **186/186 régressions**, **17/17 gates EAS**, **95 TS/TSX**, **728 clés EN**, audits continuité/hygiène/backend/release PASS ; hygiène source **296 fichiers**.
+
+## V0.160 — LIA participe socialement sans devenir envahissante
+
+- Nouveau moteur `src/lib/liaSocialPresence.ts` : LIA peut choisir `smile`, `chuckle` ou `laugh` après un rire, mais uniquement dans une session sociale explicitement active et consentie.
+- Priorité absolue à l'humain : parole active, interruption ou reprise de conversation annulent immédiatement toute réaction sociale en attente.
+- Pas de rire mécanique : confiance minimale, vrai silence après le rire, cooldown de 45 s et budget maximal de réactions selon le niveau social.
+- Contexte sensible = aucune réaction ludique. Niveau Discrète = aucun rire vocal.
+- Contrat privacy local-first : aucun audio ambiant envoyé au cloud pour détecter le rire ; si le classificateur local n'est pas disponible, la fonction reste inactive.
+- Chemin natif retenu : Apple Sound Analysis sur iOS et MediaPipe Audio Classifier sur Android. Le module natif n'est pas encore branché dans ce checkpoint, donc `RECORD_AUDIO` reste volontairement bloqué.
+- Document de référence : `docs/LIA_SOCIAL_AUDIO_V0160.md`.
+- Validation locale : **183/183 régressions**, **17/17 gates EAS**, **92 TS/TSX**, **716 clés EN**, audits continuité/hygiène/backend/release PASS ; hygiène source **285 fichiers**.
+
+## V0.159 — découverte LIA à coût plafonné
+
+- La présentation initiale de LIA avant authentification est **locale/scriptée** : un téléchargement qui ne devient jamais compte ne nécessite aucun appel IA payant.
+- Après authentification et avant abonnement, le cloud de découverte dispose d’un budget d’acquisition interne maximal de **0,05 $ à vie par compte**.
+- À **0,035 $**, la découverte passe en routage économique ; à **0,05 $**, les appels cloud gratuits s’arrêtent mais l’expérience locale continue.
+- Nouveau moteur `src/lib/liaDiscovery.ts` : modes `local_intro`, `cloud_normal`, `cloud_economy`, `local_only`, `subscriber`.
+- Nouveau garde serveur transactionnel `reserve_lia_discovery_budget` : plafond 50 000 micro-USD, verrou concurrent, `request_id` idempotent, exécution réservée au `service_role`.
+- Risque théorique : 90 000 comptes gratuits arrivant tous au plafond = **4 500 $** d’IA de découverte, au lieu d’un coût non borné.
+- Le fournisseur IA cloud n’est pas encore branché dans cette version : le contrat économique est prêt, mais aucun appel fournisseur n’est prétendu opérationnel.
+- Validation locale : **180/180 régressions**, **17/17 gates EAS**, **91 TS/TSX**, **716 clés EN**, audits continuité/hygiène/backend/release PASS ; hygiène source **282 fichiers**.
+
+## V0.158 — langue d’abord, puis LIA
+
+- Le premier écran du premier lancement est désormais le choix explicite de langue.
+- La langue de l’appareil ne sert que de présélection ; le choix utilisateur est mémorisé séparément.
+- Après validation, LIA se présente immédiatement avant authentification et création du foyer.
+- V0.158 expose uniquement FR / EN / ES / HE, qui sont les langues complètement localisées aujourd’hui ; IT / PT-BR / AR restent prévues mais masquées tant que la localisation complète n’est pas prête.
+- Aucun microphone/TTS n’est activé automatiquement par ce parcours.
+
+## V0.157 — abonnement durable et budget LIA
+
+- Une seule **LIA complète** : aucun modèle de LIA différent selon la durée choisie.
+- Trois durées de référence validées pour le modèle économique : **6,99 $ / mois**, **34,99 $ / 6 mois**, **59,99 $ / an**.
+- En production, l’écran n’utilise jamais ces montants comme fallback : les prix localisés proviennent obligatoirement d’Apple/Google via l’adaptateur RevenueCat.
+- Nouveau moteur `src/lib/liaEconomics.ts` : estimation du coût texte/recherche/voix/TTS/image à partir de tarifs fournis, cible interne **1 $ / foyer / mois**, et paliers `normal` / `economize` / `protect_margin`.
+- Le garde de marge ne coupe jamais une aide essentielle : il change d’abord le routage technique et refuse seulement les routes coûteuses non essentielles.
+- Projection explicite à l’échelle : 10 000 foyers à 1 $ de coût moyen LIA = 10 000 $/mois de coût IA estimé.
+- Les tarifs fournisseur ne sont pas codés en dur dans l’app afin de pouvoir être mis à jour sans publier une nouvelle version.
+
+## V0.156 — LIA, la Confidente
+
+- **LIA** devient la couche intelligente permanente de Notre Table : un seul point d’accès global, au-dessus des onglets, jamais un chatbot isolé dans une page.
+- Première surface fonctionnelle ajoutée : états **Cuisine / À table / Discrète**, niveau social **Discrète / Présente / Animatrice**, pause immédiate et message clair sur micro/mémoire.
+- Nouveau moteur de politique `src/lib/lia.ts` : une question n’est posée que si elle peut changer une décision ; LIA se tait lorsqu’un humain parle et attend davantage en mode table qu’en cuisine.
+- Mémoire structurée prévue avec visibilité `organizer`, `member_private` ou `household`, confirmation et dates de validité. Les informations personnelles temporaires ne deviennent jamais des vérités permanentes.
+- Le contrat complet couvre : profils nutritionnels individuels, invités, « Je m’en occupe », restes, chronos, mode cuisine vocal, mode à table, politesse conversationnelle, humour renouvelable, anecdotes, notifications et accès extérieur contrôlé.
+- Document de référence : `docs/LIA_CONFIDANTE_V0156.md`.
+
+## V0.156 — cuisiner avec ce que j’ai, photos cumulées
+
+- Nouvelle entrée **Avec ce que j’ai** depuis Recettes/Cuisiner, sans ajouter d’onglet principal.
+- Deux sources simples : photo du frigo/placard ou stock déjà enregistré.
+- Les photos sont **cumulatives** : étagères, porte, bacs et placard peuvent être photographiés séparément ; chaque nouvelle vue enrichit la même analyse et ne remplace jamais la précédente.
+- Les doublons reconnus sont fusionnés par ingrédient ; tous les produits uniques restent pris en compte pour le matching, même si l’écran n’en montre qu’un résumé compact.
+- Le moteur limite les propositions à **3 recettes maximum** pour préserver la simplicité.
+- Le parcours est **conversationnel** : après une photo, Notre Table demande si l’organisateur veut compléter, reprendre une photo ou écrire un produit à la main.
+- Les détections incertaines ne sont jamais utilisées silencieusement pour les recettes : un Oui/Non rapide les confirme ou les retire.
+- **Cohérence du dîner** : aucune idée « pour ce soir » n’est affichée tant que le nombre de convives n’est pas connu. Notre Table réutilise d’abord le dîner déjà planifié ; sinon elle propose « Demander à la famille » ou une saisie directe du nombre.
+- Le matching recette est désormais **quantitatif** : les quantités de recette sont recalculées selon le nombre de convives et le résultat distingue `suffisant`, `insuffisant` et `quantité à confirmer`. Une quantité non lisible sur photo n’est jamais inventée.
+- Validation locale après intégration LIA : **170/170 régressions**, audit projet PASS, audit hygiène source PASS, **88 TS/TSX transpillés sans erreur** et **709 clés EN** avec parité.
+- V0.155 reste le checkpoint officiel importé/verrouillé ; V0.156 est la ligne produit en cours de validation.
 
 ## V0.155 — lockfile npm réel et reproductible
 

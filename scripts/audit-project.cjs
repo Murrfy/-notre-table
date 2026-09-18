@@ -129,12 +129,18 @@ if(!planningText.includes('onOpenShopping'))failures.push('Daily-focus invariant
 if(!planningText.includes('const [mealDetailsOpen,setMealDetailsOpen]=useState(false)'))failures.push('Meal-planning friction invariant: optional meal details must stay collapsed by default.');
 if(planningText.includes("locale.t('planning.freeMeal')"))failures.push('Meal-planning friction invariant: do not restore the redundant free-meal selector; the direct meal text field is sufficient.');
 if(!/currentEditingMeal\?<Pressable\b[^>]*\bonPress=\{remove\}/.test(planningText))failures.push('Meal-planning friction invariant: delete must only appear when editing an existing meal.');
-// First-contact guardrails: onboarding is a single promise screen, not a tutorial carousel.
+// First-contact guardrails: language is chosen before LIA introduces Notre Table.
+const languageFirstText=fs.readFileSync(path.join(srcRoot,'screens','LanguageFirstScreen.tsx'),'utf8');
+const appEntryText=fs.readFileSync(path.join(root,'App.tsx'),'utf8');
+if(!languageFirstText.includes('supportedLanguages.map'))failures.push('First-contact invariant: the first screen must expose the supported language choices.');
+if(!languageFirstText.includes('accessibilityRole="radio"')||!languageFirstText.includes('accessibilityState={{checked:active}}'))failures.push('First-contact invariant: language selection must remain an accessible single-choice control.');
+if(!appEntryText.includes('if(!languageChosen)')||!appEntryText.includes('<LanguageFirstScreen'))failures.push('First-contact invariant: explicit language selection must happen before LIA onboarding.');
+if(!appEntryText.includes('await locale.setLanguage(language);await markLanguageChosen();'))failures.push('First-contact invariant: first-language choice must be persisted before continuing.');
 const onboardingText=fs.readFileSync(path.join(srcRoot,'screens','OnboardingScreen.tsx'),'utf8');
-if(onboardingText.includes('useState('))failures.push('First-contact invariant: onboarding must stay one-step and must not reintroduce local page state.');
-if(!onboardingText.includes('TableMark'))failures.push('First-contact invariant: onboarding must keep the original shared-table identity mark.');
+if(/\b(setStep|currentStep|pageIndex|setPage|onboardingPage)\b/.test(onboardingText))failures.push('First-contact invariant: LIA introduction must stay one-step and must not reintroduce carousel/page navigation state.');
+if(!onboardingText.includes('TableMark')||!onboardingText.includes('liaBadge'))failures.push('First-contact invariant: LIA introduction must keep Notre Table identity and visible LIA identity.');
 if(/🗓️|🛒|🍲|🍽️|👨‍🍳/.test(onboardingText))failures.push('First-contact invariant: onboarding must not use platform emoji as primary product identity.');
-if(!onboardingText.includes("'onboarding.promise1'")||!onboardingText.includes("'onboarding.promise2'")||!onboardingText.includes("'onboarding.promise3'"))failures.push('First-contact invariant: onboarding must keep the three concise product promises.');
+if(!onboardingText.includes("'onboarding.promise1'")||!onboardingText.includes("'onboarding.promise2'")||!onboardingText.includes("'onboarding.promise3'"))failures.push('First-contact invariant: LIA introduction must keep three concise help promises.');
 const householdEntryText=fs.readFileSync(path.join(srcRoot,'screens','HouseholdScreen.tsx'),'utf8');
 if(householdEntryText.includes('styles.preview'))failures.push('First-contact invariant: household entry must not restore the redundant educational preview card.');
 
@@ -314,7 +320,7 @@ for(const permission of ['android.permission.SCHEDULE_EXACT_ALARM','android.perm
 }
 if(packageJson?.scripts?.regression!=='node scripts/regression-tests.cjs')failures.push('Quality invariant: regression test script must remain wired in package.json.');
 if(packageJson?.scripts?.preflight!=='node scripts/environment-preflight.cjs')failures.push('Quality invariant: environment preflight must remain wired in package.json.');
-if(packageJson?.scripts?.verify!=='npm run preflight && npm run continuity:audit && npm run source:hygiene:audit && npm run backend:audit && npm run release:audit && npm run release:gate-test && npm run audit && npm run regression')failures.push('Quality invariant: verify must run preflight, continuity audit, source hygiene audit, backend contract audit, release audit, EAS release gate tests, product audit and regression tests.');
+if(packageJson?.scripts?.verify!=='npm run preflight && npm run continuity:audit && npm run source:hygiene:audit && npm run backend:audit && npm run release:audit && npm run release:gate-test && npm run feature:acceptance:audit && npm run audit && npm run regression')failures.push('Quality invariant: verify must run preflight, continuity audit, source hygiene audit, backend contract audit, release audit, EAS release gate tests, feature acceptance audit, product audit and regression tests.');
 if(packageJson?.scripts?.['validate:expo-deps']!=='expo install --check')failures.push('Quality invariant: Expo SDK dependency compatibility check must remain wired in package.json.');
 if(packageJson?.scripts?.['validate:installed']!=='npm run validate:expo-deps && npm run typecheck && npm run verify && npm run validate:bundle:android && npm run validate:bundle:ios')failures.push('Quality invariant: installed validation must include Expo dependency check, typecheck, verify and iOS/Android JS bundle exports in order.');
 for(const required of ["alter table public.profiles add column if not exists avatar_path text","'profile-avatars','profile-avatars',false",'create policy profile_avatars_select','create policy profile_avatars_insert','create policy profile_avatars_delete']){
@@ -529,7 +535,7 @@ for(const file of pressableFiles){
     if(hidden)hiddenPressableCount++;
   }
 }
-if(pressableCount!==117)failures.push(`Accessibility invariant: expected 117 Pressable controls, found ${pressableCount}; classify new controls explicitly.`);
+if(pressableCount!==197)failures.push(`Accessibility invariant: expected 197 Pressable controls, found ${pressableCount}; classify new controls explicitly.`);
 if(hiddenPressableCount!==1)failures.push(`Accessibility invariant: expected one intentionally hidden Pressable backdrop, found ${hiddenPressableCount}.`);
 
 let disabledPressableCount=0;
@@ -541,7 +547,7 @@ for(const file of pressableFiles){
     if(!/accessibilityState=\{\{[^}]*\bdisabled\s*:/.test(tag))failures.push(`Accessibility invariant: disabled Pressable is missing accessibilityState.disabled in ${path.relative(root,file)}.`);
   }
 }
-if(disabledPressableCount!==32)failures.push(`Accessibility invariant: expected 32 disabled Pressable controls, found ${disabledPressableCount}; classify new controls explicitly.`);
+if(disabledPressableCount!==57)failures.push(`Accessibility invariant: expected 57 disabled Pressable controls, found ${disabledPressableCount}; classify new controls explicitly.`);
 
 let busyPressableCount=0;
 for(const file of pressableFiles){
@@ -550,7 +556,7 @@ for(const file of pressableFiles){
     if(/accessibilityState=/.test(tag)&&/\bbusy\s*:/.test(tag))busyPressableCount++;
   }
 }
-if(busyPressableCount!==21)failures.push(`Accessibility invariant: expected 21 Pressable controls with busy state, found ${busyPressableCount}; classify asynchronous controls explicitly.`);
+if(busyPressableCount!==38)failures.push(`Accessibility invariant: expected 38 Pressable controls with busy state, found ${busyPressableCount}; classify asynchronous controls explicitly.`);
 
 let selectedPressableCount=0;
 for(const file of pressableFiles){
@@ -559,7 +565,7 @@ for(const file of pressableFiles){
     if(/accessibilityState=/.test(tag)&&/\bselected\b/.test(tag))selectedPressableCount++;
   }
 }
-if(selectedPressableCount!==26)failures.push(`Accessibility invariant: expected 26 Pressable controls with selected state, found ${selectedPressableCount}; classify persistent selection controls explicitly.`);
+if(selectedPressableCount!==37)failures.push(`Accessibility invariant: expected 37 Pressable controls with selected state, found ${selectedPressableCount}; classify persistent selection controls explicitly.`);
 
 const notificationSettings=fs.readFileSync(path.join(root,'src','screens','NotificationSettingsScreen.tsx'),'utf8');
 if(!notificationSettings.includes('const saveInFlight=useRef(false);')||!notificationSettings.includes('if(saveInFlight.current)return;')) failures.push('Notification invariant: reminder save must retain a synchronous single-flight guard.');
@@ -620,7 +626,7 @@ for(const file of pressableFiles){
     if(/accessibilityState=/.test(tag)&&/\bexpanded\s*:/.test(tag))expandedPressableCount++;
   }
 }
-if(expandedPressableCount!==7)failures.push(`Accessibility invariant: expected 7 disclosure controls with expanded state, found ${expandedPressableCount}; classify expandable controls explicitly.`);
+if(expandedPressableCount!==13)failures.push(`Accessibility invariant: expected 13 disclosure controls with expanded state, found ${expandedPressableCount}; classify expandable controls explicitly.`);
 
 let textInputCount=0;
 for(const file of pressableFiles){
@@ -630,7 +636,7 @@ for(const file of pressableFiles){
     if(!/\baccessibilityLabel=/.test(tag))failures.push(`Accessibility invariant: TextInput is missing accessibilityLabel in ${path.relative(root,file)}.`);
   }
 }
-if(textInputCount!==24)failures.push(`Accessibility invariant: expected 24 TextInput controls, found ${textInputCount}; label new fields explicitly.`);
+if(textInputCount!==38)failures.push(`Accessibility invariant: expected 38 TextInput controls, found ${textInputCount}; label new fields explicitly.`);
 const authInputSource=fs.readFileSync(path.join(root,'src','screens','AuthScreen.tsx'),'utf8');
 const recoveryInputSource=fs.readFileSync(path.join(root,'src','screens','PasswordRecoveryScreen.tsx'),'utf8');
 const householdInputSource=fs.readFileSync(path.join(root,'src','screens','HouseholdScreen.tsx'),'utf8');
@@ -644,7 +650,7 @@ for(const file of accessibilitySourceFiles){
   const source=fs.readFileSync(file,'utf8');
   accessibleProgressCount+=(source.match(/<ActivityIndicator\b[^>]*accessibilityRole=[\'"]progressbar[\'"][^>]*accessibilityLabel=\{locale\.t\([\'"]common\.loading[\'"]\)\}/g)||[]).length;
 }
-if(accessibleProgressCount!==14) failures.push(`Accessibility invariant: expected 14 standalone accessible progress indicators, found ${accessibleProgressCount}; classify new loaders explicitly.`);
+if(accessibleProgressCount!==19) failures.push(`Accessibility invariant: expected 19 standalone accessible progress indicators, found ${accessibleProgressCount}; classify new loaders explicitly.`);
 const notificationSettingsSource=fs.readFileSync(path.join(root,'src','screens','NotificationSettingsScreen.tsx'),'utf8');
 if(!notificationSettingsSource.includes("try{\n      await saveNotificationPreferences(prefs);")) failures.push('Notification resilience invariant: settings save must catch storage/native scheduling failures.');
 if(!notificationSettingsSource.includes("setError(locale.t('notifications.scheduleError'))")) failures.push('Notification resilience invariant: settings save must surface localized scheduling failure.');

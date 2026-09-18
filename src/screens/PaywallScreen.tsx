@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, radius } from '../theme';
-import { AccessState, trialDaysRemaining } from '../services/subscription';
+import { AccessState, SUBSCRIPTION_REFERENCE_PRICES_USD, SubscriptionBillingPeriod, trialDaysRemaining } from '../services/subscription';
 import { useLocale } from '../context/LocaleContext';
 import { runtimeConfig } from '../lib/runtimeConfig';
 
@@ -13,7 +13,7 @@ const featureKeys = [
   ['🛡️','paywall.featurePreferences','paywall.featurePreferencesDesc'],
 ] as const;
 
-type Billing='monthly'|'annual';
+type Billing=SubscriptionBillingPeriod;
 
 export type PaywallStorePackage={
   localizedPrice:string;
@@ -22,12 +22,13 @@ export type PaywallStorePackage={
 
 export type PaywallStoreOffer={
   monthly?:PaywallStorePackage;
+  semiannual?:PaywallStorePackage;
   annual?:PaywallStorePackage;
   restorePurchases:()=>Promise<void>;
 };
 
 /**
- * Preview/development may show the French business-model reference prices.
+ * Preview/development may show the business-model reference prices in USD.
  * Production must only render localized prices supplied by the active Store
  * through the real RevenueCat adapter. No FX conversion or fallback price is
  * allowed in a shipped build.
@@ -41,15 +42,21 @@ export function PaywallScreen({ access, demo=false, onClose, onStartTrial, store
   const billingInFlight=useRef(false);
   const active=access.plan==='trial'||access.plan==='family';
   const production=runtimeConfig.environment==='production';
-  const monthlyReference=useMemo(()=>locale.formatCurrency(4.99,'EUR'),[locale.languageTag]);
-  const annualReference=useMemo(()=>locale.formatCurrency(39.99,'EUR'),[locale.languageTag]);
-  const monthlyEquivalent=useMemo(()=>locale.formatCurrency(39.99/12,'EUR'),[locale.languageTag]);
+  const monthlyReference=useMemo(()=>locale.formatCurrency(SUBSCRIPTION_REFERENCE_PRICES_USD.monthly,'USD'),[locale.languageTag]);
+  const semiannualReference=useMemo(()=>locale.formatCurrency(SUBSCRIPTION_REFERENCE_PRICES_USD.semiannual,'USD'),[locale.languageTag]);
+  const annualReference=useMemo(()=>locale.formatCurrency(SUBSCRIPTION_REFERENCE_PRICES_USD.annual,'USD'),[locale.languageTag]);
+  const semiannualEquivalent=useMemo(()=>locale.formatCurrency(SUBSCRIPTION_REFERENCE_PRICES_USD.semiannual/6,'USD'),[locale.languageTag]);
+  const annualEquivalent=useMemo(()=>locale.formatCurrency(SUBSCRIPTION_REFERENCE_PRICES_USD.annual/12,'USD'),[locale.languageTag]);
   const monthlyPrice=production?storeOffer?.monthly?.localizedPrice:monthlyReference;
+  const semiannualPrice=production?storeOffer?.semiannual?.localizedPrice:semiannualReference;
   const annualPrice=production?storeOffer?.annual?.localizedPrice:annualReference;
-  const selectedPackage=billing==='annual'?storeOffer?.annual:storeOffer?.monthly;
-  const storeReady=!production||Boolean(storeOffer?.monthly&&storeOffer?.annual);
+  const packageByBilling:Record<Billing,PaywallStorePackage|undefined>={monthly:storeOffer?.monthly,semiannual:storeOffer?.semiannual,annual:storeOffer?.annual};
+  const selectedPackage=packageByBilling[billing];
+  const storeReady=!production||Boolean(storeOffer?.monthly&&storeOffer?.semiannual&&storeOffer?.annual);
   const cta=production?locale.t('paywall.subscribe'):locale.t(access.plan==='free'?'paywall.tryTrial':access.plan==='trial'?'paywall.trialCta':'paywall.activeCta');
-  const afterTrial=!production&&access.plan==='free'?locale.t(billing==='annual'?'paywall.afterTrialAnnual':'paywall.afterTrialMonthly',{price:billing==='annual'?annualReference:monthlyReference}):null;
+  const trialKey=billing==='annual'?'paywall.afterTrialAnnual':billing==='semiannual'?'paywall.afterTrialSemiannual':'paywall.afterTrialMonthly';
+  const trialPrice=billing==='annual'?annualReference:billing==='semiannual'?semiannualReference:monthlyReference;
+  const afterTrial=!production&&access.plan==='free'?locale.t(trialKey,{price:trialPrice}):null;
 
   const purchase=async()=>{
     if(active||busy||billingInFlight.current) return;
@@ -79,7 +86,7 @@ export function PaywallScreen({ access, demo=false, onClose, onStartTrial, store
     {access.plan==='trial'&&remaining>0?<View style={styles.trialBanner}><Text style={[styles.trialTitle,rtl&&styles.rtl]}>{locale.t('paywall.trialActive')}</Text><Text style={[styles.trialText,rtl&&styles.rtl]}>{locale.t('paywall.daysRemaining',{count:remaining})}</Text></View>:null}
 
     <View style={styles.compare}>
-      <View style={styles.compareHead}><Text style={styles.compareTitle}>{locale.t('paywall.free')}</Text><Text style={styles.comparePrice}>{locale.formatCurrency(0,'EUR')}</Text></View>
+      <View style={styles.compareHead}><Text style={styles.compareTitle}>{locale.t('paywall.free')}</Text><Text style={styles.comparePrice}>{locale.formatCurrency(0,'USD')}</Text></View>
       {(['paywall.free1','paywall.free2','paywall.free3','paywall.free4'] as const).map(key=><Text key={key} style={[styles.line,rtl&&styles.rtl]}>• {locale.t(key)}</Text>)}
     </View>
 
@@ -88,7 +95,8 @@ export function PaywallScreen({ access, demo=false, onClose, onStartTrial, store
       {!production?<Text style={[styles.reference,rtl&&styles.rtl]}>{locale.t('paywall.referencePrice')}</Text>:null}
       <View style={styles.billingRow}>
         <Pressable accessibilityRole="button" disabled={production&&!monthlyPrice} accessibilityState={{disabled:production&&!monthlyPrice,selected:billing==='monthly'}} onPress={()=>setBilling('monthly')} style={[styles.billing,billing==='monthly'&&styles.billingActive,production&&!monthlyPrice&&styles.billingDisabled]}><Text style={[styles.billingTitle,billing==='monthly'&&styles.billingTitleActive]}>{locale.t('paywall.monthly')}</Text><Text style={[styles.billingPrice,billing==='monthly'&&styles.billingPriceActive]}>{monthlyPrice??'—'}</Text>{!production?<Text style={[styles.billingMeta,billing==='monthly'&&styles.billingMetaActive]}>{locale.t('paywall.perMonth')}</Text>:null}</Pressable>
-        <Pressable accessibilityRole="button" disabled={production&&!annualPrice} accessibilityState={{disabled:production&&!annualPrice,selected:billing==='annual'}} onPress={()=>setBilling('annual')} style={[styles.billing,billing==='annual'&&styles.billingActive,production&&!annualPrice&&styles.billingDisabled]}><Text style={[styles.billingTitle,billing==='annual'&&styles.billingTitleActive]}>{locale.t('paywall.annual')}</Text><Text style={[styles.billingPrice,billing==='annual'&&styles.billingPriceActive]}>{annualPrice??'—'}</Text>{!production?<Text style={[styles.billingMeta,billing==='annual'&&styles.billingMetaActive]}>≈ {monthlyEquivalent}/{locale.t('paywall.perMonth')} · -33 %</Text>:null}</Pressable>
+        <Pressable accessibilityRole="button" disabled={production&&!semiannualPrice} accessibilityState={{disabled:production&&!semiannualPrice,selected:billing==='semiannual'}} onPress={()=>setBilling('semiannual')} style={[styles.billing,billing==='semiannual'&&styles.billingActive,production&&!semiannualPrice&&styles.billingDisabled]}><Text style={[styles.billingTitle,billing==='semiannual'&&styles.billingTitleActive]}>{locale.t('paywall.semiannual')}</Text><Text style={[styles.billingPrice,billing==='semiannual'&&styles.billingPriceActive]}>{semiannualPrice??'—'}</Text>{!production?<Text style={[styles.billingMeta,billing==='semiannual'&&styles.billingMetaActive]}>≈ {semiannualEquivalent}/{locale.t('paywall.perMonth')} · -17 %</Text>:null}</Pressable>
+        <Pressable accessibilityRole="button" disabled={production&&!annualPrice} accessibilityState={{disabled:production&&!annualPrice,selected:billing==='annual'}} onPress={()=>setBilling('annual')} style={[styles.billing,billing==='annual'&&styles.billingActive,production&&!annualPrice&&styles.billingDisabled]}><Text style={[styles.billingTitle,billing==='annual'&&styles.billingTitleActive]}>{locale.t('paywall.annual')}</Text><Text style={[styles.billingPrice,billing==='annual'&&styles.billingPriceActive]}>{annualPrice??'—'}</Text>{!production?<Text style={[styles.billingMeta,billing==='annual'&&styles.billingMetaActive]}>≈ {annualEquivalent}/{locale.t('paywall.perMonth')} · -28 %</Text>:null}</Pressable>
       </View>
       {production&&!storeReady?<Text style={[styles.storeUnavailable,rtl&&styles.rtl]}>{locale.t('paywall.storeUnavailable')}</Text>:null}
       {featureKeys.map(([icon,titleKey,descKey])=><View key={titleKey} style={styles.feature}><Text style={styles.icon}>{icon}</Text><View style={{flex:1}}><Text style={[styles.featureTitle,rtl&&styles.rtl]}>{locale.t(titleKey)}</Text><Text style={[styles.featureText,rtl&&styles.rtl]}>{locale.t(descKey)}</Text></View></View>)}
@@ -101,4 +109,4 @@ export function PaywallScreen({ access, demo=false, onClose, onStartTrial, store
   </ScrollView>;
 }
 
-const styles=StyleSheet.create({content:{padding:22,paddingTop:58,paddingBottom:42,backgroundColor:colors.cream,minHeight:'100%'},top:{alignItems:'flex-end'},close:{color:colors.sageDark,fontWeight:'800'},kicker:{marginTop:24,color:colors.sageDark,fontSize:11,fontWeight:'900',letterSpacing:1.6},title:{color:colors.ink,fontSize:34,lineHeight:39,fontWeight:'900',marginTop:8},subtitle:{color:colors.muted,fontSize:15,lineHeight:22,marginTop:10},trialBanner:{backgroundColor:colors.sageSoft,padding:14,borderRadius:radius.md,marginTop:18},trialTitle:{color:colors.sageDark,fontWeight:'900'},trialText:{color:colors.muted,fontSize:12,marginTop:3},compare:{marginTop:18,backgroundColor:colors.paper,borderWidth:1,borderColor:colors.border,borderRadius:radius.md,padding:17},familyCard:{borderColor:colors.sageBorder,backgroundColor:colors.sageCard},compareHead:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},compareTitle:{color:colors.ink,fontSize:20,fontWeight:'900'},comparePrice:{color:colors.muted,fontSize:16,fontWeight:'800'},familyTitle:{color:colors.sageDark,fontSize:21,fontWeight:'900'},best:{fontSize:9,fontWeight:'900',letterSpacing:.7,color:colors.sageDark,backgroundColor:colors.sageBadge,paddingHorizontal:9,paddingVertical:6,borderRadius:999},reference:{color:colors.muted,fontSize:9,marginTop:10},line:{color:colors.ink,fontSize:13,lineHeight:25},billingRow:{flexDirection:'row',gap:9,marginTop:10,marginBottom:11},billing:{flex:1,borderWidth:1,borderColor:colors.border,borderRadius:14,padding:12,backgroundColor:colors.paper},billingActive:{backgroundColor:colors.sageDark,borderColor:colors.sageDark},billingDisabled:{opacity:.5},billingTitle:{color:colors.muted,fontWeight:'800',fontSize:11},billingTitleActive:{color:colors.onAccentMuted},billingPrice:{color:colors.ink,fontWeight:'900',fontSize:18,marginTop:3},billingPriceActive:{color:colors.onAccent},billingMeta:{color:colors.muted,fontSize:9,marginTop:2},billingMetaActive:{color:colors.onAccentMuted},storeUnavailable:{color:colors.warningText,fontSize:10,lineHeight:15,fontWeight:'800',marginBottom:10},feature:{flexDirection:'row',gap:11,paddingVertical:10,borderTopWidth:1,borderTopColor:colors.sageBorder},icon:{fontSize:21},featureTitle:{color:colors.ink,fontSize:14,fontWeight:'900'},featureText:{color:colors.muted,fontSize:11,lineHeight:17,marginTop:2},cta:{backgroundColor:colors.sageDark,minHeight:56,borderRadius:16,alignItems:'center',justifyContent:'center',marginTop:20},ctaDisabled:{opacity:.55},ctaText:{color:colors.onAccent,fontSize:15,fontWeight:'900'},afterTrial:{color:colors.ink,fontSize:10,lineHeight:15,textAlign:'center',marginTop:9},note:{color:colors.muted,fontSize:10,lineHeight:15,textAlign:'center',marginTop:10},restore:{color:colors.sageDark,fontSize:11,fontWeight:'800',textAlign:'center',marginTop:20},restoreDisabled:{opacity:.45},rtl:{textAlign:'right',writingDirection:'rtl'}});
+const styles=StyleSheet.create({content:{padding:22,paddingTop:58,paddingBottom:42,backgroundColor:colors.cream,minHeight:'100%'},top:{alignItems:'flex-end'},close:{color:colors.sageDark,fontWeight:'800'},kicker:{marginTop:24,color:colors.sageDark,fontSize:11,fontWeight:'900',letterSpacing:1.6},title:{color:colors.ink,fontSize:34,lineHeight:39,fontWeight:'900',marginTop:8},subtitle:{color:colors.muted,fontSize:15,lineHeight:22,marginTop:10},trialBanner:{backgroundColor:colors.sageSoft,padding:14,borderRadius:radius.md,marginTop:18},trialTitle:{color:colors.sageDark,fontWeight:'900'},trialText:{color:colors.muted,fontSize:12,marginTop:3},compare:{marginTop:18,backgroundColor:colors.paper,borderWidth:1,borderColor:colors.border,borderRadius:radius.md,padding:17},familyCard:{borderColor:colors.sageBorder,backgroundColor:colors.sageCard},compareHead:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},compareTitle:{color:colors.ink,fontSize:20,fontWeight:'900'},comparePrice:{color:colors.muted,fontSize:16,fontWeight:'800'},familyTitle:{color:colors.sageDark,fontSize:21,fontWeight:'900'},best:{fontSize:9,fontWeight:'900',letterSpacing:.7,color:colors.sageDark,backgroundColor:colors.sageBadge,paddingHorizontal:9,paddingVertical:6,borderRadius:999},reference:{color:colors.muted,fontSize:9,marginTop:10},line:{color:colors.ink,fontSize:13,lineHeight:25},billingRow:{flexDirection:'row',gap:7,marginTop:10,marginBottom:11},billing:{flex:1,minWidth:0,borderWidth:1,borderColor:colors.border,borderRadius:14,paddingHorizontal:8,paddingVertical:11,backgroundColor:colors.paper},billingActive:{backgroundColor:colors.sageDark,borderColor:colors.sageDark},billingDisabled:{opacity:.5},billingTitle:{color:colors.muted,fontWeight:'800',fontSize:10},billingTitleActive:{color:colors.onAccentMuted},billingPrice:{color:colors.ink,fontWeight:'900',fontSize:16,marginTop:3},billingPriceActive:{color:colors.onAccent},billingMeta:{color:colors.muted,fontSize:8,lineHeight:11,marginTop:2},billingMetaActive:{color:colors.onAccentMuted},storeUnavailable:{color:colors.warningText,fontSize:10,lineHeight:15,fontWeight:'800',marginBottom:10},feature:{flexDirection:'row',gap:11,paddingVertical:10,borderTopWidth:1,borderTopColor:colors.sageBorder},icon:{fontSize:21},featureTitle:{color:colors.ink,fontSize:14,fontWeight:'900'},featureText:{color:colors.muted,fontSize:11,lineHeight:17,marginTop:2},cta:{backgroundColor:colors.sageDark,minHeight:56,borderRadius:16,alignItems:'center',justifyContent:'center',marginTop:20},ctaDisabled:{opacity:.55},ctaText:{color:colors.onAccent,fontSize:15,fontWeight:'900'},afterTrial:{color:colors.ink,fontSize:10,lineHeight:15,textAlign:'center',marginTop:9},note:{color:colors.muted,fontSize:10,lineHeight:15,textAlign:'center',marginTop:10},restore:{color:colors.sageDark,fontSize:11,fontWeight:'800',textAlign:'center',marginTop:20},restoreDisabled:{opacity:.45},rtl:{textAlign:'right',writingDirection:'rtl'}});

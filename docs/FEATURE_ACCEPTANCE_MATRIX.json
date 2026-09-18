@@ -1,0 +1,324 @@
+{
+  "format_version": 1,
+  "checkpoint": "V0.184",
+  "scenarios": [
+    {
+      "id": "location.household_default",
+      "group": "location",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "location.session_override",
+      "group": "location",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "location.no_address",
+      "group": "location",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "location.precise_consent",
+      "group": "location",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "location.precise_denied_fallback",
+      "group": "location",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "location.current_choice_explicit",
+      "group": "location",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "location.address_change_reloads",
+      "group": "location",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "location.no_movement_history",
+      "group": "location",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "delivery.radius_10km",
+      "group": "delivery",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "delivery.near_not_delivery",
+      "group": "delivery",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "delivery.confirmed_only_from_provider",
+      "group": "delivery",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "delivery.unavailable_removed",
+      "group": "delivery",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "delivery.provider_failure_honest",
+      "group": "delivery",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "delivery.distance_3km_real",
+      "group": "delivery",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "delivery.order_link_verified",
+      "group": "delivery",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "delivery.currency_required_for_fees",
+      "group": "delivery",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "carousel.swipe",
+      "group": "carousel",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "carousel.dots",
+      "group": "carousel",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "carousel.autoplay",
+      "group": "carousel",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "carousel.reduced_motion",
+      "group": "carousel",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "carousel.pause_after_touch",
+      "group": "carousel",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "carousel.return_position",
+      "group": "carousel",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "carousel.short_list_under_three",
+      "group": "carousel",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "carousel.max_initial_cards",
+      "group": "carousel",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "sponsored.separate_provider",
+      "group": "sponsored",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "sponsored.label_visible",
+      "group": "sponsored",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "sponsored.never_first_by_engine",
+      "group": "sponsored",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "sponsored.no_consecutive",
+      "group": "sponsored",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "sponsored.no_sensitive_targeting",
+      "group": "sponsored",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "sponsored.no_fake_impression",
+      "group": "sponsored",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "sponsored.frequency_cap_contract",
+      "group": "sponsored",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "lia.sensitive_never_voice",
+      "group": "lia_privacy",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "lia.private_generic_preview",
+      "group": "lia_privacy",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "lia.private_owner_scope",
+      "group": "lia_privacy",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "lia.quiet_blocks_proactive",
+      "group": "lia_privacy",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "lia.early_return_allowed",
+      "group": "lia_privacy",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "lia.table_yields_to_humans",
+      "group": "lia_privacy",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "lia.no_sensitive_humor",
+      "group": "lia_privacy",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "lia.notification_permission_not_surprise",
+      "group": "lia_privacy",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "memo.explicit_save_only",
+      "group": "memos_favorites",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "memo.no_transcript",
+      "group": "memos_favorites",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "memo.link_optional",
+      "group": "memos_favorites",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "memo.link_open_explicit",
+      "group": "memos_favorites",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "favorite_private",
+      "group": "memos_favorites",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "favorite_not_memo",
+      "group": "memos_favorites",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "network.offline_no_stale_truth",
+      "group": "network_rtl_accessibility",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "network.reconnect_reverify",
+      "group": "network_rtl_accessibility",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "network.provider_error_distinct",
+      "group": "network_rtl_accessibility",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "rtl.commander_layout",
+      "group": "network_rtl_accessibility",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "rtl.memos_layout",
+      "group": "network_rtl_accessibility",
+      "critical": false,
+      "status": "required"
+    },
+    {
+      "id": "a11y.controls_semantic",
+      "group": "network_rtl_accessibility",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "a11y.reduced_motion",
+      "group": "network_rtl_accessibility",
+      "critical": true,
+      "status": "required"
+    },
+    {
+      "id": "a11y.dynamic_errors_announced",
+      "group": "network_rtl_accessibility",
+      "critical": true,
+      "status": "required"
+    }
+  ]
+}

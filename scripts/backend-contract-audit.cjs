@@ -174,6 +174,7 @@ if(!verifyBackend.includes('app_release_settings')||!verifyBackend.includes('pre
 if(!verifyBackend.includes('oidvectortypes(p.proargtypes)')||!verifyBackend.includes('signature_exists')||!verifyBackend.includes('unexpected_overload')) failures.push('verify_backend.sql must prove exact RPC signatures and expose stale overloads.');
 const expectedRpcSignatures={
   create_household:'text',
+  complete_household_family_setup:'uuid, text, text, integer, text, jsonb',
   create_household_invitation:'uuid',
   join_household_by_code:'text',
   create_recipe_with_ingredients:'uuid, text, integer, integer, numeric, text[], text[], jsonb, text, text, text, text',
@@ -213,9 +214,15 @@ const normalizeSql=(value)=>value.replace(/--.*$/gm,'').replace(/\s+/g,' ').trim
 const normalizedSchema=normalizeSql(schema);
 const effectiveObjects=new Map();
 const privilegeStatements=[];
+const addedColumns=[];
 for(const migration of migrations.slice(1)){
   const sql=fs.readFileSync(path.join(migrationDir,migration),'utf8');
   let tracked=0;
+  for(const match of sql.matchAll(/create\s+table\s+if\s+not\s+exists\s+public\.([a-z0-9_]+)/gi)){
+    tracked++;
+    const table=match[1].toLowerCase();
+    if(!normalizedSchema.includes(`create table if not exists public.${table}`)) failures.push(`Schema snapshot is missing table created in later migration: ${migration} (${table})`);
+  }
   for(const match of sql.matchAll(/(create\s+or\s+replace\s+function\s+public\.([a-z0-9_]+)\s*\(([^)]*)\)[\s\S]*?\$\$;)/gi)){
     tracked++;
     const key=`function:${match[2].toLowerCase()}(${normalizeSql(match[3])})`;
@@ -230,6 +237,10 @@ for(const migration of migrations.slice(1)){
     tracked++;
     privilegeStatements.push({sql:match[0],migration});
   }
+  for(const match of sql.matchAll(/alter\s+table\s+public\.([a-z0-9_]+)\s+add\s+column\s+if\s+not\s+exists\s+([a-z0-9_]+)/gi)){
+    tracked++;
+    addedColumns.push({table:match[1].toLowerCase(),column:match[2].toLowerCase(),migration});
+  }
   if(!tracked) failures.push(`Migration parity audit cannot identify any tracked SQL object in later migration: ${migration}`);
 }
 for(const {sql,migration} of effectiveObjects.values()){
@@ -239,6 +250,11 @@ for(const {sql,migration} of effectiveObjects.values()){
 for(const {sql,migration} of privilegeStatements){
   const normalized=normalizeSql(sql);
   if(normalized&&!normalizedSchema.includes(normalized)) failures.push(`Schema snapshot is missing a privilege statement from migration: ${migration}`);
+}
+for(const {table,column,migration} of addedColumns){
+  const block=(schema.match(new RegExp(`create\\s+table\\s+if\\s+not\\s+exists\\s+public\\.${table}\\s*\\(([\\s\\S]*?)\\);`,'i'))||[])[1]||'';
+  const alterPattern=new RegExp(`alter\\s+table\\s+public\\.${table}[\\s\\S]{0,120}?add\\s+column\\s+if\\s+not\\s+exists\\s+${column}\\b`,'i');
+  if(!new RegExp(`\\b${column}\\b`,'i').test(block)&&!alterPattern.test(schema)) failures.push(`Schema snapshot is missing column public.${table}.${column} from migration: ${migration}`);
 }
 if(migrations.length&&fs.readFileSync(path.join(migrationDir,migrations[0]),'utf8')!==schema) notes.push('Schema snapshot differs from the initial migration and later-migration parity was checked.');
 

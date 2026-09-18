@@ -57,7 +57,8 @@ export async function pendingShoppingQueueCount(householdId:string,weekStart:str
   return withQueueLock(context.key,async()=>(await readQueueByKey(context.key)).length);
 }
 export async function flushShoppingQueue(householdId: string, weekStart: string): Promise<number> {
-  if (!supabase) return 0;
+  const client=supabase;
+  if (!client) return 0;
   const context=await queueContext(householdId,weekStart);
   if(!context)return 0;
   return withQueueLock(context.key,async()=>{
@@ -71,7 +72,7 @@ export async function flushShoppingQueue(householdId: string, weekStart: string)
         failed.push(...ops.slice(index));
         break;
       }
-      const { data, error } = await supabase.from('shopping_items').update({ checked: op.checked, checked_at: op.checked ? new Date().toISOString() : null }).eq('id', op.id).eq('household_id', householdId).eq('week_start', weekStart).select('id');
+      const { data, error } = await client.from('shopping_items').update({ checked: op.checked, checked_at: op.checked ? new Date().toISOString() : null }).eq('id', op.id).eq('household_id', householdId).eq('week_start', weekStart).select('id');
       if(error){failed.push(op);continue;}
       if(!(data??[]).length){
         try{await assertHouseholdWriteAllowed(householdId);}catch(gate){

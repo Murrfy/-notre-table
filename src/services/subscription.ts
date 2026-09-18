@@ -3,6 +3,15 @@ import { runtimeConfig } from '../lib/runtimeConfig';
 import { supabase } from '../lib/supabase';
 
 export type AccessPlan = 'free' | 'trial' | 'family';
+
+export const SUBSCRIPTION_REFERENCE_PRICES_USD = {
+  monthly: 6.99,
+  semiannual: 34.99,
+  annual: 59.99,
+} as const;
+
+export type SubscriptionBillingPeriod = keyof typeof SUBSCRIPTION_REFERENCE_PRICES_USD;
+
 export type AccessState = {
   plan: AccessPlan;
   trialEndsAt?: string | null;

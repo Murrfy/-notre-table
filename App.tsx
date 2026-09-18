@@ -8,11 +8,11 @@ import { HouseholdScreen } from './src/screens/HouseholdScreen';
 import { MainScreen } from './src/screens/MainScreen';
 import { isSupabaseConfigured, supabase } from './src/lib/supabase';
 import { runtimeConfig } from './src/lib/runtimeConfig';
-import { createHousehold, getMyHousehold, joinHousehold } from './src/services/households';
+import { completeHouseholdFamilySetup, createHousehold, getMyHousehold, joinHousehold } from './src/services/households';
 import { colors } from './src/theme';
 import { Household } from './src/types';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
-import { hasSeenOnboarding, markOnboardingSeen } from './src/services/appPreferences';
+import { hasChosenLanguage, hasSeenLiaSecondIntro, hasSeenOnboarding, markLanguageChosen, markLiaSecondIntroSeen, markOnboardingSeen } from './src/services/appPreferences';
 import { configureNotificationHandler } from './src/services/notifications';
 import { LocaleProvider, useLocale } from './src/context/LocaleContext';
 import { ThemeProvider, useAppTheme } from './src/context/ThemeContext';
@@ -25,6 +25,13 @@ import { withTimeout } from './src/lib/async';
 import { beginRequest, createRequestGate, invalidateRequests, isCurrentRequest } from './src/lib/requestGate';
 import { consumeAuthLink } from './src/services/auth';
 import { PasswordRecoveryScreen } from './src/screens/PasswordRecoveryScreen';
+import { LanguageFirstScreen } from './src/screens/LanguageFirstScreen';
+import { HouseholdSetupScreen } from './src/screens/HouseholdSetupScreen';
+import { LiaSecondIntroScreen } from './src/screens/LiaSecondIntroScreen';
+import * as Notifications from 'expo-notifications';
+import { LiaPrivateMessageScreen } from './src/screens/LiaPrivateMessageScreen';
+import { liaPrivateMessageIdFromNotificationData } from './src/services/liaPrivateNotificationRoute';
+import { noteLiaReengagementEvent } from './src/services/liaOpenLoops';
 
 const AUTH_BOOT_TIMEOUT_MS=8_000;
 const HOUSEHOLD_BOOT_TIMEOUT_MS=10_000;
@@ -46,16 +53,18 @@ function AppContent() {
   const [loadingHousehold,setLoadingHousehold]=useState(false);
   const [householdFailure,setHouseholdFailure]=useState(false);
   const [demo,setDemo]=useState(false);
-  const [onboardingReady,setOnboardingReady]=useState(false);
+  const [firstContactReady,setFirstContactReady]=useState(false);
+  const [languageChosen,setLanguageChosen]=useState(true);
   const [onboardingSeen,setOnboardingSeen]=useState(true);
+  const [liaSecondIntroSeen,setLiaSecondIntroSeen]=useState(true);
   const [pendingInviteCode,setPendingInviteCode]=useState<string|null>(null);
   const [passwordRecovery,setPasswordRecovery]=useState(false);
   const [authLinkError,setAuthLinkError]=useState('');
+  const [pendingLiaPrivateMessageId,setPendingLiaPrivateMessageId]=useState<string|null>(null);
   const authVersionRef=useRef(0);
   const activeUserIdRef=useRef<string|null>(null);
   const householdGateRef=useRef(createRequestGate());
   const exitInFlightRef=useRef(false);
-
   const applySession=useCallback((next:Session|null)=>{
     const previousUserId=activeUserIdRef.current;
     const nextUserId=next?.user.id??null;
@@ -70,7 +79,26 @@ function AppContent() {
     if(next)setSessionFailure(false);
   },[]);
 
-  useEffect(()=>{hasSeenOnboarding().then(seen=>{setOnboardingSeen(seen);setOnboardingReady(true);}).catch(()=>{setOnboardingSeen(false);setOnboardingReady(true);});},[]);
+  useEffect(()=>{Promise.all([hasChosenLanguage(),hasSeenOnboarding(),hasSeenLiaSecondIntro()]).then(([chosen,seen,secondSeen])=>{setLanguageChosen(chosen);setOnboardingSeen(seen);setLiaSecondIntroSeen(secondSeen);}).catch(()=>{setLanguageChosen(false);setOnboardingSeen(false);setLiaSecondIntroSeen(false);}).finally(()=>setFirstContactReady(true));},[]);
+  useEffect(()=>{
+    let active=true;
+    const handle=(response:Notifications.NotificationResponse|null)=>{
+      if(!active||!response)return;
+      const data=response.notification.request.content.data;
+      if(data?.source==='lia-open-loop-reengagement'){
+        void noteLiaReengagementEvent('opened').catch(()=>{});
+        void Notifications.clearLastNotificationResponseAsync().catch(()=>{});
+        return;
+      }
+      const messageId=liaPrivateMessageIdFromNotificationData(data);
+      if(!messageId)return;
+      setPendingLiaPrivateMessageId(messageId);
+      void Notifications.clearLastNotificationResponseAsync().catch(()=>{});
+    };
+    Notifications.getLastNotificationResponseAsync().then(handle).catch(()=>{});
+    const subscription=Notifications.addNotificationResponseReceivedListener(handle);
+    return()=>{active=false;subscription.remove();};
+  },[]);
   useEffect(()=>{
     let active=true;
     const handle=async(url:string|null|undefined)=>{
@@ -157,6 +185,7 @@ function AppContent() {
     invalidateRequests(householdGateRef.current);
     setHousehold(null);
     setHouseholdFailure(false);
+    setPendingLiaPrivateMessageId(null);
     try{
       if(demo){setDemo(false);return;}
       const result=await supabase?.auth.signOut({scope:'local'});
@@ -164,7 +193,8 @@ function AppContent() {
     }finally{exitInFlightRef.current=false;}
   };
 
-  if(booting||!onboardingReady) return <Splash text={locale.t('boot.preparing')}/>;
+  if(booting||!firstContactReady) return <Splash text={locale.t('boot.preparing')}/>;
+  if(!languageChosen) return <><StatusBar style={statusStyle}/><LanguageFirstScreen onDone={async language=>{await locale.setLanguage(language);await markLanguageChosen();setLanguageChosen(true);}}/></>;
   if(!onboardingSeen) return <><StatusBar style={statusStyle}/><OnboardingScreen onDone={async()=>{await markOnboardingSeen();setOnboardingSeen(true);}}/></>;
   if(sessionFailure&&!demo) return <><StatusBar style={statusStyle}/><RecoveryScreen title={locale.t('recovery.connectionTitle')} message={locale.t('recovery.connectionText')} primaryLabel={locale.t('recovery.retry')} onPrimary={()=>setAuthBootNonce(value=>value+1)}/></>;
   if(!isSupabaseConfigured&&!demo) return <ConfigMissing onDemo={runtimeConfig.allowDemo?enterDemo:undefined}/>;
@@ -172,7 +202,10 @@ function AppContent() {
   if(!demo&&passwordRecovery&&session) return <><StatusBar style={statusStyle}/><PasswordRecoveryScreen onDone={()=>setPasswordRecovery(false)}/></>;
   if(loadingHousehold) return <Splash text={locale.t('boot.household')}/>;
   if(householdFailure&&!demo) return <><StatusBar style={statusStyle}/><RecoveryScreen title={locale.t('recovery.householdTitle')} message={locale.t('recovery.householdText')} primaryLabel={locale.t('recovery.retry')} onPrimary={()=>{void loadHousehold();}} secondaryLabel={locale.t('recovery.signOut')} onSecondary={()=>{void exit();}}/></>;
-  if(!household) return <><StatusBar style={statusStyle}/><HouseholdScreen demo={demo} initialJoinCode={pendingInviteCode??undefined} onCreate={async(name)=>{if(demo)setHousehold({id:'demo-household',name,role:'admin'});else setHousehold(await createHousehold(name));}} onJoin={async(code)=>{setHousehold(await joinHousehold(code));setPendingInviteCode(null);}}/></>;
+  if(!household) return <><StatusBar style={statusStyle}/><HouseholdScreen demo={demo} initialJoinCode={pendingInviteCode??undefined} onCreate={async(name,deliveryAddress)=>{if(demo)setHousehold({id:'demo-household',name,role:'admin',setup_completed:true,default_party_size:4,delivery_address:deliveryAddress??null});else setHousehold(await createHousehold(name,deliveryAddress));}} onJoin={async(code)=>{setHousehold(await joinHousehold(code));setPendingInviteCode(null);}}/></>;
+  if(!demo&&household.role==='admin'&&household.setup_completed===false) return <><StatusBar style={statusStyle}/><HouseholdSetupScreen householdName={household.name} onComplete={async(payload)=>{await completeHouseholdFamilySetup(household.id,payload);setHousehold({...household,setup_completed:true,default_party_size:payload.defaultPartySize});setLiaSecondIntroSeen(false);}}/></>;
+  if(!demo&&household.role==='admin'&&household.setup_completed!==false&&!liaSecondIntroSeen) return <><StatusBar style={statusStyle}/><LiaSecondIntroScreen onDone={async()=>{await markLiaSecondIntroSeen();setLiaSecondIntroSeen(true);}}/></>;
+  if(!demo&&sessionUserId&&pendingLiaPrivateMessageId) return <><StatusBar style={statusStyle}/><LiaPrivateMessageScreen ownerId={sessionUserId} messageId={pendingLiaPrivateMessageId} onClose={()=>setPendingLiaPrivateMessageId(null)}/></>;
   return <><StatusBar style={statusStyle}/><MainScreen household={household} demo={demo} onSignOut={exit}/></>;
 }
 

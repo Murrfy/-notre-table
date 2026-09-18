@@ -85,7 +85,7 @@ export function ShoppingScreen({ householdId, demo=false, weekStart, onWeekStart
     void Network.getNetworkStateAsync().then(observe).catch(()=>undefined);
     return()=>{active=false;subscription.remove();networkReachableRef.current=null;};
   },[demo,load,networkReachableRef]);
-  useEffect(()=>{if(demo||!supabase)return;const channel=supabase.channel(`shopping-${householdId}-${weekKey}`).on('postgres_changes',{event:'*',schema:'public',table:'shopping_items',filter:`household_id=eq.${householdId}`},()=>{load();}).subscribe();return()=>{supabase.removeChannel(channel);};},[demo,householdId,weekKey,load]);
+  useEffect(()=>{const client=supabase;if(demo||!client)return;const channel=client.channel(`shopping-${householdId}-${weekKey}`).on('postgres_changes',{event:'*',schema:'public',table:'shopping_items',filter:`household_id=eq.${householdId}`},()=>{load();}).subscribe();return()=>{void client.removeChannel(channel);};},[demo,householdId,weekKey,load]);
 
   const loadResponsibility=useCallback(async()=>{
     const token=beginRequest(responsibilityGate);
@@ -106,7 +106,7 @@ export function ShoppingScreen({ householdId, demo=false, weekStart, onWeekStart
   },[demo,householdId,weekKey,locale.language,responsibilityGate]);
   useEffect(()=>{loadResponsibility();},[loadResponsibility]);
   useEffect(()=>()=>{invalidateRequests(loadGate);invalidateRequests(responsibilityGate);},[loadGate,responsibilityGate]);
-  useEffect(()=>{if(demo||!supabase)return;const channel=supabase.channel(`shopping-owner-${householdId}-${weekKey}`).on('postgres_changes',{event:'*',schema:'public',table:'shopping_responsibilities',filter:`household_id=eq.${householdId}`},()=>{loadResponsibility();}).subscribe();return()=>{supabase.removeChannel(channel);};},[demo,householdId,weekKey,loadResponsibility]);
+  useEffect(()=>{const client=supabase;if(demo||!client)return;const channel=client.channel(`shopping-owner-${householdId}-${weekKey}`).on('postgres_changes',{event:'*',schema:'public',table:'shopping_responsibilities',filter:`household_id=eq.${householdId}`},()=>{loadResponsibility();}).subscribe();return()=>{void client.removeChannel(channel);};},[demo,householdId,weekKey,loadResponsibility]);
 
   const handleMutationError=async(error:unknown,fallback:()=>void)=>{if(classifyPremiumGateError(error)==='FAMILY_PLAN_REQUIRED'){await onFamilyRequired?.();return true;}fallback();return false;};
   const remaining=items.filter(i=>!i.checked).length;

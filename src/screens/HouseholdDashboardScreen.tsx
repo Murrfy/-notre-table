@@ -89,13 +89,14 @@ export function HouseholdDashboardScreen({ household, demo=false, access, onRefr
   },[demo,household.id,activityExpanded,activityGate]);
 
   useEffect(()=>{
-    if(demo||!supabase||!activityExpanded)return;
-    const channel=supabase.channel(`household-activity-${household.id}`)
+    const client=supabase;
+    if(demo||!client||!activityExpanded)return;
+    const channel=client.channel(`household-activity-${household.id}`)
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'household_activity',filter:`household_id=eq.${household.id}`},()=>{
         const token=beginRequest(activityGate);
         fetchRecentHouseholdActivity(household.id,10).then(rows=>{if(isCurrentRequest(activityGate,token))setActivity(rows);}).catch(()=>{});
       }).subscribe();
-    return()=>{void supabase.removeChannel(channel);invalidateRequests(activityGate);};
+    return()=>{void client.removeChannel(channel);invalidateRequests(activityGate);};
   },[demo,household.id,activityExpanded,activityGate]);
 
   const activityText=(item:HouseholdActivity)=>{

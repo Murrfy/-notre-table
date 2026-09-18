@@ -5,6 +5,9 @@ export type Household = {
   id: string;
   name: string;
   role: 'admin' | 'member';
+  setup_completed?: boolean;
+  default_party_size?: number | null;
+  delivery_address?: string | null;
 };
 
 export type HouseholdMember = {

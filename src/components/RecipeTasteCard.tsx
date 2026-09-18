@@ -38,11 +38,12 @@ export function RecipeTasteCard({householdId,recipeId,demoMode=false,onFamilyReq
   useEffect(()=>()=>{invalidateRequests(loadGate);},[loadGate]);
 
   useEffect(()=>{
-    if(demoMode||!supabase)return;
-    const channel=supabase.channel(`recipe-taste-${householdId}-${recipeId}`)
+    const client=supabase;
+    if(demoMode||!client)return;
+    const channel=client.channel(`recipe-taste-${householdId}-${recipeId}`)
       .on('postgres_changes',{event:'*',schema:'public',table:'recipe_feedback',filter:`recipe_id=eq.${recipeId}`},()=>{void load();})
       .subscribe();
-    return()=>{void supabase.removeChannel(channel);};
+    return()=>{void client.removeChannel(channel);};
   },[demoMode,householdId,recipeId,load]);
 
   const choose=async(reaction:RecipeReaction)=>{

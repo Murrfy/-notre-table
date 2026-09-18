@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useKeepAwake } from 'expo-keep-awake';
 import { colors, radius } from '../theme';
@@ -6,14 +6,98 @@ import { Recipe } from '../types';
 import { useLocale } from '../context/LocaleContext';
 import { convertQuantity } from '../lib/units';
 import { normalizeUnit } from '../domain/catalog';
+import {formatCookingClock,liaCookingCue} from '../lib/liaCookingCompanion';
+import {runLiaCookingCommand,type LiaCookingSpeechAdapter} from '../services/liaCookingRuntime';
+import {setLiaCookingSessionVoiceHandler} from '../services/liaCookingSession';
 
-export function CookingModeScreen({recipe,onClose}:{recipe:Recipe;onClose:()=>void}){
+export function CookingModeScreen({recipe,onClose,speechAdapter}:{recipe:Recipe;onClose:()=>void;speechAdapter?:LiaCookingSpeechAdapter}){
   useKeepAwake('notre-table-cooking');
   const locale=useLocale(); const rtl=locale.textDirection==='rtl';
   const steps=useMemo(()=>recipe.steps?.filter(Boolean)??[],[recipe.steps]);
   const [index,setIndex]=useState(0);
   const [ingredientsOpen,setIngredientsOpen]=useState(false);
+  const [timerEndsAt,setTimerEndsAt]=useState<number|null>(null);
+  const [clockNow,setClockNow]=useState(()=>Date.now());
+  const [voiceListening,setVoiceListening]=useState(false);
   const current=steps[index]??locale.t('cooking.noStep');
+  const cue=useMemo(()=>liaCookingCue(current,index,steps.length),[current,index,steps.length]);
+  const remainingSeconds=timerEndsAt===null?0:Math.max(0,Math.ceil((timerEndsAt-clockNow)/1000));
+  useEffect(()=>{if(timerEndsAt===null)return;const id=setInterval(()=>setClockNow(Date.now()),1000);return()=>clearInterval(id);},[timerEndsAt]);
+  useEffect(()=>{if(timerEndsAt!==null&&remainingSeconds===0)setTimerEndsAt(null);},[remainingSeconds,timerEndsAt]);
+  useEffect(()=>{setTimerEndsAt(null);setClockNow(Date.now());},[index]);
+  const handleHandsFreeCommand=(text:string)=>{
+    const now=Date.now();
+    const result=runLiaCookingCommand({
+      text,currentStep:current,nowMs:now,
+      state:{stepIndex:index,stepCount:steps.length,timerEndsAtMs:timerEndsAt,voiceShouldStop:false},
+    });
+    if(result.state.stepIndex!==index)setIndex(result.state.stepIndex);
+    if(result.state.timerEndsAtMs!==timerEndsAt){setClockNow(now);setTimerEndsAt(result.state.timerEndsAtMs);}
+    if(result.action.kind==='show_ingredients'||result.action.kind==='list_ingredients')setIngredientsOpen(true);
+    if(result.action.kind==='hide_ingredients')setIngredientsOpen(false);
+    return result;
+  };
+  useEffect(()=>setLiaCookingSessionVoiceHandler((text,languageTag)=>{
+    const result=handleHandsFreeCommand(text);
+    const fr=languageTag.toLowerCase().startsWith('fr');
+    if(result.action.kind==='unknown'||result.action.kind==='music')return{handled:false,spokenReply:null};
+    if(result.action.kind==='repeat_step')return{handled:true,spokenReply:current};
+    if(result.action.kind==='step_status'){
+      const stepNumber=Math.min(steps.length,Math.max(1,index+1));
+      if(!steps.length)return{handled:true,spokenReply:fr?'Aucune étape n’est renseignée pour cette recette.':'No steps are entered for this recipe.'};
+      return{handled:true,spokenReply:fr?`Tu es à l’étape ${stepNumber} sur ${steps.length} : ${current}`:`You’re on step ${stepNumber} of ${steps.length}: ${current}`};
+    }
+    if(result.action.kind==='go_to_step'){
+      const target=result.action.stepNumber??null;
+      if(target===null||target<1||target>steps.length)return{handled:true,spokenReply:fr?`Cette recette a ${steps.length} étape${steps.length>1?'s':''}.`:`This recipe has ${steps.length} step${steps.length===1?'':'s'}.`};
+      return{handled:true,spokenReply:steps[target-1]??null};
+    }
+    if(result.action.kind==='show_ingredients')return{handled:true,spokenReply:fr?'Je te les affiche.':'I’m showing the ingredients.'};
+    if(result.action.kind==='hide_ingredients')return{handled:true,spokenReply:fr?'D’accord, je les masque.':'Okay, I’m hiding the ingredients.'};
+    if(result.action.kind==='list_ingredients'){
+      const items=recipe.ingredients?.filter(x=>x.name.trim()).map(x=>{const quantity=quantityLabel(x.quantity,x.unit);return quantity?`${x.name}, ${quantity}`:x.name;})??[];
+      if(!items.length)return{handled:true,spokenReply:fr?'Aucun ingrédient n’est renseigné pour cette recette.':'No ingredients are entered for this recipe.'};
+      const lead=fr?'Il te faut ':'You need ';
+      return{handled:true,spokenReply:`${lead}${items.join(', ')}.`};
+    }
+    if(result.action.kind==='timer_remaining')return{handled:true,spokenReply:result.reply.kind==='timer_remaining'?(fr?`Il reste ${result.reply.textValue}.`:`${result.reply.textValue} remaining.`):(fr?'Aucun minuteur de recette n’est en cours.':'No recipe timer is running.')};
+    if(result.action.kind==='cancel_timer')return{handled:true,spokenReply:result.reply.kind==='timer_cancelled'?(fr?`D’accord, j’annule le minuteur de la recette.`:`Okay, I’m cancelling the recipe timer.`):(fr?'Aucun minuteur de recette n’est en cours.':'No recipe timer is running.')};
+    if(result.action.kind==='start_timer'){
+      if(result.action.timerSeconds===null)return{handled:true,spokenReply:fr?'Dis-moi combien de temps.':'Tell me how long.'};
+      const seconds=result.action.timerSeconds;
+      const duration=seconds%60===0?(fr?`${seconds/60} minute${seconds/60>1?'s':''}`:`${seconds/60} minute${seconds/60===60?'':'s'}`):(fr?`${Math.floor(seconds/60)?`${Math.floor(seconds/60)} min `:''}${seconds%60} sec`:`${formatCookingClock(seconds)}`);
+      return{handled:true,spokenReply:fr?`D’accord, je lance ${duration}.`:`Okay, starting ${duration}.`};
+    }
+    if(result.action.kind==='next_step'){
+      const nextIndex=Math.min(Math.max(0,steps.length-1),index+1);
+      if(nextIndex===index)return{handled:true,spokenReply:fr?'C’est la dernière étape.':'This is the last step.'};
+      return{handled:true,spokenReply:steps[nextIndex]??null};
+    }
+    if(result.action.kind==='complete_step'){
+      const nextIndex=Math.min(Math.max(0,steps.length-1),index+1);
+      if(nextIndex===index)return{handled:true,spokenReply:fr?'C’était la dernière étape.':'That was the last step.'};
+      return{handled:true,spokenReply:steps[nextIndex]??null};
+    }
+    if(result.action.kind==='finish_recipe'){
+      onClose();
+      return{handled:true,spokenReply:fr?'C’est terminé. Bon appétit !':'All done. Enjoy your meal!'};
+    }
+    if(result.action.kind==='previous_step'){
+      const previousIndex=Math.max(0,index-1);
+      if(previousIndex===index)return{handled:true,spokenReply:fr?'C’est la première étape.':'This is the first step.'};
+      return{handled:true,spokenReply:steps[previousIndex]??null};
+    }
+    if(result.action.kind==='stop_voice')return{handled:true,spokenReply:null};
+    return{handled:false,spokenReply:null};
+  }),[current,index,steps,timerEndsAt]);
+
+  const toggleVoiceListening=async()=>{
+    if(!speechAdapter?.available)return;
+    if(voiceListening){await speechAdapter.stop();setVoiceListening(false);return;}
+    await speechAdapter.start(text=>{handleHandsFreeCommand(text);});
+    setVoiceListening(true);
+  };
+  useEffect(()=>()=>{if(speechAdapter?.available)void speechAdapter.stop();},[speechAdapter]);
   const progress=steps.length?Math.min(100,((index+1)/steps.length)*100):0;
   const quantityLabel=(quantity:number|null|undefined,unit:string|null|undefined)=>{if(quantity==null)return'';const converted=convertQuantity(quantity,unit,locale.measurementSystem);const normalized=normalizeUnit(converted.unit);const unitLabel=normalized&&['piece','pack','ball','can','box','g','kg','ml','l','tsp','tbsp','cup','oz','lb'].includes(String(normalized))?locale.t(`unit.${normalized}${normalized==='piece'&&converted.quantity!==1?'_plural':''}` as any):String(normalized??'');return `${locale.formatNumber(converted.quantity??quantity)} ${unitLabel}`.trim();};
   return <View style={styles.screen}>
@@ -23,6 +107,7 @@ export function CookingModeScreen({recipe,onClose}:{recipe:Recipe;onClose:()=>vo
 
     <ScrollView contentContainerStyle={styles.stepArea} showsVerticalScrollIndicator={false}>
       <Text style={[styles.stepText,rtl&&styles.rtl]}>{current}</Text>
+      <View style={styles.liaCard}><Text style={[styles.liaLabel,rtl&&styles.rtl]}>{locale.t('cooking.liaWithYou')}</Text><Text style={[styles.liaText,rtl&&styles.rtl]}>{locale.t(cue.kind==='timed'?'cooking.liaTimed':cue.kind==='salt'?'cooking.liaSalt':cue.kind==='next_step'?'cooking.liaNext':'cooking.liaSteady',cue.seconds?{minutes:locale.formatNumber(Math.round(cue.seconds/60))}:undefined)}</Text>{cue.seconds?<Pressable accessibilityRole="button" onPress={()=>{setClockNow(Date.now());setTimerEndsAt(Date.now()+cue.seconds!*1000);}} accessibilityState={{selected:timerEndsAt!==null}} style={[styles.timerButton,timerEndsAt!==null&&styles.timerButtonActive]}><Text style={[styles.timerButtonText,timerEndsAt!==null&&styles.timerButtonTextActive]}>{timerEndsAt!==null?locale.t('cooking.timerRunning',{time:formatCookingClock(remainingSeconds)}):locale.t('cooking.startTimer',{minutes:locale.formatNumber(Math.round(cue.seconds/60))})}</Text></Pressable>:null}{timerEndsAt!==null?<Pressable accessibilityRole="button" onPress={()=>setTimerEndsAt(null)} style={styles.timerCancel}><Text style={styles.timerCancelText}>{locale.t('cooking.cancelTimer')}</Text></Pressable>:null}</View>
       <Pressable accessibilityRole="button" accessibilityState={{expanded:ingredientsOpen}} onPress={()=>setIngredientsOpen(v=>!v)} style={styles.ingredientsToggle}><Text style={styles.ingredientsToggleText}>{locale.t(ingredientsOpen?'cooking.hideIngredients':'cooking.showIngredients')}</Text></Pressable>
       {ingredientsOpen?<View style={styles.ingredientsCard}><Text style={[styles.ingredientsTitle,rtl&&styles.rtl]}>{locale.t('cooking.ingredients')}</Text>{recipe.ingredients?.length?recipe.ingredients.map((x,i)=><View key={`${x.name}-${i}`} style={styles.ingredientRow}><Text style={styles.bullet}>•</Text><Text style={[styles.ingredientText,rtl&&styles.rtl]}>{x.name}{x.quantity!=null?` — ${quantityLabel(x.quantity,x.unit)}`:''}</Text></View>):<Text style={[styles.empty,rtl&&styles.rtl]}>{locale.t('cooking.noIngredients')}</Text>}</View>:null}
     </ScrollView>
@@ -31,8 +116,9 @@ export function CookingModeScreen({recipe,onClose}:{recipe:Recipe;onClose:()=>vo
       <Pressable accessibilityRole="button" disabled={index===0} accessibilityState={{disabled:index===0}} onPress={()=>setIndex(i=>Math.max(0,i-1))} style={[styles.secondary,index===0&&styles.disabled]}><Text style={styles.secondaryText}>‹ {locale.t('cooking.previous')}</Text></Pressable>
       {steps.length&&index<steps.length-1?<Pressable accessibilityRole="button" onPress={()=>setIndex(i=>Math.min(steps.length-1,i+1))} style={styles.primary}><Text style={styles.primaryText}>{locale.t('cooking.next')} ›</Text></Pressable>:<Pressable accessibilityRole="button" onPress={onClose} style={styles.primary}><Text style={styles.primaryText}>{locale.t('cooking.finish')} ✓</Text></Pressable>}
     </View>
+    {speechAdapter?.available?<Pressable accessibilityRole="button" accessibilityState={{selected:voiceListening}} onPress={()=>{void toggleVoiceListening();}} style={styles.voiceButton}><Text style={styles.voiceButtonText}>{voiceListening?'LIA • écoute':'LIA • mains libres'}</Text></Pressable>:null}
     <Text style={[styles.keepAwake,rtl&&styles.rtl]}>{locale.t('cooking.keepAwake')}</Text>
   </View>;
 }
 
-const styles=StyleSheet.create({screen:{flex:1,backgroundColor:colors.cream,paddingHorizontal:22,paddingTop:58,paddingBottom:24},header:{flexDirection:'row',gap:14,alignItems:'flex-start'},kicker:{color:colors.orange,fontSize:10,fontWeight:'900',letterSpacing:1.4},title:{color:colors.ink,fontSize:26,lineHeight:31,fontWeight:'900',marginTop:5},close:{color:colors.sageDark,fontWeight:'900',paddingTop:5},progressTrack:{height:7,borderRadius:999,backgroundColor:colors.track,overflow:'hidden',marginTop:22},progressFill:{height:'100%',backgroundColor:colors.sageDark,borderRadius:999},metaRow:{flexDirection:'row',justifyContent:'space-between',marginTop:9},meta:{color:colors.muted,fontSize:11,fontWeight:'700'},stepArea:{flexGrow:1,justifyContent:'center',paddingVertical:28},stepText:{color:colors.ink,fontSize:30,lineHeight:42,fontWeight:'800'},ingredientsToggle:{alignSelf:'flex-start',marginTop:28,backgroundColor:colors.sageSoft,paddingHorizontal:13,paddingVertical:10,borderRadius:999},ingredientsToggleText:{color:colors.sageDark,fontSize:11,fontWeight:'900'},ingredientsCard:{backgroundColor:colors.paper,borderWidth:1,borderColor:colors.border,borderRadius:radius.md,padding:16,marginTop:13},ingredientsTitle:{color:colors.muted,fontSize:10,fontWeight:'900',letterSpacing:1.1,marginBottom:7},ingredientRow:{flexDirection:'row',gap:8,paddingVertical:5},bullet:{color:colors.orange,fontWeight:'900'},ingredientText:{color:colors.ink,fontSize:13,flex:1},empty:{color:colors.muted,fontSize:12},footer:{flexDirection:'row',gap:10},secondary:{flex:1,minHeight:54,borderWidth:1,borderColor:colors.border,borderRadius:16,alignItems:'center',justifyContent:'center',backgroundColor:colors.paper},disabled:{opacity:.35},secondaryText:{color:colors.sageDark,fontWeight:'900'},primary:{flex:1.35,minHeight:54,borderRadius:16,alignItems:'center',justifyContent:'center',backgroundColor:colors.sageDark},primaryText:{color:colors.onAccent,fontWeight:'900'},keepAwake:{color:colors.muted,fontSize:9,textAlign:'center',marginTop:9},rtl:{textAlign:'right',writingDirection:'rtl'}});
+const styles=StyleSheet.create({screen:{flex:1,backgroundColor:colors.cream,paddingHorizontal:22,paddingTop:58,paddingBottom:24},header:{flexDirection:'row',gap:14,alignItems:'flex-start'},kicker:{color:colors.orange,fontSize:10,fontWeight:'900',letterSpacing:1.4},title:{color:colors.ink,fontSize:26,lineHeight:31,fontWeight:'900',marginTop:5},close:{color:colors.sageDark,fontWeight:'900',paddingTop:5},progressTrack:{height:7,borderRadius:999,backgroundColor:colors.track,overflow:'hidden',marginTop:22},progressFill:{height:'100%',backgroundColor:colors.sageDark,borderRadius:999},metaRow:{flexDirection:'row',justifyContent:'space-between',marginTop:9},meta:{color:colors.muted,fontSize:11,fontWeight:'700'},stepArea:{flexGrow:1,justifyContent:'center',paddingVertical:28},stepText:{color:colors.ink,fontSize:30,lineHeight:42,fontWeight:'800'},liaCard:{backgroundColor:colors.paper,borderWidth:1,borderColor:colors.border,borderRadius:radius.md,padding:14,marginTop:20},liaLabel:{color:colors.orange,fontSize:10,fontWeight:'900',letterSpacing:1},liaText:{color:colors.ink,fontSize:13,lineHeight:19,fontWeight:'700',marginTop:5},timerButton:{marginTop:12,minHeight:44,borderRadius:13,backgroundColor:colors.sageSoft,alignItems:'center',justifyContent:'center',paddingHorizontal:12},timerButtonActive:{backgroundColor:colors.sageDark},timerButtonText:{color:colors.sageDark,fontSize:12,fontWeight:'900'},timerButtonTextActive:{color:colors.onAccent},timerCancel:{alignSelf:'center',paddingHorizontal:12,paddingVertical:8,marginTop:4},timerCancelText:{color:colors.muted,fontSize:10,fontWeight:'800'},ingredientsToggle:{alignSelf:'flex-start',marginTop:28,backgroundColor:colors.sageSoft,paddingHorizontal:13,paddingVertical:10,borderRadius:999},ingredientsToggleText:{color:colors.sageDark,fontSize:11,fontWeight:'900'},ingredientsCard:{backgroundColor:colors.paper,borderWidth:1,borderColor:colors.border,borderRadius:radius.md,padding:16,marginTop:13},ingredientsTitle:{color:colors.muted,fontSize:10,fontWeight:'900',letterSpacing:1.1,marginBottom:7},ingredientRow:{flexDirection:'row',gap:8,paddingVertical:5},bullet:{color:colors.orange,fontWeight:'900'},ingredientText:{color:colors.ink,fontSize:13,flex:1},empty:{color:colors.muted,fontSize:12},footer:{flexDirection:'row',gap:10},secondary:{flex:1,minHeight:54,borderWidth:1,borderColor:colors.border,borderRadius:16,alignItems:'center',justifyContent:'center',backgroundColor:colors.paper},disabled:{opacity:.35},secondaryText:{color:colors.sageDark,fontWeight:'900'},primary:{flex:1.35,minHeight:54,borderRadius:16,alignItems:'center',justifyContent:'center',backgroundColor:colors.sageDark},primaryText:{color:colors.onAccent,fontWeight:'900'},voiceButton:{alignSelf:'center',marginTop:10,minHeight:42,paddingHorizontal:18,borderRadius:999,backgroundColor:colors.sageSoft,alignItems:'center',justifyContent:'center'},voiceButtonText:{color:colors.sageDark,fontSize:11,fontWeight:'900'},keepAwake:{color:colors.muted,fontSize:9,textAlign:'center',marginTop:9},rtl:{textAlign:'right',writingDirection:'rtl'}});

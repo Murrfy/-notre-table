@@ -10,9 +10,16 @@ export type RuntimeConfig = {
     reason?: string;
   };
   recipeOcrEndpoint?: string;
+  commanderLiveProvider: 'disabled' | 'supabase-edge';
+  pantryVisionEndpoint?: string;
   accountDeletionEndpoint?: string;
   accountDeletionWebUrl?: string;
   privacyPolicyUrl?: string;
+  googleNavigation: {
+    enabled: boolean;
+    iosApiKey?: string;
+    reason?: string;
+  };
   revenueCat: {
     enabled: boolean;
     iosApiKey?: string;
@@ -45,6 +52,15 @@ function isSupportedPublishableKey(value: string | undefined): boolean {
   return Boolean(value && /^sb_publishable_[A-Za-z0-9_-]+$/.test(value));
 }
 
+
+
+function resolveGoogleNavigationConfig(env: Record<string, string | undefined>): RuntimeConfig['googleNavigation'] {
+  const iosApiKey=clean(env.EXPO_PUBLIC_GOOGLE_NAVIGATION_IOS_API_KEY);
+  if(!iosApiKey)return{enabled:false,reason:'GOOGLE_NAVIGATION_NOT_CONFIGURED'};
+  if(isPlaceholder(iosApiKey))return{enabled:false,reason:'GOOGLE_NAVIGATION_PLACEHOLDER_KEY'};
+  if(!/^AIza[0-9A-Za-z_-]{20,}$/.test(iosApiKey))return{enabled:false,reason:'GOOGLE_NAVIGATION_IOS_KEY_INVALID'};
+  return{enabled:true,iosApiKey};
+}
 
 function resolveRevenueCatConfig(env: Record<string, string | undefined>): RuntimeConfig['revenueCat'] {
   const iosApiKey = clean(env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY);
@@ -82,9 +98,11 @@ export function resolveRuntimeConfig(env: Record<string, string | undefined> = p
   const url = clean(env.EXPO_PUBLIC_SUPABASE_URL);
   const key = clean(env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
   const recipeOcrEndpoint = clean(env.EXPO_PUBLIC_RECIPE_OCR_ENDPOINT);
+  const pantryVisionEndpoint = clean(env.EXPO_PUBLIC_PANTRY_VISION_ENDPOINT);
   const accountDeletionEndpoint = clean(env.EXPO_PUBLIC_ACCOUNT_DELETION_ENDPOINT);
   const accountDeletionWebUrl = clean(env.EXPO_PUBLIC_ACCOUNT_DELETION_WEB_URL);
   const privacyPolicyUrl = clean(env.EXPO_PUBLIC_PRIVACY_POLICY_URL);
+  const commanderLiveProvider = clean(env.EXPO_PUBLIC_COMMANDER_LIVE_PROVIDER) === 'supabase-edge' ? 'supabase-edge' : 'disabled';
 
   let enabled = false;
   let reason: string | undefined;
@@ -101,9 +119,12 @@ export function resolveRuntimeConfig(env: Record<string, string | undefined> = p
     allowDemo,
     supabase: enabled ? { enabled: true, url, publishableKey: key } : { enabled: false, reason },
     recipeOcrEndpoint: recipeOcrEndpoint && isHttpsUrl(recipeOcrEndpoint) ? recipeOcrEndpoint : undefined,
+    commanderLiveProvider,
+    pantryVisionEndpoint: pantryVisionEndpoint && isHttpsUrl(pantryVisionEndpoint) ? pantryVisionEndpoint : undefined,
     accountDeletionEndpoint: accountDeletionEndpoint && !isPlaceholder(accountDeletionEndpoint) && isHttpsUrl(accountDeletionEndpoint) ? accountDeletionEndpoint : undefined,
     accountDeletionWebUrl: accountDeletionWebUrl && !isPlaceholder(accountDeletionWebUrl) && isHttpsUrl(accountDeletionWebUrl) ? accountDeletionWebUrl : undefined,
     privacyPolicyUrl: privacyPolicyUrl && !isPlaceholder(privacyPolicyUrl) && isHttpsUrl(privacyPolicyUrl) ? privacyPolicyUrl : undefined,
+    googleNavigation: resolveGoogleNavigationConfig(env),
     revenueCat: resolveRevenueCatConfig(env),
   };
 }

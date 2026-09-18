@@ -22,6 +22,7 @@ import { Recipe, RecipeIngredient } from '../types';
 import { AccessState, hasFamilyAccess } from '../services/subscription';
 import { PaywallScreen } from './PaywallScreen';
 import { CookingModeScreen } from './CookingModeScreen';
+import { CookWithWhatIHaveScreen } from './CookWithWhatIHaveScreen';
 import {
   AisleCode,
   DifficultyCode,
@@ -134,18 +135,24 @@ const unitCodes = new Set<UnitCode>([
 
 export function RecipesScreen({
   householdId,
+  householdName,
   demoMode = false,
   weekStart,
   access,
   onRefreshAccess,
   onStartTrial,
+  liaPantryVisionRequestId=0,
+  liaRecipeOpenRequest=null,
 }: {
   householdId: string;
+  householdName: string;
   demoMode?: boolean;
   weekStart: Date;
   access: AccessState;
   onRefreshAccess?: () => Promise<AccessState>;
   onStartTrial?: () => void | Promise<void>;
+  liaPantryVisionRequestId?: number;
+  liaRecipeOpenRequest?: {requestId:number;recipeId:string;startCooking:boolean}|null;
 }) {
   const locale = useLocale();
   const textAlign = locale.textDirection === 'rtl' ? 'right' : 'left';
@@ -203,11 +210,33 @@ export function RecipesScreen({
   const [photoImportError, setPhotoImportError] = useState('');
   const [localPhotoPreview, setLocalPhotoPreview] = useState<string | null>(null);
   const [paywallOpen, setPaywallOpen] = useState(false);
+  const [cookWithOpen,setCookWithOpen]=useState(false);
+  const [cookWithAutoCamera,setCookWithAutoCamera]=useState(false);
+  const lastLiaPantryVisionRequestRef=useRef(0);
+  const lastLiaRecipeOpenRequestRef=useRef(0);
   const importInFlight=useRef(false);
   const photoImportInFlight=useRef(false);
   const favoriteInFlight=useRef<Set<string>>(new Set());
   const shoppingInFlight=useRef(false);
   const saveInFlight=useRef(false);
+
+  useEffect(()=>{
+    if(!liaPantryVisionRequestId||liaPantryVisionRequestId===lastLiaPantryVisionRequestRef.current)return;
+    lastLiaPantryVisionRequestRef.current=liaPantryVisionRequestId;
+    setCookWithAutoCamera(true);
+    setCookWithOpen(true);
+  },[liaPantryVisionRequestId]);
+
+  useEffect(()=>{
+    if(!liaRecipeOpenRequest||liaRecipeOpenRequest.requestId===lastLiaRecipeOpenRequestRef.current)return;
+    const recipe=recipes.find(item=>item.id===liaRecipeOpenRequest.recipeId);
+    if(!recipe)return;
+    lastLiaRecipeOpenRequestRef.current=liaRecipeOpenRequest.requestId;
+    setCookWithOpen(false);
+    setCookWithAutoCamera(false);
+    setSelected(recipe);
+    if(liaRecipeOpenRequest.startCooking)setCooking(recipe);
+  },[liaRecipeOpenRequest,recipes]);
 
   const load = useCallback(async () => {
     if (demoMode) return;
@@ -521,6 +550,15 @@ export function RecipesScreen({
           right={<Pressable onPress={() => setAddMenuOpen(true)} style={styles.plus} accessibilityRole="button" accessibilityLabel={locale.t('recipes.newRecipe')}><Text style={styles.plusText}>＋</Text></Pressable>}
         />
 
+        <Pressable accessibilityRole="button" onPress={()=>setCookWithOpen(true)} style={styles.cookWithCard}>
+          <View style={styles.cookWithIcon}><Text style={styles.cookWithEmoji}>📷</Text></View>
+          <View style={{flex:1}}>
+            <Text style={[styles.cookWithTitle,{textAlign}]}>{locale.t('cookWith.entryTitle')}</Text>
+            <Text style={[styles.cookWithText,{textAlign}]}>{locale.t('cookWith.entryText')}</Text>
+          </View>
+          <Text style={styles.cookWithArrow}>›</Text>
+        </Pressable>
+
         <TextInput
           accessibilityLabel={locale.t('recipes.search')}
           value={query}
@@ -700,7 +738,7 @@ export function RecipesScreen({
             <Text style={[styles.help, { textAlign }]}>{locale.t('recipes.noSteps')}</Text>
           )}
 
-          {selected ? <RecipeTasteCard householdId={householdId} recipeId={selected.id} demoMode={demoMode} onFamilyRequired={()=>handlePremiumRefusal(new Error('FAMILY_PLAN_REQUIRED'))} /> : null}
+          {selected ? <RecipeTasteCard householdId={householdId} recipeId={selected.id} demoMode={demoMode} onFamilyRequired={async()=>{await handlePremiumRefusal(new Error('FAMILY_PLAN_REQUIRED'));}} /> : null}
         </ScrollView>
       </Modal>
 
@@ -711,6 +749,19 @@ export function RecipesScreen({
         onRequestClose={() => setCooking(null)}
       >
         {cooking ? <CookingModeScreen recipe={cooking} onClose={() => setCooking(null)} /> : null}
+      </Modal>
+
+      <Modal visible={cookWithOpen} animationType="slide" onRequestClose={()=>{setCookWithOpen(false);setCookWithAutoCamera(false);}}>
+        <CookWithWhatIHaveScreen
+          householdId={householdId}
+          householdName={householdName}
+          recipes={recipes}
+          demoMode={demoMode}
+          autoStartCamera={cookWithAutoCamera}
+          onClose={()=>{setCookWithOpen(false);setCookWithAutoCamera(false);}}
+          onSelectRecipe={(recipe)=>{setCookWithOpen(false);setCookWithAutoCamera(false);setSelected(recipe);}}
+          onFamilyRequired={()=>{void handlePremiumRefusal(new Error('FAMILY_PLAN_REQUIRED'));}}
+        />
       </Modal>
 
       <Modal visible={addMenuOpen} transparent animationType="fade" onRequestClose={() => setAddMenuOpen(false)}>
@@ -953,7 +1004,13 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 28 },
   plus: { width: 46, height: 46, borderRadius: 15, backgroundColor: colors.sageDark, alignItems: 'center', justifyContent: 'center' },
   plusText: { color: colors.onAccent, fontSize: 28, lineHeight: 30 },
-  search: { backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.border, borderRadius: 15, minHeight: 48, paddingHorizontal: 14, color: colors.ink, marginTop: 16 },
+  cookWithCard:{minHeight:82,flexDirection:'row',alignItems:'center',gap:12,backgroundColor:colors.sageCard,borderWidth:1,borderColor:colors.sageBorder,borderRadius:radius.md,padding:14,marginTop:16,marginBottom:10},
+  cookWithIcon:{width:44,height:44,borderRadius:16,backgroundColor:colors.sageSoft,alignItems:'center',justifyContent:'center'},
+  cookWithEmoji:{fontSize:21},
+  cookWithTitle:{color:colors.ink,fontSize:14,fontWeight:'900'},
+  cookWithText:{color:colors.muted,fontSize:10,lineHeight:15,marginTop:3},
+  cookWithArrow:{color:colors.sageDark,fontSize:27,fontWeight:'800'},
+  search: { backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.border, borderRadius: 15, minHeight: 48, paddingHorizontal: 14, color: colors.ink, marginTop: 6 },
   filterBar: { flexDirection: 'row', gap: 8, marginTop: 9, flexWrap: 'wrap', alignItems: 'center' },
   advancedFilters: { marginTop: 2 },
   filters: { gap: 8, marginTop: 8, paddingRight: 10 },
@@ -965,7 +1022,7 @@ const styles = StyleSheet.create({
   clearFilter: { paddingHorizontal: 6, paddingVertical: 8 },
   clearFilterText: { color: colors.sageDark, fontSize: 11, fontWeight: '800' },
   actionOverlay: { flex: 1, justifyContent: 'flex-end' },
-  actionBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.28)' },
+  actionBackdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.28)' },
   actionSheet: { backgroundColor: colors.paper, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 34, borderWidth: 1, borderColor: colors.border },
   actionHandle: { width: 40, height: 4, borderRadius: 999, backgroundColor: colors.iconMuted, alignSelf: 'center', marginBottom: 16 },
   actionTitle: { color: colors.ink, fontSize: 20, fontWeight: '900', marginBottom: 8 },

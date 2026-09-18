@@ -1,6 +1,6 @@
 {
   "name": "notre-table",
-  "version": "0.155.0",
+  "version": "0.286.0",
   "private": true,
   "main": "index.ts",
   "scripts": {
@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "audit": "node scripts/audit-project.cjs",
     "regression": "node scripts/regression-tests.cjs",
-    "verify": "npm run preflight && npm run continuity:audit && npm run source:hygiene:audit && npm run backend:audit && npm run release:audit && npm run release:gate-test && npm run audit && npm run regression",
+    "verify": "npm run preflight && npm run continuity:audit && npm run source:hygiene:audit && npm run backend:audit && npm run release:audit && npm run release:gate-test && npm run feature:acceptance:audit && npm run audit && npm run regression",
     "preflight": "node scripts/environment-preflight.cjs",
     "validate:bundle:android": "expo export --platform android --output-dir .validation/android",
     "validate:bundle:ios": "expo export --platform ios --output-dir .validation/ios",
@@ -28,7 +28,11 @@
     "release:doctor:strict": "node scripts/release-doctor.cjs --strict",
     "beta:acceptance:audit": "node scripts/beta-acceptance-audit.cjs",
     "continuity:audit": "node scripts/continuity-audit.cjs",
-    "source:hygiene:audit": "node scripts/source-hygiene-audit.cjs"
+    "source:hygiene:audit": "node scripts/source-hygiene-audit.cjs",
+    "vendor:yamnet": "node scripts/vendor-yamnet-model.cjs",
+    "feature:acceptance:audit": "node scripts/feature-acceptance-audit.cjs",
+    "feature:beta:audit": "node scripts/feature-beta-acceptance-audit.cjs",
+    "feature:beta:template": "node scripts/feature-beta-template.cjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",

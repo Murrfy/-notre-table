@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["LiaSoundAnalysisModule"]
+  },
+  "android": {
+    "modules": ["com.notretable.lia.LiaSoundAnalysisModule"]
+  }
+}

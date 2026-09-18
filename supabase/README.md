@@ -11,6 +11,7 @@ Backend contract prepared in V0.55.
 - `functions/delete-account/index.ts`: authenticated permanent account-deletion endpoint; privileged credentials stay server-side.
 - `functions/sync-household-access/index.ts`: authenticated RevenueCat-to-household entitlement synchronizer; only the server writes billing state.
 - `migrations/202609150012_light_members_response_foundation.sql`: lightweight-member response model, one-use token contract and organizer aggregation.
+- `migrations/202609160017_lia_memos_child_age_optional.sql`: private LIA Mémos plus optional child age in the family-sheet RPC.
 - `functions/light-response/index.ts`: public no-account response page; it delegates data access to service-role-only RPCs.
 - `config.toml`: explicitly sets `verify_jwt = false` only for `light-response`, because lightweight responders have no Supabase account.
 
@@ -40,3 +41,12 @@ Never put `service_role`, `sb_secret_*`, database passwords, JWT secrets, or oth
 7. Only after those checks, use the backend for a beta build.
 
 No real Supabase deployment is claimed yet.
+
+- `migrations/202609160018_household_delivery_address.sql`: optional household delivery address used as Commander’s default destination without blocking existing households.
+
+- `migrations/202609160019_commander_favorites.sql`: private per-user Commander restaurant favorites, stored independently from LIA Mémos.
+
+## Commander sponsored provider boundary (V0.172)
+- V0.172 n'ajoute aucune migration ni Edge Function publicitaire.
+- Le contrat sponsorisé est côté application et reste désactivé tant qu'une intégration commerciale vérifiée n'est pas explicitement configurée.
+- Les données sponsorisées ne doivent jamais être injectées dans le classement naturel.
