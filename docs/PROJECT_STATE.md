@@ -1,3 +1,11 @@
+## V0.288 — Répondant humoristique sur le prénom de LIA
+
+- LIA conserve toujours son prénom canonique « LIA ».
+- Une taquinerie explicite du type « Coco, tu me mets de la musique ? » peut être comprise comme une adresse à LIA et la vraie action continue d’être exécutée.
+- Réponse miroir ponctuelle et légère : « Oui Boubou 😏… », jamais un changement de prénom persistant.
+- Les prénoms ordinaires ne sont pas captés ; « Michel, passe-moi le sel » reste une conversation humaine.
+- Les urgences, détresses et contextes sensibles désactivent la plaisanterie.
+
 ## V0.287 — Quantité d’ingrédient ciblée en mode cuisine
 
 - « Combien de farine ? » / « Il faut combien d’œufs ? » interroge uniquement la recette réellement ouverte.
