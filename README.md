@@ -1,5 +1,11 @@
-# Notre Table — V0.290
+# Notre Table — V0.291
 
+
+## V0.291 — « Et le lait ? » garde le même nombre de personnes
+
+V0.291 reprend V0.290 et rend le contexte de portions encore plus naturel. Après une demande comme « combien de farine pour 6 personnes ? », LIA comprend désormais « et le lait ? » et réutilise automatiquement les 6 personnes. Le même principe fonctionne avec les autres langues déjà prises en charge par le parseur court.
+
+Le suivi ne s’active que dans la fenêtre cuisine récente de deux minutes. Le mot proposé doit correspondre à un ingrédient réel de la recette ouverte ; sinon LIA ne fabrique pas de correspondance. Le contexte reste en mémoire de session uniquement et réutilise le même pipeline vocal global.
 
 ## V0.290 — « Et pour 8 ? » sans tout répéter
 

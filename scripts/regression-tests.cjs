@@ -5884,6 +5884,31 @@ test('V0.290 brief serving follow-up is accepted by the global LIA lane and expi
 });
 
 
+test('V0.291 cooking parses connected ingredient follow-ups but not arbitrary bare ingredient phrases',()=>{
+  assert.equal(liaCookingCompanion.liaCookingIngredientFollowupQuery('et le lait ?'),'lait');
+  assert.equal(liaCookingCompanion.liaCookingIngredientFollowupQuery('and the milk?'),'milk');
+  assert.equal(liaCookingCompanion.liaCookingIngredientFollowupQuery('y la leche?'),'leche');
+  assert.equal(liaCookingCompanion.liaCookingIngredientFollowupQuery('le lait'),null);
+  assert.equal(liaCookingCompanion.liaCookingIngredientFollowupQuery('et pour 8 ?'),null);
+});
+
+test('V0.291 short ingredient follow-up reuses the previous serving target only for a real recipe ingredient',()=>{
+  const screen=fs.readFileSync(path.join(root,'src/screens/CookingModeScreen.tsx'),'utf8');
+  assert.ok(screen.includes('targetServings:number|null;atMs:number'));
+  assert.ok(screen.includes('liaCookingIngredientMatches(followupIngredient,recipe.ingredients??[]).length>0'));
+  assert.ok(screen.includes('previousServingQuery.targetServings!==null'));
+  assert.ok(screen.includes('combien de ${realFollowupIngredient} pour ${previousServingQuery.targetServings} personnes'));
+});
+
+test('V0.291 a recognized ingredient follow-up refreshes the same bounded serving context instead of creating new state',()=>{
+  const screen=fs.readFileSync(path.join(root,'src/screens/CookingModeScreen.tsx'),'utf8');
+  assert.ok(screen.includes("lastServingQueryRef.current={kind:'ingredient_quantity'"));
+  assert.ok(screen.includes('targetServings:result.action.targetServings??null'));
+  assert.ok(screen.includes('markLiaCookingSessionFollowupWindow()'));
+  assert.ok(!screen.includes('AsyncStorage'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}

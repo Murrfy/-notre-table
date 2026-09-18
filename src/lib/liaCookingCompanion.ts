@@ -133,6 +133,26 @@ export function liaHandsFreeCookingServingTarget(text:string):number|null{
   return value!==null&&value>=1&&value<=50?value:null;
 }
 
+export function liaCookingIngredientFollowupQuery(text:string):string|null{
+  const folded=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’]/g,"'").replace(/[?!.,;:]+/g,' ').replace(/\s+/g,' ').trim();
+  const patterns:RegExp[]=[
+    /^et\s+(?:(?:le|la|les|l')\s*)?(.+)$/i,
+    /^and\s+(?:the\s+)?(.+)$/i,
+    /^y\s+(?:(?:el|la|los|las)\s+)?(.+)$/i,
+    /^ו\s*(.+)$/u,
+  ];
+  for(const pattern of patterns){
+    const match=folded.match(pattern);
+    if(!match)continue;
+    const target=match[1].trim();
+    if(!target||/^(?:pour|for|para)\b/i.test(target))return null;
+    const key=canonicalIngredientKey(target);
+    if(['pour','for','para','personne','personnes','portion','portions','people','serving','servings','temps','time','minute','minutes','etape','etapes','step','steps','minuteur','timer'].includes(key))return null;
+    return target;
+  }
+  return null;
+}
+
 export function liaCookingServingFollowupTarget(text:string):number|null{
   const folded=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’]/g,"'").replace(/[?!.,;:]+/g,' ').replace(/\s+/g,' ').trim();
   const patterns:RegExp[]=[

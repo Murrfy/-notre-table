@@ -1,3 +1,11 @@
+## V0.291 — Suivi conversationnel d’ingrédient
+
+- Après une demande de quantité, « et le lait ? » réutilise le nombre de personnes récent.
+- Le suivi conserve seulement l’ingrédient précédent, la cible de portions et l’horodatage de session.
+- Le nouvel ingrédient doit exister réellement dans la recette ouverte avant toute reconstruction de commande.
+- « Et pour 8 ? » reste réservé au suivi de portions et n’est jamais interprété comme un ingrédient.
+- Fenêtre maximale inchangée : 2 minutes, sans persistance et sans second pipeline vocal.
+
 ## V0.290 — Suivi conversationnel des portions
 
 - Après une quantité ciblée ou une adaptation de toute la liste, « et pour 8 ? » réutilise le contexte récent.
