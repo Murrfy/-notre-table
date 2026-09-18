@@ -372,7 +372,7 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
             sessionStillActive:Boolean(tableConversationRuntimeRef.current),
           });
           if(!maySpeak)return;
-          await speakLia(text,locale.languageTag,currentVoice?.identifier,{
+          await speakLia(spokenText,locale.languageTag,currentVoice?.identifier,{
             onStart:()=>setVoiceSpeaking(true),
             onDone:()=>setVoiceSpeaking(false),
             onStopped:()=>setVoiceSpeaking(false),
@@ -445,11 +445,11 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
             await speakIfStillFree(assistant.spokenReply);
             return;
           }
-          const personalReply=liaPersonalPresenceReply(turn.text,locale.languageTag);
+          const personalReply=liaPersonalPresenceReply(responseTurn.text,locale.languageTag);
           if(personalReply){await speakIfStillFree(personalReply);return;}
 
           const result=await generateLiaTableResponse({
-            turn,
+            turn:responseTurn,
             context:{
               mode:mode==='cooking'?'cooking':'table',
               languageTag:locale.languageTag,
