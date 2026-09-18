@@ -90,6 +90,53 @@ export function extractApprovedUserNickname(text:string,names:ReadonlyArray<stri
   return null;
 }
 
+export type LiaPlayfulWrongNameAddress={
+  addressed:boolean;
+  cleanedText:string;
+  usedName:string|null;
+  mirrorNickname:string|null;
+};
+
+function playfulNicknameCandidate(value:string):boolean{
+  const normalized=fold(value).replace(/[^\p{L}\p{N}]/gu,'');
+  if(!normalized||normalized.length<4||normalized.length>12)return false;
+  if(['coco','boubou','doudou','loulou','chouchou','kiki','nono','fifi','lili','mimi','riri','toto'].includes(normalized))return true;
+  if(normalized.length%2!==0)return false;
+  const half=normalized.slice(0,normalized.length/2);
+  return half.length>=2&&half.length<=4&&half+half===normalized;
+}
+
+function assistantLikeRequest(text:string):boolean{
+  const s=fold(text).replace(/[’']/g,' ').replace(/[!?.,;:]+/g,' ').replace(/\s+/g,' ').trim();
+  if(!s)return false;
+  if(/\b(?:urgence|urgent|secours|danger|accident|police|ambulance|suicide|mourir|violence|emergency|help me|danger|accident|police|ambulance|suicide|die)\b/.test(s))return false;
+  return /^(?:tu\s+(?:me\s+)?(?:mets?|lances?|joues?|donnes?|dis|fais|ouvres?|fermes?|cherches?|trouves?|rappelles?|appelles?|envoies?|ajoutes?|montres?|lis|annules?|arretes?)|peux\s+tu|est\s+ce\s+que\s+tu|(?:mets?|lance|joue|donne|dis|fais|ouvre|ferme|cherche|trouve|rappelle|appelle|envoie|ajoute|montre|lis|annule|arrete)\b|can\s+you|could\s+you|would\s+you|please\b|(?:play|start|tell|show|open|close|find|call|send|add|cancel|stop)\b|puedes\b|podrias\b|(?:pon|reproduce|dime|muestra|abre|cierra|busca|llama|envia|anade|cancela|para)\b|(?:את\s+יכולה|תשימי|תפעילי|תגידי|תראי|תפתחי|תסגרי|תחפשי|תתקשרי|תשלחי)\b)/iu.test(s);
+}
+
+export function liaPlayfulMirrorNickname(wrongName:string):string{
+  const bank=['Boubou','Doudou','Loulou','Chouchou'];
+  let hash=0;for(const char of fold(wrongName))hash+=char.codePointAt(0)??0;
+  return bank[Math.abs(hash)%bank.length];
+}
+
+export function detectLiaPlayfulWrongNameAddress(text:string,names:ReadonlyArray<string>=['LIA']):LiaPlayfulWrongNameAddress{
+  const raw=text.trim();
+  const match=raw.match(/^(?:hey\s+|salut\s+)?([\p{L}\p{N}'’_-]{2,16})(?:\s*[,;:!?.-]\s*|\s+)(.+)$/iu);
+  if(!match)return{addressed:false,cleanedText:raw,usedName:null,mirrorNickname:null};
+  const candidate=sanitizeLiaNickname(match[1]??'');
+  const cleanedText=(match[2]??'').trim();
+  if(!candidate||names.some(name=>fold(name)===fold(candidate))||!playfulNicknameCandidate(candidate)||!assistantLikeRequest(cleanedText))return{addressed:false,cleanedText:raw,usedName:null,mirrorNickname:null};
+  return{addressed:true,cleanedText,usedName:candidate,mirrorNickname:liaPlayfulMirrorNickname(candidate)};
+}
+
+export function liaPlayfulNameTeasePrefix(languageTag:string,mirrorNickname:string):string{
+  const tag=languageTag.toLowerCase();
+  if(tag.startsWith('fr'))return`Oui ${mirrorNickname} 😏.`;
+  if(tag.startsWith('es'))return`Sí, ${mirrorNickname} 😏.`;
+  if(tag.startsWith('he'))return`כן, ${mirrorNickname} 😏.`;
+  return`Sure, ${mirrorNickname} 😏.`;
+}
+
 export function liaMayPlayfullyMirrorNameTease(input:{tone:'warm'|'neutral'|'tense'|'distress'|'unknown';sensitiveMoment:boolean;targetComfortKnown:boolean;jokeTargetsVulnerability:boolean}):boolean{
   if(input.sensitiveMoment||input.jokeTargetsVulnerability)return false;
   if(input.tone==='tense'||input.tone==='distress'||input.tone==='unknown')return false;
