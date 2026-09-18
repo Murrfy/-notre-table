@@ -242,14 +242,14 @@ if(hasRevenueCatAdapter!==hasRevenueCatDependency)failures.push('RevenueCat inva
 if(appConfig?.expo?.scheme!=='notretable')failures.push('Deep-link invariant: app scheme must remain notretable until a universal-link domain is configured.');
 if(appConfig?.expo?.ios?.config?.usesNonExemptEncryption!==false)failures.push('iOS release invariant: usesNonExemptEncryption must stay explicitly false while runtime has no non-exempt application cryptography.');
 const sdk57Recommended={
-  expo:'~57.0.17',
+  expo:'~57.0.24',
   react:'19.2.3',
   'react-native':'0.86.3',
   'expo-status-bar':'~57.0.1',
-  'expo-notifications':'~57.0.18',
+  'expo-notifications':'~57.0.20',
   'expo-print':'~57.0.2',
-  'expo-sharing':'~57.0.19',
-  'expo-image-picker':'~57.0.17',
+  'expo-sharing':'~57.0.21',
+  'expo-image-picker':'~57.0.19',
   'expo-keep-awake':'~57.0.2',
   'expo-localization':'~57.0.2',
   'expo-file-system':'~57.0.7',

@@ -29,15 +29,15 @@ const npmMatch=npmUserAgent.match(/(?:^|\s)npm\/([^\s]+)/);
 if(npmMatch&&npmMatch[1]!==expectedNpm) failures.push(`npm ${npmMatch[1]} does not match the release toolchain ${expectedNpm}.`);
 if(pkg.version!==app.expo?.version) failures.push(`Version mismatch: package.json=${pkg.version}, app.json=${app.expo?.version}`);
 
-// SDK 57 compatibility floor / current recommended patch line verified against Expo docs on 2026-09-14.
-expect('dependencies','expo','~57.0.17');
+// SDK 57 compatibility line aligned with Expo CLI's installed-version check on 2026-09-18.
+expect('dependencies','expo','~57.0.24');
 expect('dependencies','react','19.2.3');
 expect('dependencies','react-native','0.86.3');
 expect('dependencies','expo-status-bar','~57.0.1');
-expect('dependencies','expo-notifications','~57.0.18');
+expect('dependencies','expo-notifications','~57.0.20');
 expect('dependencies','expo-print','~57.0.2');
-expect('dependencies','expo-sharing','~57.0.19');
-expect('dependencies','expo-image-picker','~57.0.17');
+expect('dependencies','expo-sharing','~57.0.21');
+expect('dependencies','expo-image-picker','~57.0.19');
 expect('dependencies','expo-keep-awake','~57.0.2');
 expect('dependencies','expo-localization','~57.0.2');
 expect('dependencies','expo-file-system','~57.0.7');
