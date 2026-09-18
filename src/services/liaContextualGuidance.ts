@@ -6,7 +6,8 @@ export type LiaContextualGuidanceEvent=
   |{kind:'family_message_first_use';householdId:string;organizerName:string}
   |{kind:'family_message_help';householdId:string;organizerName:string;step:'prepare'|'share'}
   |{kind:'family_choice_changed';householdId:string;organizerName:string;memberName:string;mealDate:string;mealType:MealType;desire:LightDesire}
-  |{kind:'family_take_charge_changed';householdId:string;organizerName:string;memberName:string;mealDate:string;mealType:MealType;active:boolean};
+  |{kind:'family_take_charge_changed';householdId:string;organizerName:string;memberName:string;mealDate:string;mealType:MealType;active:boolean}
+  |{kind:'profile_enrichment_question';householdId:string;organizerName:string;subjectName:string;fact:'birthday'};
 
 type Listener=(event:LiaContextualGuidanceEvent)=>void;
 const listeners=new Set<Listener>();
@@ -23,7 +24,8 @@ function eventKey(event:LiaContextualGuidanceEvent):string{
   if(event.kind==='family_message_first_use')return event.kind+':'+event.householdId+':'+event.organizerName;
   if(event.kind==='family_message_help')return event.kind+':'+event.householdId+':'+event.step;
   if(event.kind==='family_choice_changed')return event.kind+':'+event.householdId+':'+event.mealDate+':'+event.mealType+':'+event.memberName+':'+event.desire;
-  return event.kind+':'+event.householdId+':'+event.mealDate+':'+event.mealType+':'+event.memberName+':'+String(event.active);
+  if(event.kind==='family_take_charge_changed')return event.kind+':'+event.householdId+':'+event.mealDate+':'+event.mealType+':'+event.memberName+':'+String(event.active);
+  return event.kind+':'+event.householdId+':'+event.subjectName+':'+event.fact;
 }
 
 export function emitLiaContextualGuidance(event:LiaContextualGuidanceEvent):void{
@@ -72,6 +74,11 @@ export function liaContextualGuidancePrompt(event:LiaContextualGuidanceEvent,lan
       :(fr?'la demande est prête mais aucun destinataire n’a encore été envoyé. Guide-la seulement pour choisir les prénoms et envoyer.':'the request is ready but no recipient has been sent yet. Guide only through choosing names and sending.');
     return fr?`${prefix}${task} Une étape à la fois, ton rassurant et léger, puis tais-toi dès qu’elle avance.`:`${prefix}${task} One step at a time, light and reassuring, then stop once they progress.`;
   }
+  if(event.kind==='profile_enrichment_question'){
+    return fr
+      ?`${prefix}profite d’un moment calme pour apprendre une petite information familiale manquante, sans donner l’impression d’un formulaire. Demande simplement quand est l’anniversaire de ${event.subjectName}. Précise que le jour et le mois suffisent et que l’année est facultative. Une seule question, ton naturel et chaleureux, aucune insistance.`
+      :`${prefix}use a calm moment to learn one small missing family detail without sounding like a form. Simply ask when ${event.subjectName}'s birthday is. Say that day and month are enough and the year is optional. Ask one question only, warmly, with no pressure.`;
+  }
   if(event.kind==='family_choice_changed'){
     const label:Record<LightDesire,string>={home:'Plat fait maison',pizza:'Pizza',pasta:'Pâtes',sushi:'Sushi',chinese:'Chinois'};
     if(event.desire==='home'){
@@ -95,7 +102,7 @@ export function liaContextualGuidancePrompt(event:LiaContextualGuidanceEvent,lan
 
 function samePerson(a:string,b:string):boolean{return cleanName(a).toLocaleLowerCase()===cleanName(b).toLocaleLowerCase();}
 function stableJoke(event:LiaContextualGuidanceEvent):boolean{
-  const seed=event.kind==='family_take_charge_changed'?event.memberName+event.mealDate:event.kind;
+  const seed=event.kind==='family_take_charge_changed'?event.memberName+event.mealDate:event.kind==='profile_enrichment_question'?event.subjectName+event.fact:event.kind;
   let sum=0;for(const ch of seed)sum+=ch.charCodeAt(0);return sum%3===0;
 }
 
@@ -111,6 +118,11 @@ export function liaContextualGuidanceFallback(event:LiaContextualGuidanceEvent,l
   if(event.kind==='family_message_help'){
     if(event.step==='prepare')return fr?`${prefix}choisis d’abord les options du repas. Ensuite on choisira à qui envoyer.`:`${prefix}choose the meal options first. Then we’ll choose who to send it to.`;
     return fr?`${prefix}la demande est prête. Choisis maintenant les personnes à qui l’envoyer, et je suis la suite avec toi.`:`${prefix}the request is ready. Choose who to send it to, and I’ll follow what happens with you.`;
+  }
+  if(event.kind==='profile_enrichment_question'){
+    return fr
+      ?`${prefix}au fait, pour que je pense aux anniversaires : c’est quand celui de ${event.subjectName} ? Le jour et le mois me suffisent, l’année est facultative.`
+      :`${prefix}by the way, so I can keep birthdays in mind: when is ${event.subjectName}'s birthday? Day and month are enough; the year is optional.`;
   }
   if(event.kind==='family_choice_changed'){
     if(event.desire!=='home')return'';
