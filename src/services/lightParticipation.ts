@@ -3,6 +3,9 @@ import { runtimeConfig } from '../lib/runtimeConfig';
 import type { MealType } from '../types';
 
 export type LightDesire='home'|'pizza'|'pasta'|'sushi'|'chinese'|'surprise';
+export type LightPrimaryDesire='home'|'pizza'|'pasta'|'sushi'|'chinese';
+export function lightPrimaryDesire(value:LightDesire|null):LightPrimaryDesire|null{return value==='surprise'?'home':value;}
+export function lightIsHomeDesire(value:LightDesire|null):boolean{return value==='home'||value==='surprise';}
 export type LightMember={
   id:string;
   household_id:string;
