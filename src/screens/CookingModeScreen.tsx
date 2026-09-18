@@ -8,7 +8,7 @@ import { convertQuantity } from '../lib/units';
 import { normalizeUnit } from '../domain/catalog';
 import {formatCookingClock,liaCookingApproximationConsent,liaCookingCue,liaCookingIngredientMatches,liaCookingServingFollowupTarget} from '../lib/liaCookingCompanion';
 import {runLiaCookingCommand,type LiaCookingSpeechAdapter} from '../services/liaCookingRuntime';
-import {setLiaCookingSessionVoiceHandler,type LiaCookingApproximationRequest} from '../services/liaCookingSession';
+import {markLiaCookingSessionFollowupWindow,setLiaCookingSessionVoiceHandler,type LiaCookingApproximationRequest} from '../services/liaCookingSession';
 
 export function CookingModeScreen({recipe,onClose,speechAdapter}:{recipe:Recipe;onClose:()=>void;speechAdapter?:LiaCookingSpeechAdapter}){
   useKeepAwake('notre-table-cooking');
@@ -70,8 +70,10 @@ export function CookingModeScreen({recipe,onClose,speechAdapter}:{recipe:Recipe;
       :text;
     const result=handleHandsFreeCommand(commandText);
     if(result.action.kind==='ingredient_quantity'&&result.action.ingredientQuery){
+      markLiaCookingSessionFollowupWindow();
       lastServingQueryRef.current={kind:'ingredient_quantity',ingredientQuery:result.action.ingredientQuery,atMs:now};
     }else if(result.action.kind==='scale_ingredients'){
+      markLiaCookingSessionFollowupWindow();
       lastServingQueryRef.current={kind:'scale_ingredients',ingredientQuery:null,atMs:now};
     }
     if(result.action.kind==='unknown'||result.action.kind==='music')return{handled:false,spokenReply:null};
