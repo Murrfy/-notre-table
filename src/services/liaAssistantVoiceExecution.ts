@@ -2,7 +2,7 @@ import {isLiaAssistantActionCancellation,routeLiaAssistantVoiceRequest} from '..
 import {clearLiaPhoneCallClarification,continueLiaPhoneCallClarification,executeLiaPhoneCall,liaPhoneCallReply,type LiaPhoneCallResult} from './liaPhoneCallCoordinator';
 import {clearLiaMessageClarification,continueLiaMessageClarification,prepareLiaMessageFromSpeech} from './liaMessageActionAdapter';
 import {clearLiaReminderClarification,continueLiaReminderClarification,liaReminderClarificationPending,prepareLiaReminderFromSpeech} from './liaAssistantReminderExecution';
-import {clearLiaDirectAppActionClarification,continueLiaDirectAppActionClarification,liaDirectAppActionClarificationPending,prepareLiaDirectAppActionFromSpeech} from './liaAssistantDirectActionExecution';
+import {clearLiaDirectAppActionClarification,clearLiaShoppingShortageFollowup,continueLiaDirectAppActionClarification,continueLiaShoppingShortageFollowup,liaDirectAppActionClarificationPending,liaShoppingShortageFollowupActive,noteLiaShoppingShortageFromSpeech,prepareLiaDirectAppActionFromSpeech} from './liaAssistantDirectActionExecution';
 import {clearLiaMusicClarification,continueLiaMusicClarification,liaMusicClarificationPending,prepareLiaMusicFromSpeech} from './liaMusicActionAdapter';
 import {clearLiaTimerClarification,continueLiaTimerClarification,executeLiaTimerFromSpeech,liaTimerClarificationPending} from './liaAssistantTimerExecution';
 import {clearLiaNavigationClarification,continueLiaNavigationClarification,liaNavigationClarificationPending,prepareLiaNavigationFromSpeech} from './liaAssistantNavigationExecution';
@@ -44,7 +44,7 @@ export type LiaAssistantVoiceExecution=
   |{status:'cooking_command';spokenReply:string}
   |{status:'cooking_approximation_requested';request:LiaCookingApproximationRequest}
   |{status:'action_cancelled';spokenReply:string}
-  |{status:'app_action_completed'|'app_action_needs_clarification'|'app_action_unavailable'|'app_action_failed';spokenReply:string}
+  |{status:'app_action_context_noted'|'app_action_completed'|'app_action_needs_clarification'|'app_action_unavailable'|'app_action_failed';spokenReply:string}
   |{status:'phone';result:LiaPhoneCallResult;spokenReply:string|null};
 
 export async function executeLiaAssistantVoiceRequest(input:{text:string;languageTag:string;awaitingPhoneName?:boolean;awaitingPhoneClarification?:boolean;awaitingMessageClarification?:boolean;directNames?:ReadonlyArray<string>;householdId?:string;weekStart?:string;demo?:boolean}):Promise<LiaAssistantVoiceExecution>{
@@ -52,6 +52,7 @@ export async function executeLiaAssistantVoiceRequest(input:{text:string;languag
   const request=routeLiaAssistantVoiceRequest(input.text,directNames);
   const reminderPending=liaReminderClarificationPending();
   const directActionPending=liaDirectAppActionClarificationPending();
+  const shoppingShortageFollowup=liaShoppingShortageFollowupActive();
   const musicPending=liaMusicClarificationPending();
   const timerPending=liaTimerClarificationPending();
   const navigationPending=liaNavigationClarificationPending();
@@ -63,12 +64,13 @@ export async function executeLiaAssistantVoiceRequest(input:{text:string;languag
   const cookingPending=liaCookingSessionClarificationPending();
   const cookingFollowupActive=liaCookingSessionFollowupActive();
   const cancellationRequested=isLiaAssistantActionCancellation(input.text)||isLiaAssistantActionCancellation(input.text,directNames);
-  if((input.awaitingPhoneName||input.awaitingPhoneClarification||input.awaitingMessageClarification||reminderPending||timerPending||navigationPending||alongRoutePending||calendarPending||pantryShoppingPending||pantryPlanningPending||pantryRecipeOpenPending||directActionPending||musicPending||cookingPending)&&cancellationRequested){
+  if((input.awaitingPhoneName||input.awaitingPhoneClarification||input.awaitingMessageClarification||reminderPending||timerPending||navigationPending||alongRoutePending||calendarPending||pantryShoppingPending||pantryPlanningPending||pantryRecipeOpenPending||directActionPending||shoppingShortageFollowup||musicPending||cookingPending)&&cancellationRequested){
     clearLiaPhoneCallClarification();
     clearLiaMessageClarification();
     clearLiaReminderClarification();
     clearLiaTimerClarification();
     clearLiaDirectAppActionClarification();
+    clearLiaShoppingShortageFollowup();
     clearLiaMusicClarification();
     clearLiaNavigationClarification();
     clearLiaNavigationAlongRoutePending();
@@ -285,12 +287,20 @@ export async function executeLiaAssistantVoiceRequest(input:{text:string;languag
     if(cooking.approximationRequest)return{status:'cooking_approximation_requested',request:cooking.approximationRequest};
     if(cooking.handled)return{status:'cooking_command',spokenReply:cooking.spokenReply??''};
   }
+  if(shoppingShortageFollowup){
+    const shortageFollowup=await continueLiaShoppingShortageFollowup(request.directAddressed?request.cleanedText:input.text);
+    if(shortageFollowup.status!=='not_recognized'){
+      return{status:shortageFollowup.status==='completed'?'app_action_completed':shortageFollowup.status==='needs_clarification'?'app_action_needs_clarification':shortageFollowup.status==='failed'?'app_action_failed':'app_action_unavailable',spokenReply:shortageFollowup.spokenReply};
+    }
+  }
   if(!request.directAddressed||request.intent==='listen_only')return{status:'not_assistant_request'};
   if(liaCookingSessionActive()){
     const cooking=await runLiaCookingSessionVoiceCommand(request.cleanedText,input.languageTag);
     if(cooking.approximationRequest)return{status:'cooking_approximation_requested',request:cooking.approximationRequest};
     if(cooking.handled)return{status:'cooking_command',spokenReply:cooking.spokenReply??''};
   }
+  const shortage=noteLiaShoppingShortageFromSpeech({text:request.cleanedText,languageTag:input.languageTag,householdId:input.householdId,weekStart:input.weekStart,demo:input.demo});
+  if(shortage.status==='context_noted')return{status:'app_action_context_noted',spokenReply:shortage.spokenReply};
   const pantryRecipeOpen=prepareLiaPantryVisionRecipeOpenFromSpeech({text:request.cleanedText,languageTag:input.languageTag});
   if(pantryRecipeOpen.status==='open_requested')return{status:'pantry_recipe_open_requested',recipeId:pantryRecipeOpen.recipeId,startCooking:pantryRecipeOpen.startCooking,spokenReply:pantryRecipeOpen.spokenReply};
   if(pantryRecipeOpen.status!=='not_recognized')return{status:pantryRecipeOpen.status==='needs_recipe'?'pantry_recipe_open_needs_recipe':'pantry_recipe_open_unavailable',spokenReply:pantryRecipeOpen.spokenReply};
