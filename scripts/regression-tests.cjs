@@ -6122,7 +6122,9 @@ test('V0.295 birthday awareness is useful but non-autonomous and wins over a new
   const main=fs.readFileSync(path.join(root,'src/screens/MainScreen.tsx'),'utf8');
   assert.ok(guidance.includes('Ne mentionne jamais son âge'));
   assert.ok(guidance.includes('sans créer de rappel, achat, réservation ou planning sans demande explicite'));
-  assert.ok(main.indexOf('maybeEmitLiaBirthdayAwareness')<main.indexOf('maybeEmitLiaProfileEnrichmentQuestion'));
+  const birthdayCall=main.indexOf('const birthdaySurfaced=await maybeEmitLiaBirthdayAwareness');
+  const enrichmentCall=main.indexOf('await maybeEmitLiaProfileEnrichmentQuestion');
+  assert.ok(birthdayCall>=0&&enrichmentCall>birthdayCall);
   assert.ok(main.includes('if(cancelled||birthdaySurfaced)return'));
 });
 
