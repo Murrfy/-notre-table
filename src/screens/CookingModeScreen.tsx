@@ -60,6 +60,15 @@ export function CookingModeScreen({recipe,onClose,speechAdapter}:{recipe:Recipe;
       if(!matches.length)return{handled:true,spokenReply:fr?`Je ne vois pas ${query||'cet ingrédient'} dans cette recette.`:`I don’t see ${query||'that ingredient'} in this recipe.`};
       if(matches.length>1)return{handled:true,spokenReply:fr?`${matches[0].name} apparaît plusieurs fois dans la recette. Je préfère ne pas additionner des quantités qui pourraient avoir des usages différents.`:`${matches[0].name} appears more than once in the recipe. I won’t add quantities that may be used differently.`};
       const ingredient=matches[0];
+      const targetServings=result.action.targetServings??null;
+      if(targetServings!==null){
+        if(!Number.isFinite(recipe.portions)||recipe.portions<=0)return{handled:true,spokenReply:fr?'Je ne peux pas adapter cette quantité : le nombre de portions de la recette n’est pas renseigné.':'I can’t scale that quantity because the recipe serving count is not entered.'};
+        if(ingredient.quantity==null)return{handled:true,spokenReply:fr?`La recette mentionne ${ingredient.name}, mais sans quantité précise à adapter.`:`The recipe includes ${ingredient.name}, but no exact quantity is entered to scale.`};
+        const scaledQuantity=ingredient.quantity*targetServings/recipe.portions;
+        const scaledLabel=quantityLabel(scaledQuantity,ingredient.unit);
+        if(!scaledLabel)return{handled:true,spokenReply:fr?`Je ne peux pas calculer une quantité précise de ${ingredient.name} pour ${targetServings} personnes.`:`I can’t calculate an exact amount of ${ingredient.name} for ${targetServings} people.`};
+        return{handled:true,spokenReply:fr?`Pour ${targetServings} personnes, il faut ${scaledLabel} de ${ingredient.name}.`:`For ${targetServings} people, you need ${scaledLabel} of ${ingredient.name}.`};
+      }
       const quantity=quantityLabel(ingredient.quantity,ingredient.unit);
       if(!quantity)return{handled:true,spokenReply:fr?`La recette mentionne ${ingredient.name}, mais sans quantité précise.`:`The recipe includes ${ingredient.name}, but no exact quantity is entered.`};
       return{handled:true,spokenReply:fr?`Il faut ${quantity} de ${ingredient.name}.`:`You need ${quantity} of ${ingredient.name}.`};
