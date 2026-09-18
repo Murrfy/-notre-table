@@ -1,3 +1,14 @@
+## V0.295 — Anniversaires utiles, sans automatisme imposé
+
+- LIA exploite les anniversaires déjà enregistrés au lieu de les stocker passivement.
+- Fenêtre d’anticipation : 7 jours maximum, avec une intervention « à venir » puis éventuellement une intervention le jour J.
+- Chaque étape est dite une seule fois par personne et par année.
+- Aucun âge n’est annoncé ou déduit dans l’intervention.
+- Aucun rappel, achat, réservation ou planning n’est créé sans demande explicite.
+- Le 29 février est traité le 28 février les années non bissextiles pour ne pas oublier la personne.
+- Une intervention anniversaire a priorité sur une nouvelle question de profil dans le même moment calme.
+- Même moteur de guidage LIA et même pipeline vocal ; aucun système parallèle.
+
 ## V0.294 — Guidage contextuel + tableau famille + profil progressif
 
 - Message famille : tableau nominatif partagé avec cinq choix actifs — Fait maison, Pizza, Pâtes, Sushi, Chinois — et compteurs par option.
