@@ -1,5 +1,11 @@
-# Notre Table — V0.288
+# Notre Table — V0.289
 
+
+## V0.289 — Adapter toute la liste d’ingrédients
+
+V0.289 reprend V0.288 sans modifier la recette enregistrée. En mode cuisine, LIA comprend désormais des demandes comme « adapte les ingrédients pour 6 personnes » ou « adjust the ingredients for 8 servings » et recalcule à la volée toutes les quantités qui disposent d’une base exacte.
+
+Le calcul reste déterministe : quantité enregistrée × portions demandées / portions de base. Si certaines quantités manquent, LIA donne d’abord celles qu’elle peut calculer exactement, signale les ingrédients incomplets puis demande l’autorisation avant d’approximer uniquement ce qui manque. Si les portions de base sont absentes, elle demande aussi l’accord avant toute approximation. Les valeurs approximatives restent clairement séparées des données réelles de la recette et ne sont jamais enregistrées.
 
 ## V0.288 — Adapter une quantité à un nombre de personnes
 

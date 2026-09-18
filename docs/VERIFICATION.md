@@ -1,13 +1,13 @@
-# Vérifications techniques — état courant V0.288
-- Checkpoint V0.288 : quantité ciblée adaptée aux portions, avec approximation uniquement après consentement explicite lorsque les données exactes manquent.
+# Vérifications techniques — état courant V0.289
+- Checkpoint V0.289 : adaptation vocale de toute la liste d’ingrédients à un nombre de personnes, avec approximation uniquement après consentement explicite pour les données manquantes.
 - `npm ci` : **PASS** sur runner GitHub avec Node 22.16.0 / npm 10.9.2.
 - `expo install --check` : **PASS**, dépendances SDK 57 à jour.
 - TypeScript installé (`tsc --noEmit`) : **PASS**.
 - `npm run verify` : **PASS**.
-- Régressions : **683/683 PASS**.
+- Régressions : **686/686 PASS**.
 - Gates EAS : **17/17 PASS**.
 - Matrice d’acceptation : **53 scénarios / 33 invariants critiques PASS**.
-- Audit TypeScript/TSX : **220 fichiers transpilés, 0 diagnostic**.
+- Audit TypeScript/TSX : **219 fichiers transpilés, 0 diagnostic**.
 - Expo Android : **export PASS**.
 - Expo iOS : **export PASS**.
-- Release evidence : **589 fichiers hashés**, contrat SHA-256 `6a3fab1ccaba73b0c866a71aec139941da76c89b3dfc558228a347f1dc450c0c`.
+- Release evidence : **589 fichiers hashés**, contrat SHA-256 `69cfb0946201df07aed84e1f53120f142240aca5eb181a23077e107872d1961e`.

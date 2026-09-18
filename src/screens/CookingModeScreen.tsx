@@ -34,7 +34,7 @@ export function CookingModeScreen({recipe,onClose,speechAdapter}:{recipe:Recipe;
     });
     if(result.state.stepIndex!==index)setIndex(result.state.stepIndex);
     if(result.state.timerEndsAtMs!==timerEndsAt){setClockNow(now);setTimerEndsAt(result.state.timerEndsAtMs);}
-    if(result.action.kind==='show_ingredients'||result.action.kind==='list_ingredients')setIngredientsOpen(true);
+    if(result.action.kind==='show_ingredients'||result.action.kind==='list_ingredients'||result.action.kind==='scale_ingredients')setIngredientsOpen(true);
     if(result.action.kind==='hide_ingredients')setIngredientsOpen(false);
     return result;
   };
@@ -68,6 +68,53 @@ export function CookingModeScreen({recipe,onClose,speechAdapter}:{recipe:Recipe;
     }
     if(result.action.kind==='show_ingredients')return{handled:true,spokenReply:fr?'Je te les affiche.':'I’m showing the ingredients.'};
     if(result.action.kind==='hide_ingredients')return{handled:true,spokenReply:fr?'D’accord, je les masque.':'Okay, I’m hiding the ingredients.'};
+    if(result.action.kind==='scale_ingredients'){
+      const targetServings=result.action.targetServings??null;
+      const ingredients=recipe.ingredients?.filter(item=>item.name.trim())??[];
+      if(!ingredients.length)return{handled:true,spokenReply:fr?'Aucun ingrédient n’est renseigné pour cette recette.':'No ingredients are entered for this recipe.'};
+      if(targetServings===null)return{handled:true,spokenReply:fr?'Pour combien de personnes ?':'For how many people?'};
+      if(!Number.isFinite(recipe.portions)||recipe.portions<=0){
+        const approximationRequest:LiaCookingApproximationRequest={
+          scope:'ingredient_list',
+          recipeTitle:recipe.title,
+          ingredientName:ingredients.map(item=>item.name).join(', '),
+          targetServings,
+          baseServings:null,
+          recordedQuantity:null,
+          recordedUnit:null,
+          ingredients:ingredients.map(item=>({name:item.name,quantity:item.quantity??null,unit:item.unit??null})),
+          reason:'missing_base_servings',
+        };
+        approximationPendingRef.current=approximationRequest;
+        return{handled:true,spokenReply:fr?'La recette ne précise pas son nombre de portions de base, donc je ne peux pas adapter toute la liste exactement. Tu veux que je te fasse une approximation ?':'The recipe does not include a base serving count, so I can’t scale the whole list exactly. Do you want me to make an approximation?',clarificationPending:true};
+      }
+      const exact:string[]=[];
+      const missing:string[]=[];
+      for(const ingredient of ingredients){
+        if(ingredient.quantity==null){missing.push(ingredient.name);continue;}
+        const scaledLabel=quantityLabel(ingredient.quantity*targetServings/recipe.portions,ingredient.unit);
+        if(!scaledLabel){missing.push(ingredient.name);continue;}
+        exact.push(`${ingredient.name}, ${scaledLabel}`);
+      }
+      if(!missing.length){
+        return{handled:true,spokenReply:fr?`Pour ${targetServings} personnes : ${exact.join(', ')}.`:`For ${targetServings} people: ${exact.join(', ')}.`};
+      }
+      const approximationRequest:LiaCookingApproximationRequest={
+        scope:'ingredient_list',
+        recipeTitle:recipe.title,
+        ingredientName:missing.join(', '),
+        targetServings,
+        baseServings:recipe.portions,
+        recordedQuantity:null,
+        recordedUnit:null,
+        ingredients:ingredients.map(item=>({name:item.name,quantity:item.quantity??null,unit:item.unit??null})),
+        reason:'missing_quantity',
+      };
+      approximationPendingRef.current=approximationRequest;
+      const exactPart=exact.length?(fr?`Je peux calculer exactement : ${exact.join(', ')}. `:`I can calculate exactly: ${exact.join(', ')}. `):'';
+      const missingPart=fr?`Il manque une quantité précise pour ${missing.join(', ')}. Tu veux que je fasse une approximation pour ce qui manque ?`:`There is no exact quantity for ${missing.join(', ')}. Do you want me to approximate what is missing?`;
+      return{handled:true,spokenReply:`${exactPart}${missingPart}`,clarificationPending:true};
+    }
     if(result.action.kind==='ingredient_quantity'){
       const query=result.action.ingredientQuery?.trim()??'';
       const matches=query?liaCookingIngredientMatches(query,recipe.ingredients??[]):[];
@@ -76,12 +123,12 @@ export function CookingModeScreen({recipe,onClose,speechAdapter}:{recipe:Recipe;
       const ingredient=matches[0];
       const targetServings=result.action.targetServings??null;
       if(targetServings!==null&&(!Number.isFinite(recipe.portions)||recipe.portions<=0)){
-        const approximationRequest:LiaCookingApproximationRequest={recipeTitle:recipe.title,ingredientName:ingredient.name,targetServings,baseServings:null,recordedQuantity:ingredient.quantity??null,recordedUnit:ingredient.unit??null,reason:'missing_base_servings'};
+        const approximationRequest:LiaCookingApproximationRequest={scope:'ingredient',recipeTitle:recipe.title,ingredientName:ingredient.name,targetServings,baseServings:null,recordedQuantity:ingredient.quantity??null,recordedUnit:ingredient.unit??null,reason:'missing_base_servings'};
         approximationPendingRef.current=approximationRequest;
         return{handled:true,spokenReply:fr?'La recette ne précise pas pour combien de personnes elle est prévue, donc je ne peux pas calculer exactement. Tu veux que je te fasse une approximation ?':'The recipe does not say how many servings it makes, so I can’t calculate it exactly. Do you want me to make an approximation?',clarificationPending:true};
       }
       if(ingredient.quantity==null){
-        const approximationRequest:LiaCookingApproximationRequest={recipeTitle:recipe.title,ingredientName:ingredient.name,targetServings,baseServings:Number.isFinite(recipe.portions)&&recipe.portions>0?recipe.portions:null,recordedQuantity:null,recordedUnit:ingredient.unit??null,reason:'missing_quantity'};
+        const approximationRequest:LiaCookingApproximationRequest={scope:'ingredient',recipeTitle:recipe.title,ingredientName:ingredient.name,targetServings,baseServings:Number.isFinite(recipe.portions)&&recipe.portions>0?recipe.portions:null,recordedQuantity:null,recordedUnit:ingredient.unit??null,reason:'missing_quantity'};
         approximationPendingRef.current=approximationRequest;
         return{handled:true,spokenReply:fr?`La recette mentionne ${ingredient.name}, mais sans quantité précise. Tu veux que je te fasse une approximation ?`:`The recipe includes ${ingredient.name}, but no exact quantity is entered. Do you want me to make an approximation?`,clarificationPending:true};
       }
