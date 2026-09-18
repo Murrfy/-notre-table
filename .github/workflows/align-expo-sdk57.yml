@@ -21,10 +21,22 @@ jobs:
     env:
       CI: '1'
     steps:
-      - name: Checkout
+      - name: Checkout safe validation branch
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
+          ref: ci/expo-sdk57-align-v0286
           persist-credentials: true
+
+      - name: Prove exact branch state
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "HEAD=$(git rev-parse HEAD)"
+          echo "BRANCH=$(git branch --show-current)"
+          test "$(git branch --show-current)" = "ci/expo-sdk57-align-v0286"
+          node -e "const p=require('./package.json'); console.log('APP='+p.version); console.log('EXPO='+p.dependencies.expo); if(p.version!=='0.286.0') process.exit(1)"
+          grep -F "expect('dependencies','expo','~57.0.24');" scripts/environment-preflight.cjs
+          grep -F "'expo-notifications':'~57.0.20'" scripts/audit-project.cjs
 
       - name: Use Node 22.16.0
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
