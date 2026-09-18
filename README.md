@@ -1,5 +1,11 @@
-# Notre Table — V0.294
+# Notre Table — V0.295
 
+
+## V0.295 — LIA utilise les anniversaires qu’elle a appris
+
+V0.295 donne une utilité concrète aux anniversaires collectés progressivement en V0.294. Quand l’application est ouverte dans un moment calme, LIA peut signaler un anniversaire dans les sept jours, puis le jour même. Elle ne mentionne jamais l’âge et ne crée aucun rappel, achat, réservation ou repas sans demande explicite.
+
+L’intervention reste légère : « L’anniversaire de Myriam approche… si tu veux prévoir quelque chose, je suis là. » Le jour J, LIA peut souhaiter l’anniversaire ou proposer de rendre le repas un peu spécial. Chaque étape — « à venir » et « aujourd’hui » — n’est dite qu’une fois par personne et par anniversaire. Si un anniversaire mérite une intervention, LIA ne pose pas en plus une nouvelle question de profil dans le même moment calme.
 
 ## V0.294 — LIA accompagne l’utilisation et apprend la famille progressivement
 
