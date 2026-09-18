@@ -4,9 +4,10 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
+      - ci/expo-sdk57-align-v0286
     paths:
       - '.github/workflows/align-expo-sdk57.yml'
+      - 'scripts/environment-preflight.cjs'
 
 permissions:
   contents: write
@@ -52,4 +53,4 @@ jobs:
             exit 0
           fi
           git commit -m "Align Expo SDK 57 dependencies"
-          git push origin HEAD:main
+          git push origin HEAD:ci/expo-sdk57-align-v0286
