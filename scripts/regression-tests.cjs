@@ -5965,6 +5965,7 @@ test('V0.293 the global LIA lane accepts only the brief explicit shortage follow
   assert.ok(voice.includes('noteLiaShoppingShortageFromSpeech'));
   assert.ok(voice.includes('continueLiaShoppingShortageFollowup'));
   assert.ok(voice.includes("status:'app_action_context_noted'"));
+  assert.ok(voice.includes('if(request.directAddressed)clearLiaShoppingShortageFollowup()'));
   assert.ok(voice.includes('clearLiaShoppingShortageFollowup()'));
   assert.ok(orb.includes('liaShoppingShortageFollowupActive()'));
 });
