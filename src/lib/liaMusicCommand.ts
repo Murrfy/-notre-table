@@ -26,7 +26,8 @@ export function parseLiaMusicCommand(text:string):LiaMusicCommand{
   const raw=text.trim();
   const service=liaMusicServiceFromText(raw);
   const patterns=[
-    /^(?:mets|met|lance|joue)\s+(?:moi\s+)?(?:de\s+)?(?:la\s+)?musique(?:\s+(.+))?$/i,
+    /^(?:tu\s+me\s+)?(?:mets|met|lance|joue)\s+(?:moi\s+)?(?:de\s+)?(?:la\s+)?musique(?:\s+(.+))?$/i,
+    /^(?:peux[- ]?tu|est[- ]ce\s+que\s+tu)\s+(?:me\s+)?(?:mettre|lancer|jouer)\s+(?:de\s+)?(?:la\s+)?musique(?:\s+(.+))?$/i,
     /^(?:mets|met|lance|joue)\s+(?:moi\s+)?(?:la\s+chanson|le\s+morceau|l['’]album|la\s+playlist)\s+(.+)$/i,
     /^(?:mets|met|lance|joue)\s+(?:moi\s+)?(.+?)\s+(?:sur\s+)?(?:spotify|apple\s+music|musique\s+apple|youtube\s+music)$/i,
     /^(?:play)\s+(?:some\s+)?music(?:\s+(.+))?$/i,
