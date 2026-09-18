@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useKeepAwake } from 'expo-keep-awake';
 import { colors, radius } from '../theme';
@@ -6,9 +6,9 @@ import { Recipe } from '../types';
 import { useLocale } from '../context/LocaleContext';
 import { convertQuantity } from '../lib/units';
 import { normalizeUnit } from '../domain/catalog';
-import {formatCookingClock,liaCookingCue,liaCookingIngredientMatches} from '../lib/liaCookingCompanion';
+import {formatCookingClock,liaCookingApproximationConsent,liaCookingCue,liaCookingIngredientMatches} from '../lib/liaCookingCompanion';
 import {runLiaCookingCommand,type LiaCookingSpeechAdapter} from '../services/liaCookingRuntime';
-import {setLiaCookingSessionVoiceHandler} from '../services/liaCookingSession';
+import {setLiaCookingSessionVoiceHandler,type LiaCookingApproximationRequest} from '../services/liaCookingSession';
 
 export function CookingModeScreen({recipe,onClose,speechAdapter}:{recipe:Recipe;onClose:()=>void;speechAdapter?:LiaCookingSpeechAdapter}){
   useKeepAwake('notre-table-cooking');
@@ -19,6 +19,7 @@ export function CookingModeScreen({recipe,onClose,speechAdapter}:{recipe:Recipe;
   const [timerEndsAt,setTimerEndsAt]=useState<number|null>(null);
   const [clockNow,setClockNow]=useState(()=>Date.now());
   const [voiceListening,setVoiceListening]=useState(false);
+  const approximationPendingRef=useRef<LiaCookingApproximationRequest|null>(null);
   const current=steps[index]??locale.t('cooking.noStep');
   const cue=useMemo(()=>liaCookingCue(current,index,steps.length),[current,index,steps.length]);
   const remainingSeconds=timerEndsAt===null?0:Math.max(0,Math.ceil((timerEndsAt-clockNow)/1000));
@@ -38,8 +39,21 @@ export function CookingModeScreen({recipe,onClose,speechAdapter}:{recipe:Recipe;
     return result;
   };
   useEffect(()=>setLiaCookingSessionVoiceHandler((text,languageTag)=>{
-    const result=handleHandsFreeCommand(text);
     const fr=languageTag.toLowerCase().startsWith('fr');
+    const pendingApproximation=approximationPendingRef.current;
+    if(pendingApproximation){
+      const consent=liaCookingApproximationConsent(text);
+      if(consent==='yes'){
+        approximationPendingRef.current=null;
+        return{handled:true,spokenReply:null,clarificationPending:false,approximationRequest:pendingApproximation};
+      }
+      if(consent==='no'){
+        approximationPendingRef.current=null;
+        return{handled:true,spokenReply:fr?'D’accord, je reste uniquement sur les quantités exactes de la recette.':'Okay, I’ll stick to the exact quantities in the recipe.',clarificationPending:false};
+      }
+      return{handled:true,spokenReply:fr?'Dis-moi simplement oui ou non : tu veux que je te fasse une approximation ?':'Just tell me yes or no: do you want me to make an approximation?',clarificationPending:true};
+    }
+    const result=handleHandsFreeCommand(text);
     if(result.action.kind==='unknown'||result.action.kind==='music')return{handled:false,spokenReply:null};
     if(result.action.kind==='repeat_step')return{handled:true,spokenReply:current};
     if(result.action.kind==='step_status'){
@@ -61,16 +75,24 @@ export function CookingModeScreen({recipe,onClose,speechAdapter}:{recipe:Recipe;
       if(matches.length>1)return{handled:true,spokenReply:fr?`${matches[0].name} apparaît plusieurs fois dans la recette. Je préfère ne pas additionner des quantités qui pourraient avoir des usages différents.`:`${matches[0].name} appears more than once in the recipe. I won’t add quantities that may be used differently.`};
       const ingredient=matches[0];
       const targetServings=result.action.targetServings??null;
+      if(targetServings!==null&&(!Number.isFinite(recipe.portions)||recipe.portions<=0)){
+        const approximationRequest:LiaCookingApproximationRequest={recipeTitle:recipe.title,ingredientName:ingredient.name,targetServings,baseServings:null,recordedQuantity:ingredient.quantity??null,recordedUnit:ingredient.unit??null,reason:'missing_base_servings'};
+        approximationPendingRef.current=approximationRequest;
+        return{handled:true,spokenReply:fr?'La recette ne précise pas pour combien de personnes elle est prévue, donc je ne peux pas calculer exactement. Tu veux que je te fasse une approximation ?':'The recipe does not say how many servings it makes, so I can’t calculate it exactly. Do you want me to make an approximation?',clarificationPending:true};
+      }
+      if(ingredient.quantity==null){
+        const approximationRequest:LiaCookingApproximationRequest={recipeTitle:recipe.title,ingredientName:ingredient.name,targetServings,baseServings:Number.isFinite(recipe.portions)&&recipe.portions>0?recipe.portions:null,recordedQuantity:null,recordedUnit:ingredient.unit??null,reason:'missing_quantity'};
+        approximationPendingRef.current=approximationRequest;
+        return{handled:true,spokenReply:fr?`La recette mentionne ${ingredient.name}, mais sans quantité précise. Tu veux que je te fasse une approximation ?`:`The recipe includes ${ingredient.name}, but no exact quantity is entered. Do you want me to make an approximation?`,clarificationPending:true};
+      }
       if(targetServings!==null){
-        if(!Number.isFinite(recipe.portions)||recipe.portions<=0)return{handled:true,spokenReply:fr?'Je ne peux pas adapter cette quantité : le nombre de portions de la recette n’est pas renseigné.':'I can’t scale that quantity because the recipe serving count is not entered.'};
-        if(ingredient.quantity==null)return{handled:true,spokenReply:fr?`La recette mentionne ${ingredient.name}, mais sans quantité précise à adapter.`:`The recipe includes ${ingredient.name}, but no exact quantity is entered to scale.`};
         const scaledQuantity=ingredient.quantity*targetServings/recipe.portions;
         const scaledLabel=quantityLabel(scaledQuantity,ingredient.unit);
         if(!scaledLabel)return{handled:true,spokenReply:fr?`Je ne peux pas calculer une quantité précise de ${ingredient.name} pour ${targetServings} personnes.`:`I can’t calculate an exact amount of ${ingredient.name} for ${targetServings} people.`};
         return{handled:true,spokenReply:fr?`Pour ${targetServings} personnes, il faut ${scaledLabel} de ${ingredient.name}.`:`For ${targetServings} people, you need ${scaledLabel} of ${ingredient.name}.`};
       }
       const quantity=quantityLabel(ingredient.quantity,ingredient.unit);
-      if(!quantity)return{handled:true,spokenReply:fr?`La recette mentionne ${ingredient.name}, mais sans quantité précise.`:`The recipe includes ${ingredient.name}, but no exact quantity is entered.`};
+      if(!quantity)return{handled:true,spokenReply:fr?`La recette mentionne ${ingredient.name}, mais je ne peux pas en déduire une quantité précise.`:`The recipe includes ${ingredient.name}, but I can’t derive an exact quantity.`};
       return{handled:true,spokenReply:fr?`Il faut ${quantity} de ${ingredient.name}.`:`You need ${quantity} of ${ingredient.name}.`};
     }
     if(result.action.kind==='list_ingredients'){
@@ -108,7 +130,7 @@ export function CookingModeScreen({recipe,onClose,speechAdapter}:{recipe:Recipe;
     }
     if(result.action.kind==='stop_voice')return{handled:true,spokenReply:null};
     return{handled:false,spokenReply:null};
-  }),[current,index,steps,timerEndsAt,recipe.ingredients,onClose,locale]);
+  },()=>{approximationPendingRef.current=null;}),[current,index,steps,timerEndsAt,recipe.ingredients,recipe.portions,recipe.title,onClose,locale]);
 
   const toggleVoiceListening=async()=>{
     if(!speechAdapter?.available)return;
