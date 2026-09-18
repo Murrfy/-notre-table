@@ -1,13 +1,44 @@
-export type LiaCookingSessionVoiceResult={handled:boolean;spokenReply:string|null};
+export type LiaCookingApproximationRequest={
+  recipeTitle:string;
+  ingredientName:string;
+  targetServings:number|null;
+  baseServings:number|null;
+  recordedQuantity:number|null;
+  recordedUnit:string|null;
+  reason:'missing_base_servings'|'missing_quantity';
+};
 
-type Handler=(text:string,languageTag:string)=>LiaCookingSessionVoiceResult;
+export type LiaCookingSessionVoiceResult={
+  handled:boolean;
+  spokenReply:string|null;
+  clarificationPending?:boolean;
+  approximationRequest?:LiaCookingApproximationRequest;
+};
+
+type Handler=(text:string,languageTag:string)=>LiaCookingSessionVoiceResult|Promise<LiaCookingSessionVoiceResult>;
 let handler:Handler|null=null;
+let clearHandlerClarification:(()=>void)|null=null;
+let clarificationPending=false;
 
-export function setLiaCookingSessionVoiceHandler(next:Handler):()=>void{
+export function setLiaCookingSessionVoiceHandler(next:Handler,clearClarification?:()=>void):()=>void{
   handler=next;
-  return()=>{if(handler===next)handler=null;};
+  clearHandlerClarification=clearClarification??null;
+  return()=>{
+    if(handler===next){
+      handler=null;
+      clearHandlerClarification=null;
+      clarificationPending=false;
+    }
+  };
 }
 export function liaCookingSessionActive():boolean{return Boolean(handler);}
-export function runLiaCookingSessionVoiceCommand(text:string,languageTag:string):LiaCookingSessionVoiceResult{
-  return handler?.(text,languageTag)??{handled:false,spokenReply:null};
+export function liaCookingSessionClarificationPending():boolean{return clarificationPending;}
+export function clearLiaCookingSessionClarification():void{
+  clarificationPending=false;
+  clearHandlerClarification?.();
+}
+export async function runLiaCookingSessionVoiceCommand(text:string,languageTag:string):Promise<LiaCookingSessionVoiceResult>{
+  const result=handler?await handler(text,languageTag):{handled:false,spokenReply:null};
+  clarificationPending=Boolean(result.clarificationPending);
+  return result;
 }

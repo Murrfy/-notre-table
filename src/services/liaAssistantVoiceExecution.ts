@@ -11,7 +11,7 @@ import {requestLiaNavigationStop} from './liaNavigationLiveControl';
 import {clearLiaNavigationAlongRoutePending,continueLiaNavigationAlongRoute,liaNavigationAlongRoutePending,prepareLiaNavigationAlongRouteFromSpeech} from './liaNavigationAlongRoute';
 import {clearLiaCalendarClarification,continueLiaCalendarClarification,liaCalendarClarificationPending,prepareLiaCalendarFromSpeech} from './liaAssistantCalendarExecution';
 import {prepareLiaCalendarNavigationFromSpeech} from './liaCalendarNavigation';
-import {liaCookingSessionActive,runLiaCookingSessionVoiceCommand} from './liaCookingSession';
+import {clearLiaCookingSessionClarification,liaCookingSessionActive,liaCookingSessionClarificationPending,runLiaCookingSessionVoiceCommand,type LiaCookingApproximationRequest} from './liaCookingSession';
 import {liaPantryVisionFollowupReply} from './liaPantryVisionSession';
 import {prepareLiaPantryVisionStockFromSpeech} from './liaPantryVisionStock';
 import {clearLiaPantryVisionShoppingClarification,liaPantryVisionShoppingClarificationPending,prepareLiaPantryVisionShoppingFromSpeech} from './liaPantryVisionShopping';
@@ -42,6 +42,7 @@ export type LiaAssistantVoiceExecution=
   |{status:'pantry_recipe_open_requested';recipeId:string;startCooking:boolean;spokenReply:string}
   |{status:'pantry_recipe_open_needs_recipe'|'pantry_recipe_open_unavailable';spokenReply:string}
   |{status:'cooking_command';spokenReply:string}
+  |{status:'cooking_approximation_requested';request:LiaCookingApproximationRequest}
   |{status:'action_cancelled';spokenReply:string}
   |{status:'app_action_completed'|'app_action_needs_clarification'|'app_action_unavailable'|'app_action_failed';spokenReply:string}
   |{status:'phone';result:LiaPhoneCallResult;spokenReply:string|null};
@@ -59,8 +60,9 @@ export async function executeLiaAssistantVoiceRequest(input:{text:string;languag
   const pantryShoppingPending=liaPantryVisionShoppingClarificationPending();
   const pantryPlanningPending=liaPantryVisionPlanningClarificationPending();
   const pantryRecipeOpenPending=liaPantryVisionRecipeOpenClarificationPending();
+  const cookingPending=liaCookingSessionClarificationPending();
   const cancellationRequested=isLiaAssistantActionCancellation(input.text)||isLiaAssistantActionCancellation(input.text,directNames);
-  if((input.awaitingPhoneName||input.awaitingPhoneClarification||input.awaitingMessageClarification||reminderPending||timerPending||navigationPending||alongRoutePending||calendarPending||pantryShoppingPending||pantryPlanningPending||pantryRecipeOpenPending||directActionPending||musicPending)&&cancellationRequested){
+  if((input.awaitingPhoneName||input.awaitingPhoneClarification||input.awaitingMessageClarification||reminderPending||timerPending||navigationPending||alongRoutePending||calendarPending||pantryShoppingPending||pantryPlanningPending||pantryRecipeOpenPending||directActionPending||musicPending||cookingPending)&&cancellationRequested){
     clearLiaPhoneCallClarification();
     clearLiaMessageClarification();
     clearLiaReminderClarification();
@@ -73,9 +75,15 @@ export async function executeLiaAssistantVoiceRequest(input:{text:string;languag
     clearLiaPantryVisionShoppingClarification();
     clearLiaPantryVisionPlanningClarification();
     clearLiaPantryVisionRecipeOpenClarification();
+    clearLiaCookingSessionClarification();
     return{status:'action_cancelled',spokenReply:input.languageTag.startsWith('fr')?'D’accord, j’annule.':'Okay, cancelled.'};
   }
-  const actionPending=Boolean(input.awaitingPhoneName||input.awaitingPhoneClarification||input.awaitingMessageClarification||reminderPending||timerPending||navigationPending||alongRoutePending||calendarPending||pantryShoppingPending||pantryPlanningPending||pantryRecipeOpenPending||directActionPending||musicPending);
+  const actionPending=Boolean(input.awaitingPhoneName||input.awaitingPhoneClarification||input.awaitingMessageClarification||reminderPending||timerPending||navigationPending||alongRoutePending||calendarPending||pantryShoppingPending||pantryPlanningPending||pantryRecipeOpenPending||directActionPending||musicPending||cookingPending);
+  if(cookingPending){
+    const cooking=await runLiaCookingSessionVoiceCommand(request.directAddressed?request.cleanedText:input.text,input.languageTag);
+    if(cooking.approximationRequest)return{status:'cooking_approximation_requested',request:cooking.approximationRequest};
+    if(cooking.handled)return{status:'cooking_command',spokenReply:cooking.spokenReply??''};
+  }
   if(actionPending&&request.directAddressed&&request.intent==='phone_call'){
     clearLiaPhoneCallClarification();
     clearLiaMessageClarification();
@@ -273,7 +281,8 @@ export async function executeLiaAssistantVoiceRequest(input:{text:string;languag
   }
   if(!request.directAddressed||request.intent==='listen_only')return{status:'not_assistant_request'};
   if(liaCookingSessionActive()){
-    const cooking=runLiaCookingSessionVoiceCommand(request.cleanedText,input.languageTag);
+    const cooking=await runLiaCookingSessionVoiceCommand(request.cleanedText,input.languageTag);
+    if(cooking.approximationRequest)return{status:'cooking_approximation_requested',request:cooking.approximationRequest};
     if(cooking.handled)return{status:'cooking_command',spokenReply:cooking.spokenReply??''};
   }
   const pantryRecipeOpen=prepareLiaPantryVisionRecipeOpenFromSpeech({text:request.cleanedText,languageTag:input.languageTag});

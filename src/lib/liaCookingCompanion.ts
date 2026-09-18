@@ -123,8 +123,32 @@ export function liaHandsFreeCookingStepNumber(text:string):number|null{
   return words[token]??null;
 }
 
-export function liaHandsFreeCookingIngredientQuery(text:string):string|null{
+export function liaHandsFreeCookingServingTarget(text:string):number|null{
   const folded=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’]/g,"'").replace(/[?!.,;:]+/g,' ').replace(/\s+/g,' ').trim();
+  const wordMap:Record<string,number>={un:1,une:1,deux:2,trois:3,quatre:4,cinq:5,six:6,sept:7,huit:8,neuf:9,dix:10,onze:11,douze:12,one:1,two:2,three:3,four:4,five:5,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,uno:1,una:1,dos:2,tres:3,cuatro:4,cinco:5,seis:6,siete:7,ocho:8,nueve:9,diez:10,'אחד':1,'אחת':1,'שניים':2,'שתיים':2,'שלוש':3,'ארבע':4,'חמש':5,'שש':6,'שבע':7,'שמונה':8,'תשע':9,'עשר':10};
+  const match=folded.match(/(?:\bpour\b|\bfor\b|\bpara\b|ל[- ]?)\s*([\p{L}\d'-]+)\s*(?:personnes?|portions?|people|servings?|personas?|porciones?|אנשים|מנות)\b/iu);
+  if(!match)return null;
+  const token=match[1].replace(/[-']/g,'');
+  const value=/^\d{1,2}$/.test(token)?Number(token):(wordMap[token]??null);
+  return value!==null&&value>=1&&value<=50?value:null;
+}
+
+function stripCookingServingTarget(text:string):string{
+  return text.replace(/\s+(?:pour|for|para|ל[- ]?)\s*[\p{L}\d'-]+\s*(?:personnes?|portions?|people|servings?|personas?|porciones?|אנשים|מנות)\s*[?!.,;:]*$/iu,'');
+}
+
+export type LiaCookingApproximationConsent='yes'|'no'|'unknown';
+
+export function liaCookingApproximationConsent(text:string):LiaCookingApproximationConsent{
+  const folded=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[-’']/g,' ').replace(/[!?.,;:]+/g,' ').replace(/\s+/g,' ').trim();
+  if(/^(?:oui|ok|d accord|vas y|tu peux|yes|yeah|yep|sure|go ahead|si|claro|dale|כן|בטח|אפשר)$/.test(folded))return'yes';
+  if(/^(?:non|pas la peine|laisse tomber|ne fais pas|no|nope|don t|do not|לא|עזוב)$/.test(folded))return'no';
+  return'unknown';
+}
+
+export function liaHandsFreeCookingIngredientQuery(text:string):string|null{
+  const withoutServingTarget=stripCookingServingTarget(text);
+  const folded=withoutServingTarget.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’]/g,"'").replace(/[?!.,;:]+/g,' ').replace(/\s+/g,' ').trim();
   const patterns:RegExp[]=[
     /^(?:lia\s+)?(?:il\s+faut\s+)?combien\s+(?:de\s+|d'\s*)(.+)$/i,
     /^(?:lia\s+)?quelle\s+quantite\s+(?:de\s+|d'\s*)(.+)$/i,
@@ -192,6 +216,7 @@ export type LiaHandsFreeCookingAction={
   timerSeconds:number|null;
   stepNumber?:number|null;
   ingredientQuery?:string|null;
+  targetServings?:number|null;
   needsStreamingIntegration:boolean;
   safeToExecuteLocally:boolean;
 };
@@ -206,9 +231,10 @@ export function liaHandsFreeCookingAction(text:string):LiaHandsFreeCookingAction
   const timerSeconds=kind==='start_timer'?liaHandsFreeTimerSeconds(text):null;
   const stepNumber=kind==='go_to_step'?liaHandsFreeCookingStepNumber(text):null;
   const ingredientQuery=kind==='ingredient_quantity'?liaHandsFreeCookingIngredientQuery(text):null;
+  const targetServings=kind==='ingredient_quantity'?liaHandsFreeCookingServingTarget(text):null;
   if(kind==='start_timer')return{kind,timerSeconds,needsStreamingIntegration:false,safeToExecuteLocally:timerSeconds!==null};
   if(kind==='go_to_step')return{kind,timerSeconds:null,stepNumber,needsStreamingIntegration:false,safeToExecuteLocally:stepNumber!==null};
-  if(kind==='ingredient_quantity')return{kind,timerSeconds:null,ingredientQuery,needsStreamingIntegration:false,safeToExecuteLocally:ingredientQuery!==null};
+  if(kind==='ingredient_quantity')return{kind,timerSeconds:null,ingredientQuery,targetServings,needsStreamingIntegration:false,safeToExecuteLocally:ingredientQuery!==null};
   if(kind==='music')return{kind,timerSeconds:null,needsStreamingIntegration:true,safeToExecuteLocally:false};
   if(kind==='next_step'||kind==='complete_step'||kind==='finish_recipe'||kind==='previous_step'||kind==='repeat_step'||kind==='timer_remaining'||kind==='step_status'||kind==='cancel_timer'||kind==='show_ingredients'||kind==='hide_ingredients'||kind==='list_ingredients'||kind==='stop_voice')return{kind,timerSeconds:null,needsStreamingIntegration:false,safeToExecuteLocally:true};
   return{kind:'unknown',timerSeconds:null,needsStreamingIntegration:false,safeToExecuteLocally:false};

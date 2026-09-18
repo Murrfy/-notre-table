@@ -1,3 +1,12 @@
+## V0.288 — Quantité d’ingrédient adaptée aux portions
+
+- « Combien de farine pour 6 personnes ? » combine la quantité réelle de la recette avec une cible de portions explicite.
+- Calcul strict : quantité × portions demandées / portions de base.
+- Si la quantité ou les portions de base sont absentes, LIA explique le manque et demande l’autorisation de faire une approximation.
+- Aucun calcul approximatif sans consentement explicite ; après « oui », l’estimation est annoncée comme telle et ne devient jamais une donnée de recette.
+- Cible bornée de 1 à 50 ; aucun changement persistant de la recette.
+- Même session cuisine et même micro global.
+
 ## V0.287 — Quantité d’ingrédient ciblée en mode cuisine
 
 - « Combien de farine ? » / « Il faut combien d’œufs ? » interroge uniquement la recette réellement ouverte.

@@ -36,6 +36,7 @@ import {clearLiaNavigationClarification,liaNavigationClarificationPending} from 
 import {liaPersonalPresenceReply} from '../lib/liaPersonalPresence';
 import {liaNavigationLiveSessionActive} from '../services/liaNavigationLiveSession';
 import {clearLiaCalendarClarification,liaCalendarClarificationPending} from '../services/liaAssistantCalendarExecution';
+import {liaCookingSessionClarificationPending} from '../services/liaCookingSession';
 
 export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommander,onOpenMemos,onOpenCalendar,onPantryVisionRequested,onPantryRecipeRequested,onNavigationRequested,commanderContextLabel='',onCommanderCommand,householdId,weekStart,demo=false,primaryAssistant=true}:{earlyReturnMessage?:string;onEarlyReturnDismiss?:()=>void;onOpenCommander?:()=>void;onOpenMemos?:()=>void;onOpenCalendar?:()=>void;onPantryVisionRequested?:()=>void;onPantryRecipeRequested?:(recipeId:string,startCooking:boolean)=>void;onNavigationRequested?:(destination:string)=>void;commanderContextLabel?:string;onCommanderCommand?:(command:string)=>boolean;householdId?:string;weekStart?:string;demo?:boolean;primaryAssistant?:boolean}={}){
   const locale=useLocale();
@@ -79,7 +80,7 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
   const handleForegroundAssistantTranscript=useCallback((rawText:string)=>{
     const text=rawText.trim();
     if(!text||!enabled||!primaryAssistant)return;
-    const clarificationPending=phoneNameRetryRef.current>0||liaPhoneCallClarificationPending()||liaMessageClarificationPending()||liaReminderClarificationPending()||liaTimerClarificationPending()||liaDirectAppActionClarificationPending()||liaMusicClarificationPending()||liaNavigationClarificationPending()||liaCalendarClarificationPending();
+    const clarificationPending=phoneNameRetryRef.current>0||liaPhoneCallClarificationPending()||liaMessageClarificationPending()||liaReminderClarificationPending()||liaTimerClarificationPending()||liaDirectAppActionClarificationPending()||liaMusicClarificationPending()||liaNavigationClarificationPending()||liaCalendarClarificationPending()||liaCookingSessionClarificationPending();
     const directlyAddressed=detectLiaDirectAddress(text,directNames).addressed;
     if(!clarificationPending&&!directlyAddressed)return;
 
@@ -144,6 +145,31 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
       if(assistant.status==='pantry_planning_completed'||assistant.status==='pantry_planning_needs_recipe'||assistant.status==='pantry_planning_needs_clarification'||assistant.status==='pantry_planning_unavailable'||assistant.status==='pantry_planning_failed'){await speakReply(assistant.spokenReply);return;}
       if(assistant.status==='pantry_recipe_open_requested'){onPantryRecipeRequested?.(assistant.recipeId,assistant.startCooking);await speakReply(assistant.spokenReply);return;}
       if(assistant.status==='pantry_recipe_open_needs_recipe'||assistant.status==='pantry_recipe_open_unavailable'){await speakReply(assistant.spokenReply);return;}
+      if(assistant.status==='cooking_approximation_requested'){
+        const approximation=assistant.request;
+        const target=approximation.targetServings?String(approximation.targetServings):null;
+        const requestText=locale.languageTag.startsWith('fr')
+          ?`L’utilisateur a explicitement accepté une approximation culinaire pour ${approximation.ingredientName}${target?` pour ${target} personnes`:''} dans la recette « ${approximation.recipeTitle} ». Donne une estimation prudente, dis clairement que c’est approximatif et indique l’hypothèse utilisée. Ne présente jamais cette estimation comme une quantité écrite dans la recette. Si tu n’as pas de base raisonnable pour estimer, dis-le au lieu d’inventer.`
+          :`The user explicitly accepted a cooking approximation for ${approximation.ingredientName}${target?` for ${target} people`:''} in the recipe “${approximation.recipeTitle}”. Give a cautious estimate, clearly say it is approximate, and state the assumption used. Never present the estimate as a quantity written in the recipe. If there is no reasonable basis to estimate, say so instead of inventing one.`;
+        const confirmedFacts=[
+          {key:'cooking_recipe_title',value:approximation.recipeTitle,scope:'session' as const,confirmed:true,relevant:true,sensitive:false},
+          {key:'cooking_ingredient',value:approximation.ingredientName,scope:'session' as const,confirmed:true,relevant:true,sensitive:false},
+          {key:'cooking_approximation_permission',value:'explicit_yes',scope:'session' as const,confirmed:true,relevant:true,sensitive:false},
+          ...(approximation.targetServings!==null?[{key:'cooking_target_servings',value:String(approximation.targetServings),scope:'session' as const,confirmed:true,relevant:true,sensitive:false}]:[]),
+          ...(approximation.baseServings!==null?[{key:'cooking_base_servings',value:String(approximation.baseServings),scope:'session' as const,confirmed:true,relevant:true,sensitive:false}]:[]),
+          ...(approximation.recordedQuantity!==null?[{key:'cooking_recorded_quantity',value:String(approximation.recordedQuantity),scope:'session' as const,confirmed:true,relevant:true,sensitive:false}]:[]),
+          ...(approximation.recordedUnit?[{key:'cooking_recorded_unit',value:approximation.recordedUnit,scope:'session' as const,confirmed:true,relevant:true,sensitive:false}]:[]),
+          {key:'cooking_missing_reason',value:approximation.reason,scope:'session' as const,confirmed:true,relevant:true,sensitive:false},
+        ];
+        const result=await generateLiaTableResponse({
+          turn:{text:requestText,speakerTrackId:'foreground',memberId:null,identityConfidence:0,speechConfidence:1,mayUseMemberName:false},
+          context:{mode:'cooking',languageTag:locale.languageTag,topicKey:'cooking_approximation',memberId:null,mayUseMemberName:false,naming,householdId,weekStart,demo,confirmedFacts},
+        });
+        if(generation!==tableResponseGenerationRef.current)return;
+        if(result.status==='ready'){await speakReply(result.text,result.sensitive);return;}
+        await speakReply(locale.languageTag.startsWith('fr')?'Je n’ai pas assez de base fiable pour te donner même une approximation correcte.':'I don’t have enough reliable basis to give you even a sound approximation.');
+        return;
+      }
       if(assistant.status==='cooking_command'){if(assistant.spokenReply)await speakReply(assistant.spokenReply);return;}
       if(assistant.status==='navigation_needs_clarification'){await speakReply(assistant.spokenReply);return;}
       if(assistant.status!=='defer_to_response'&&assistant.status!=='not_assistant_request'){
