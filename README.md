@@ -5,7 +5,7 @@
 
 V0.288 reprend V0.287 sans modifier la recette ni créer d’état parallèle. Pendant le mode cuisine, LIA peut maintenant répondre à une demande ciblée comme « combien de farine pour 6 personnes ? » ou « how much milk for six people? ».
 
-Le calcul est une proportion stricte entre la quantité enregistrée, le nombre de portions réel de la recette et le nombre de personnes demandé. Si la quantité de l’ingrédient ou le nombre de portions de base manque, LIA refuse le calcul au lieu d’inventer. La cible est bornée de 1 à 50 personnes et reste locale à la session cuisine.
+Le calcul exact reste une proportion stricte entre la quantité enregistrée, le nombre de portions réel de la recette et le nombre de personnes demandé. Si la quantité de l’ingrédient ou le nombre de portions de base manque, LIA explique ce qui manque puis demande : « Tu veux que je te fasse une approximation ? ». Aucune approximation n’est produite sans un « oui » explicite. Après accord, LIA donne une estimation prudente, clairement annoncée comme approximative et séparée des données réelles de la recette. La cible reste bornée de 1 à 50 personnes.
 
 ## V0.287 — Demander une quantité d’ingrédient à LIA
 
