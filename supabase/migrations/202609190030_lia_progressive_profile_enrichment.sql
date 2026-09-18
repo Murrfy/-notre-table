@@ -65,7 +65,7 @@ begin
 
   if p_subject_kind='profile' then
     if p_subject_id<>auth.uid() then raise exception 'PROFILE_NOT_SELF'; end if;
-    if not public.is_household_member(p_household_id) then raise exception 'HOUSEHOLD_ACCESS_REQUIRED'; end if;
+    if not exists(select 1 from public.household_members where household_id=p_household_id and user_id=auth.uid()) then raise exception 'HOUSEHOLD_ACCESS_REQUIRED'; end if;
     update public.profiles
        set birthday_month=p_month,
            birthday_day=p_day,
