@@ -2,6 +2,7 @@ import type {MealType} from '../types';
 
 export type LiaDirectAppActionDraft=
   |{type:'shopping.add_item';label:string|null}
+  |{type:'shopping.add_items';labels:string[]}
   |{type:'memo.create';content:string|null}
   |{type:'planning.set_meal';date:string|null;displayDay:string|null;mealType:MealType|null;customTitle:string|null};
 
@@ -81,6 +82,7 @@ function planningFields(value:string,now:Date):{date:string|null;displayDay:stri
 }
 function missingFor(draft:LiaDirectAppActionDraft):'label'|'content'|'date'|'meal_type'|'meal_title'|null{
   if(draft.type==='shopping.add_item')return draft.label?null:'label';
+  if(draft.type==='shopping.add_items')return draft.labels.length?null:'label';
   if(draft.type==='memo.create')return draft.content?null:'content';
   if(!draft.customTitle)return'meal_title';
   if(!draft.date)return'date';
@@ -88,20 +90,46 @@ function missingFor(draft:LiaDirectAppActionDraft):'label'|'content'|'date'|'mea
   return null;
 }
 
-export function liaShoppingShortageMention(text:string):string|null{
+function stripShoppingArticle(value:string):string{
+  return clean(value.replace(/^(?:(?:du|de la|des|le|la|les|un|une|the|el|los|las|una|unos|unas)\b\s*|(?:de l['’]|d['’])\s*)/i,''));
+}
+
+function splitShoppingLabels(value:string):string[]{
+  const seen=new Set<string>();
+  const labels=value.split(/\s*(?:,|;|\bet\b|\band\b|\by\b)\s*/i).map(stripShoppingArticle).filter(Boolean);
+  return labels.filter(label=>{const key=fold(label);if(!key||seen.has(key))return false;seen.add(key);return true;});
+}
+
+function shoppingShortagePayload(text:string,allowExplicitAdd:boolean):string|null{
   const raw=clean(text);
   if(!raw)return null;
-  if(/\b(?:ajoute|mets|add|put|añade|anade|agrega|pon)\b.*\b(?:courses|shopping|grocery|compras|supermercado)\b/i.test(fold(raw)))return null;
-  const patterns=[
+  if(!allowExplicitAdd&&/\b(?:ajoute|mets|add|put|añade|anade|agrega|pon)\b.*\b(?:courses|shopping|grocery|compras|supermercado)\b/i.test(fold(raw)))return null;
+  const patterns=allowExplicitAdd?[
+    /^(?:il\s+me\s+manque|je\s+n['’]?ai\s+plus|j['’]?ai\s+besoin\s+de)\s+(.+?)(?:\s*[,;:]\s*|\s+)(?:ajoute|mets)(?:-?(?:le|la|les)|\s+(?:le|la|les|ça|ca|ceci))?\s+(?:aux\s+courses|dans\s+(?:la\s+)?liste\s+de\s+courses)\s*[.!?]*$/i,
+    /^(?:i(?:'|’)m\s+out\s+of|i\s+need)\s+(.+?)(?:\s*[,;:]\s*|\s+)(?:add|put)(?:\s+(?:it|them))?\s+(?:to|on)\s+(?:the\s+)?(?:shopping|grocery)\s+list\s*[.!?]*$/i,
+    /^(?:me\s+falta|necesito)\s+(.+?)(?:\s*[,;:]\s*|\s+)(?:añade|anade|agrega|pon)(?:lo|la|los|las|\s+eso)?\s+(?:a|en)\s+(?:la\s+)?lista\s+(?:de\s+)?(?:compras|supermercado)\s*[.!?]*$/i,
+  ]:[
     /^(?:il\s+me\s+manque|je\s+n['’]?ai\s+plus|j['’]?ai\s+besoin\s+de)\s+(.+?)\s*[.!?]*$/i,
     /^(?:i(?:'|’)m\s+out\s+of|i\s+need)\s+(.+?)\s*[.!?]*$/i,
     /^(?:me\s+falta|necesito)\s+(.+?)\s*[.!?]*$/i,
   ];
-  for(const pattern of patterns){
-    const match=raw.match(pattern);if(!match)continue;
-    return stripArticle(match[1])||null;
-  }
+  for(const pattern of patterns){const match=raw.match(pattern);if(match)return clean(match[1])||null;}
   return null;
+}
+
+export function liaShoppingShortageMentions(text:string):string[]{
+  const payload=shoppingShortagePayload(text,false);
+  return payload?splitShoppingLabels(payload):[];
+}
+
+export function liaShoppingShortageMention(text:string):string|null{
+  const labels=liaShoppingShortageMentions(text);
+  return labels.length?labels.join(' et '):null;
+}
+
+export function liaShoppingExplicitShortageAddItems(text:string):string[]{
+  const payload=shoppingShortagePayload(text,true);
+  return payload?splitShoppingLabels(payload):[];
 }
 
 export function liaShoppingReferenceAddRequested(text:string):boolean{
@@ -121,6 +149,10 @@ export function parseLiaDirectAppAction(text:string,now=new Date(),seed:LiaDirec
       const draft:{type:'shopping.add_item';label:string|null}={...seed,label:seed.label??(stripArticle(raw)||null)};
       return{recognized:true,draft,missing:missingFor(draft)};
     }
+    if(seed.type==='shopping.add_items'){
+      const draft:{type:'shopping.add_items';labels:string[]}={...seed,labels:seed.labels.length?seed.labels:splitShoppingLabels(raw)};
+      return{recognized:true,draft,missing:missingFor(draft)};
+    }
     if(seed.type==='memo.create'){
       const draft:{type:'memo.create';content:string|null}={...seed,content:seed.content??(clean(raw)||null)};
       return{recognized:true,draft,missing:missingFor(draft)};
@@ -128,6 +160,14 @@ export function parseLiaDirectAppAction(text:string,now=new Date(),seed:LiaDirec
     const extra=planningFields(raw,now);
     const draft:LiaDirectAppActionDraft={type:'planning.set_meal',date:seed.date??extra.date,displayDay:seed.displayDay??extra.displayDay,mealType:seed.mealType??extra.mealType,customTitle:seed.customTitle??extra.customTitle};
     return{recognized:true,draft,missing:missingFor(draft)};
+  }
+
+  const explicitShortageItems=liaShoppingExplicitShortageAddItems(raw);
+  if(explicitShortageItems.length>1){
+    const draft:LiaDirectAppActionDraft={type:'shopping.add_items',labels:explicitShortageItems};return{recognized:true,draft,missing:null};
+  }
+  if(explicitShortageItems.length===1){
+    const draft:LiaDirectAppActionDraft={type:'shopping.add_item',label:explicitShortageItems[0]};return{recognized:true,draft,missing:null};
   }
 
   const shoppingPatterns=[
