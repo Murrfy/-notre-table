@@ -5936,6 +5936,41 @@ test('V0.292 natural missing-item command still uses the existing approved shopp
 });
 
 
+test('V0.293 a plain shortage is context only and a reference add remains an explicit write request',()=>{
+  assert.equal(liaAssistantDirectAction.liaShoppingShortageMention('il me manque du lait'),'lait');
+  assert.equal(liaAssistantDirectAction.liaShoppingShortageMention("je n'ai plus d'œufs"),'œufs');
+  assert.equal(liaAssistantDirectAction.liaShoppingShortageMention('il me manque du lait, ajoute-le aux courses'),null);
+  assert.equal(liaAssistantDirectAction.liaShoppingReferenceAddRequested('ajoute-le aux courses'),true);
+  assert.equal(liaAssistantDirectAction.liaShoppingReferenceAddRequested('mets-les dans la liste de courses'),true);
+  const unresolved=liaAssistantDirectAction.parseLiaDirectAppAction('ajoute-le aux courses');
+  assert.equal(unresolved.recognized,true);
+  if(!unresolved.recognized)throw new Error('expected shopping reference action');
+  assert.equal(unresolved.draft.type,'shopping.add_item');
+  assert.equal(unresolved.missing,'label');
+});
+
+test('V0.293 shortage context is ephemeral and execution still crosses the approved shopping action boundary',()=>{
+  const execution=fs.readFileSync(path.join(root,'src/services/liaAssistantDirectActionExecution.ts'),'utf8');
+  assert.ok(execution.includes('expiresAtMs:nowMs+120_000'));
+  assert.ok(execution.includes('liaShoppingShortageFollowupActive'));
+  assert.ok(execution.includes('liaShoppingReferenceAddRequested(text)'));
+  assert.ok(execution.includes("draft:{type:'shopping.add_item',label:current.label}"));
+  assert.ok(execution.includes('executeLiaAssistantApprovedAction'));
+  assert.ok(!execution.includes('AsyncStorage'));
+});
+
+test('V0.293 the global LIA lane accepts only the brief explicit shortage follow-up without a second microphone pipeline',()=>{
+  const voice=fs.readFileSync(path.join(root,'src/services/liaAssistantVoiceExecution.ts'),'utf8');
+  const orb=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
+  assert.ok(voice.includes('noteLiaShoppingShortageFromSpeech'));
+  assert.ok(voice.includes('continueLiaShoppingShortageFollowup'));
+  assert.ok(voice.includes("status:'app_action_context_noted'"));
+  assert.ok(voice.includes('if(request.directAddressed)clearLiaShoppingShortageFollowup()'));
+  assert.ok(voice.includes('clearLiaShoppingShortageFollowup()'));
+  assert.ok(orb.includes('liaShoppingShortageFollowupActive()'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}

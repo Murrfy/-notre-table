@@ -1,14 +1,17 @@
-import {liaDirectAppActionClarification,liaDirectMealDisplay,parseLiaDirectAppAction,type LiaDirectAppActionDraft} from '../lib/liaAssistantDirectAction';
+import {liaDirectAppActionClarification,liaDirectMealDisplay,liaShoppingReferenceAddRequested,liaShoppingShortageMention,parseLiaDirectAppAction,type LiaDirectAppActionDraft} from '../lib/liaAssistantDirectAction';
 import {executeLiaAssistantApprovedAction} from './liaAssistantActionExecutor';
 
 export type LiaAssistantDirectActionExecution=
   |{status:'not_recognized';spokenReply:null}
+  |{status:'context_noted';spokenReply:string}
   |{status:'needs_clarification';spokenReply:string}
   |{status:'completed';spokenReply:string}
   |{status:'unavailable'|'failed';spokenReply:string};
 
 type Pending={draft:LiaDirectAppActionDraft;languageTag:string;householdId:string;weekStart:string;demo:boolean};
+type RecentShoppingShortage={label:string;languageTag:string;householdId:string;weekStart:string;demo:boolean;expiresAtMs:number};
 let pending:Pending|null=null;
+let recentShoppingShortage:RecentShoppingShortage|null=null;
 
 function memoTitle(content:string):string{
   const first=content.split(/[.!?\n]/)[0]?.trim()||content.trim();
@@ -40,6 +43,37 @@ async function executeDraft(input:{draft:LiaDirectAppActionDraft;languageTag:str
 
 export function liaDirectAppActionClarificationPending():boolean{return Boolean(pending);}
 export function clearLiaDirectAppActionClarification():void{pending=null;}
+export function liaShoppingShortageFollowupActive(nowMs=Date.now()):boolean{
+  if(recentShoppingShortage&&recentShoppingShortage.expiresAtMs<nowMs)recentShoppingShortage=null;
+  return Boolean(recentShoppingShortage);
+}
+export function clearLiaShoppingShortageFollowup():void{recentShoppingShortage=null;}
+
+export function noteLiaShoppingShortageFromSpeech(input:{text:string;languageTag:string;householdId?:string;weekStart?:string;demo?:boolean;nowMs?:number}):LiaAssistantDirectActionExecution{
+  const label=liaShoppingShortageMention(input.text);
+  if(!label)return{status:'not_recognized',spokenReply:null};
+  const nowMs=input.nowMs??Date.now();
+  recentShoppingShortage={
+    label,
+    languageTag:input.languageTag,
+    householdId:input.householdId?.trim()??'',
+    weekStart:input.weekStart?.trim()??'',
+    demo:Boolean(input.demo),
+    expiresAtMs:nowMs+120_000,
+  };
+  const fr=input.languageTag.toLowerCase().startsWith('fr');
+  return{status:'context_noted',spokenReply:fr?`D’accord, je garde ${label} en tête un moment. Si tu veux, dis-moi de l’ajouter aux courses.`:`Okay, I’ll keep ${label} in mind for a moment. If you want, tell me to add it to the shopping list.`};
+}
+
+export async function continueLiaShoppingShortageFollowup(text:string,nowMs=Date.now()):Promise<LiaAssistantDirectActionExecution>{
+  if(!liaShoppingShortageFollowupActive(nowMs))return{status:'not_recognized',spokenReply:null};
+  if(!liaShoppingReferenceAddRequested(text))return{status:'not_recognized',spokenReply:null};
+  const current=recentShoppingShortage;
+  recentShoppingShortage=null;
+  if(!current)return{status:'not_recognized',spokenReply:null};
+  if(!current.householdId||!current.weekStart)return{status:'unavailable',spokenReply:unavailableReply(current.languageTag)};
+  return executeDraft({draft:{type:'shopping.add_item',label:current.label},languageTag:current.languageTag,householdId:current.householdId,weekStart:current.weekStart,demo:current.demo});
+}
 
 export async function prepareLiaDirectAppActionFromSpeech(input:{text:string;languageTag:string;householdId?:string;weekStart?:string;demo?:boolean;now?:Date}):Promise<LiaAssistantDirectActionExecution>{
   const parsed=parseLiaDirectAppAction(input.text,input.now??new Date());

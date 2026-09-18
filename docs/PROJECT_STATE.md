@@ -1,3 +1,12 @@
+## V0.293 — Manque temporaire → ordre explicite aux courses
+
+- « LIA, il me manque du lait » mémorise seulement « lait » en session pendant 2 minutes ; aucune écriture n’est faite.
+- « Ajoute-le aux courses » dans cette fenêtre devient l’ordre explicite d’ajouter le manque récent.
+- Le second tour peut être dit sans répéter « LIA » grâce au même pipeline vocal global déjà actif.
+- Une référence sans contexte valide demande l’ingrédient au lieu de deviner.
+- Annulation ou expiration efface le contexte.
+- L’écriture finale réutilise `executeLiaAssistantApprovedAction` ; aucun moteur shopping parallèle.
+
 ## V0.292 — Manquant naturel → liste de courses
 
 - « Il me manque du lait, ajoute-le aux courses » produit une action `shopping.add_item` existante.

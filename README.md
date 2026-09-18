@@ -1,5 +1,11 @@
-# Notre Table — V0.292
+# Notre Table — V0.293
 
+
+## V0.293 — « Il me manque du lait » puis « ajoute-le aux courses »
+
+V0.293 prolonge V0.292 sans rendre une simple phrase de manque dangereuse. « LIA, il me manque du lait » ne modifie toujours rien : LIA garde seulement « lait » dans un contexte de session pendant deux minutes et l’explique à l’utilisateur. Si l’utilisateur enchaîne ensuite par « ajoute-le aux courses », cet ordre explicite réutilise le manque récent et passe par l’action `shopping.add_item` existante.
+
+Le contexte n’est jamais écrit en stockage persistant, expire automatiquement et peut être annulé. Si le contexte n’existe plus, « ajoute-le aux courses » redevient une demande incomplète et LIA demande quoi ajouter au lieu de deviner. L’exécution finale reste obligatoirement confiée à `executeLiaAssistantApprovedAction`.
 
 ## V0.292 — Dire naturellement qu’un ingrédient manque et l’ajouter aux courses
 

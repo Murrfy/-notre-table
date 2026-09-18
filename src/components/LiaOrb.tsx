@@ -21,7 +21,7 @@ import {liaAgentFailureReply} from '../lib/liaAgentFailureReply';
 import {maySpeakGeneratedTableResponse} from '../services/liaTableSpeakGate';
 import {executeLiaAssistantVoiceRequest} from '../services/liaAssistantVoiceExecution';
 import {clearLiaReminderClarification,liaReminderClarificationPending} from '../services/liaAssistantReminderExecution';
-import {clearLiaDirectAppActionClarification,liaDirectAppActionClarificationPending} from '../services/liaAssistantDirectActionExecution';
+import {clearLiaDirectAppActionClarification,liaDirectAppActionClarificationPending,liaShoppingShortageFollowupActive} from '../services/liaAssistantDirectActionExecution';
 import {clearLiaMessageClarification,liaMessageClarificationPending} from '../services/liaMessageActionAdapter';
 import {liaPhonePronunciationRetryReply} from '../lib/liaAssistantVoice';
 import {clearLiaPhoneCallClarification,liaPhoneCallClarificationPending} from '../services/liaPhoneCallCoordinator';
@@ -80,7 +80,7 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
   const handleForegroundAssistantTranscript=useCallback((rawText:string)=>{
     const text=rawText.trim();
     if(!text||!enabled||!primaryAssistant)return;
-    const clarificationPending=phoneNameRetryRef.current>0||liaPhoneCallClarificationPending()||liaMessageClarificationPending()||liaReminderClarificationPending()||liaTimerClarificationPending()||liaDirectAppActionClarificationPending()||liaMusicClarificationPending()||liaNavigationClarificationPending()||liaCalendarClarificationPending()||liaCookingSessionClarificationPending()||liaCookingSessionFollowupActive();
+    const clarificationPending=phoneNameRetryRef.current>0||liaPhoneCallClarificationPending()||liaMessageClarificationPending()||liaReminderClarificationPending()||liaTimerClarificationPending()||liaDirectAppActionClarificationPending()||liaShoppingShortageFollowupActive()||liaMusicClarificationPending()||liaNavigationClarificationPending()||liaCalendarClarificationPending()||liaCookingSessionClarificationPending()||liaCookingSessionFollowupActive();
     const directlyAddressed=detectLiaDirectAddress(text,directNames).addressed;
     if(!clarificationPending&&!directlyAddressed)return;
 

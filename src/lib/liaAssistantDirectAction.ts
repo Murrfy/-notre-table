@@ -88,6 +88,32 @@ function missingFor(draft:LiaDirectAppActionDraft):'label'|'content'|'date'|'mea
   return null;
 }
 
+export function liaShoppingShortageMention(text:string):string|null{
+  const raw=clean(text);
+  if(!raw)return null;
+  if(/\b(?:ajoute|mets|add|put|añade|anade|agrega|pon)\b.*\b(?:courses|shopping|grocery|compras|supermercado)\b/i.test(fold(raw)))return null;
+  const patterns=[
+    /^(?:il\s+me\s+manque|je\s+n['’]?ai\s+plus|j['’]?ai\s+besoin\s+de)\s+(.+?)\s*[.!?]*$/i,
+    /^(?:i(?:'|’)m\s+out\s+of|i\s+need)\s+(.+?)\s*[.!?]*$/i,
+    /^(?:me\s+falta|necesito)\s+(.+?)\s*[.!?]*$/i,
+  ];
+  for(const pattern of patterns){
+    const match=raw.match(pattern);if(!match)continue;
+    return stripArticle(match[1])||null;
+  }
+  return null;
+}
+
+export function liaShoppingReferenceAddRequested(text:string):boolean{
+  const raw=clean(text);
+  const patterns=[
+    /^(?:ajoute|mets)(?:-?(?:le|la|les)|\s+(?:le|la|les|ça|ca|ceci))\s+(?:aux\s+courses|dans\s+(?:la\s+)?liste\s+de\s+courses)\s*[.!?]*$/i,
+    /^(?:add|put)\s+(?:it|them)\s+(?:to|on)\s+(?:the\s+)?(?:shopping|grocery)\s+list\s*[.!?]*$/i,
+    /^(?:añade|anade|agrega|pon)(?:lo|la|los|las|\s+eso)\s+(?:a|en)\s+(?:la\s+)?lista\s+(?:de\s+)?(?:compras|supermercado)\s*[.!?]*$/i,
+  ];
+  return patterns.some(pattern=>pattern.test(raw));
+}
+
 export function parseLiaDirectAppAction(text:string,now=new Date(),seed:LiaDirectAppActionDraft|null=null):LiaDirectAppActionParse{
   const raw=clean(text);
   if(seed){
@@ -113,6 +139,9 @@ export function parseLiaDirectAppAction(text:string,now=new Date(),seed:LiaDirec
     /^(?:add|put)\s+(.+?)\s+(?:to|on)\s+(?:the\s+)?(?:shopping|grocery)\s+list\s*[.!?]*$/i,
   ];
   for(const pattern of shoppingPatterns){const match=raw.match(pattern);if(match){const draft:LiaDirectAppActionDraft={type:'shopping.add_item',label:stripArticle(match[1])||null};return{recognized:true,draft,missing:missingFor(draft)};}}
+  if(liaShoppingReferenceAddRequested(raw)){
+    const draft:LiaDirectAppActionDraft={type:'shopping.add_item',label:null};return{recognized:true,draft,missing:'label'};
+  }
   if(/^(?:ajoute|mets)\s+(?:aux\s+courses|dans\s+(?:la\s+)?liste\s+de\s+courses)\s*[.!?]*$/i.test(raw)){
     const draft:LiaDirectAppActionDraft={type:'shopping.add_item',label:null};return{recognized:true,draft,missing:'label'};
   }

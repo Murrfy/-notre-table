@@ -1,13 +1,13 @@
-# Vérifications techniques — état courant V0.292
-- Checkpoint V0.292 : formulation naturelle d’un ingrédient manquant suivie d’une demande explicite d’ajout aux courses.
+# Vérifications techniques — état courant V0.293
+- Checkpoint V0.293 : contexte temporaire d’un ingrédient manquant, sans écriture, suivi d’un ordre explicite de l’ajouter aux courses.
 - `npm ci` : **PASS** sur runner GitHub avec Node 22.16.0 / npm 10.9.2.
 - `expo install --check` : **PASS**, dépendances SDK 57 à jour.
 - TypeScript installé (`tsc --noEmit`) : **PASS**.
 - `npm run verify` : **PASS**.
-- Régressions : **695/695 PASS**.
+- Régressions : **698/698 PASS**.
 - Gates EAS : **17/17 PASS**.
 - Matrice d’acceptation : **53 scénarios / 33 invariants critiques PASS**.
 - Audit TypeScript/TSX : **219 fichiers transpilés, 0 diagnostic**.
 - Expo Android : **export PASS**.
 - Expo iOS : **export PASS**.
-- Release evidence : **592 fichiers hashés**, contrat SHA-256 `634270384898fd2c8b1fadbb2a756b99d87a68b742b38bbac60e07dc9356bedd`.
+- Release evidence : **593 fichiers hashés**, contrat SHA-256 `2e7a93972629379d5f3a9c9ea60bfba4cc946be526494bd6c017f487802cb3f2`.
