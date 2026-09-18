@@ -25,12 +25,30 @@ export type LightMealQuestion={
   closed_at?:string|null;
   updated_at?:string;
 };
+export type LightMealResponse={
+  member_id:string;
+  member_name:string;
+  presence:'yes'|'no'|'maybe'|'take_charge';
+  desire:LightDesire|null;
+  note:string|null;
+  responded_at:string;
+};
+export type LightMealRecipient={
+  member_id:string;
+  member_name:string;
+  responded:boolean;
+  presence:'yes'|'no'|'maybe'|'take_charge'|null;
+  desire:LightDesire|null;
+  responded_at:string|null;
+};
 export type LightMealSummary={
   total:number;
   presence:{yes:number;no:number;maybe:number;take_charge:number};
   desires:Record<LightDesire,number>;
   take_charge_name:string|null;
   notes:Array<{member_name:string;note:string;responded_at:string}>;
+  responses:LightMealResponse[];
+  recipients:LightMealRecipient[];
 };
 
 function client(){
@@ -86,6 +104,18 @@ export async function fetchLightMealSummary(questionId:string):Promise<LightMeal
     desires:{home:Number(raw.desires?.home??0),pizza:Number(raw.desires?.pizza??0),pasta:Number(raw.desires?.pasta??0),sushi:Number(raw.desires?.sushi??0),chinese:Number(raw.desires?.chinese??0)},
     take_charge_name:typeof raw.take_charge_name==='string'?raw.take_charge_name:null,
     notes:Array.isArray(raw.notes)?raw.notes.filter((x:any)=>x&&typeof x.member_name==='string'&&typeof x.note==='string').map((x:any)=>({member_name:x.member_name,note:x.note,responded_at:typeof x.responded_at==='string'?x.responded_at:''})):[],
+    responses:Array.isArray(raw.responses)?raw.responses.filter((x:any)=>x&&typeof x.member_id==='string'&&typeof x.member_name==='string').map((x:any)=>({
+      member_id:x.member_id,member_name:x.member_name,
+      presence:x.presence==='no'||x.presence==='maybe'||x.presence==='take_charge'?x.presence:'yes',
+      desire:x.desire==='home'||x.desire==='pizza'||x.desire==='pasta'||x.desire==='sushi'||x.desire==='chinese'?x.desire:null,
+      note:typeof x.note==='string'?x.note:null,responded_at:typeof x.responded_at==='string'?x.responded_at:'',
+    })):[],
+    recipients:Array.isArray(raw.recipients)?raw.recipients.filter((x:any)=>x&&typeof x.member_id==='string'&&typeof x.member_name==='string').map((x:any)=>({
+      member_id:x.member_id,member_name:x.member_name,responded:Boolean(x.responded),
+      presence:x.presence==='yes'||x.presence==='no'||x.presence==='maybe'||x.presence==='take_charge'?x.presence:null,
+      desire:x.desire==='home'||x.desire==='pizza'||x.desire==='pasta'||x.desire==='sushi'||x.desire==='chinese'?x.desire:null,
+      responded_at:typeof x.responded_at==='string'?x.responded_at:null,
+    })):[],
   };
 }
 
