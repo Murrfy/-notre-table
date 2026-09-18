@@ -35,7 +35,7 @@ order by e.table_name;
 
 -- 3) Expected Realtime tables must be in the supabase_realtime publication.
 with expected(table_name) as (
-  values ('meal_plans'),('shopping_items'),('household_activity'),('member_absences'),('shopping_responsibilities'),('recipe_feedback'),('light_meal_responses')
+  values ('meal_plans'),('shopping_items'),('household_activity'),('member_absences'),('shopping_responsibilities'),('recipe_feedback'),('light_meal_questions'),('light_meal_responses')
 )
 select e.table_name, (p.tablename is not null) as realtime_enabled
 from expected e
@@ -77,7 +77,8 @@ with expected(routine_name,arg_types) as (
     ('update_light_member','uuid, text, text, boolean'),
     ('upsert_light_meal_question','uuid, date, text, text[], timestamp with time zone'),
     ('issue_light_response_token','uuid, uuid'),
-    ('get_light_meal_summary','uuid')
+    ('get_light_meal_summary','uuid'),
+    ('set_lia_family_birthday','uuid, text, uuid, integer, integer, integer')
 ), resolved as (
   select e.routine_name,e.arg_types,p.oid,p.proowner,p.proacl
   from expected e
@@ -153,7 +154,7 @@ from resolved r;
 
 -- 6c2) Lightweight public-link helpers are server-only; mobile roles never read bearer-token hashes.
 with expected(routine_name,arg_types) as (
-  values ('get_light_response_context','text'),('submit_light_response','text, text, text, text')
+  values ('get_light_response_context','text'),('get_light_family_decisions','text'),('submit_light_response','text, text, text, text, boolean')
 ), resolved as (
   select e.routine_name,e.arg_types,p.oid,p.proowner,p.proacl
   from expected e
@@ -189,7 +190,7 @@ select
 -- 7) Applied migration versions visible to the Supabase migration history.
 -- Every expected row should show applied=true.
 with expected(version) as (
-  values ('202609140001'),('202609140002'),('202609140003'),('202609140004'),('202609140005'),('202609140006'),('202609140007'),('202609140008'),('202609140009'),('202609140010'),('202609140011'),('202609150012'),('202609150013'),('202609160014'),('202609160015'),('202609160016'),('202609160017'),('202609160018'),('202609160019'),('202609160020'),('202609160021'),('202609170022'),('202609170023'),('202609170024'),('202609180025'),('202609180026'),('202609180027'),('202609180028')
+  values ('202609140001'),('202609140002'),('202609140003'),('202609140004'),('202609140005'),('202609140006'),('202609140007'),('202609140008'),('202609140009'),('202609140010'),('202609140011'),('202609150012'),('202609150013'),('202609160014'),('202609160015'),('202609160016'),('202609160017'),('202609160018'),('202609160019'),('202609160020'),('202609160021'),('202609170022'),('202609170023'),('202609170024'),('202609180025'),('202609180026'),('202609180027'),('202609180028'),('202609190029'),('202609190030')
 )
 select e.version,(m.version is not null) as applied
 from expected e

@@ -20,11 +20,15 @@ import { MemosScreen } from './MemosScreen';
 import type { LiaMemo } from '../services/memos';
 import {getNotificationPreferences} from '../services/appPreferences';
 import {refreshLiaNoonNudgesAfterOpen} from '../services/notifications';
-import {chooseLiaEarlyReturnVariant,liaQuietNow,noteLiaAppOpened} from '../services/liaProactivity';
+import {chooseLiaEarlyReturnVariant,getLiaQuietState,liaQuietNow,noteLiaAppOpened} from '../services/liaProactivity';
 import {runLiaOpenLoopReengagement} from '../services/liaReengagementRuntime';
 import {LiaNavigationScreen} from './LiaNavigationScreen';
 import {LiaCalendarScreen} from './LiaCalendarScreen';
 import {maybeLiaCalendarForegroundNudge} from '../services/liaCalendarProactive';
+import {getMyDisplayName} from '../services/profiles';
+import {maybeEmitLiaProfileEnrichmentQuestion} from '../services/liaProfileEnrichment';
+import {liaCookingSessionActive} from '../services/liaCookingSession';
+import {startLiaFamilyMealDecisionMonitor} from '../services/liaFamilyMealMonitor';
 
 export function MainScreen({ household, demo=false, onSignOut }:{household:Household;demo?:boolean;onSignOut:()=>void}) {
   const locale=useLocale();
@@ -38,6 +42,7 @@ export function MainScreen({ household, demo=false, onSignOut }:{household:House
   const lastOpenRefreshRef=useRef(0);
   const [weekStart,setWeekStart]=useState<Date>(()=>startOfWeek(new Date(),locale.firstWeekday));
   useEffect(()=>{setWeekStart(current=>startOfWeek(current,locale.firstWeekday));},[locale.firstWeekday]);
+  useEffect(()=>startLiaFamilyMealDecisionMonitor({householdId:household.id,demo}),[household.id,demo]);
   useEffect(()=>{
     const refresh=async()=>{
       const now=Date.now();if(now-lastOpenRefreshRef.current<2_000)return;lastOpenRefreshRef.current=now;
@@ -70,6 +75,22 @@ export function MainScreen({ household, demo=false, onSignOut }:{household:House
     const sub=AppState.addEventListener('change',state=>{if(state==='active')void refresh();});
     return()=>sub.remove();
   },[demo,household.id,locale.language]);
+  useEffect(()=>{
+    if(demo||liaSurface!==null||liaNavigationDestination!==null||liaReturnGreeting)return;
+    let cancelled=false;
+    const timer=setTimeout(()=>{
+      void (async()=>{
+        if(cancelled||liaCookingSessionActive())return;
+        const quiet=await getLiaQuietState().catch(()=>null);
+        if(cancelled||!quiet||liaQuietNow(quiet))return;
+        const organizerName=await getMyDisplayName().catch(()=>'');
+        if(cancelled)return;
+        await maybeEmitLiaProfileEnrichmentQuestion({householdId:household.id,organizerName,demo:false}).catch(()=>false);
+      })();
+    },90_000);
+    return()=>{cancelled=true;clearTimeout(timer);};
+  },[demo,household.id,liaSurface,liaNavigationDestination,liaReturnGreeting]);
+
   const [access,setAccess]=useState<AccessState>(()=>runtimeConfig.environment==='preview'?{plan:'family',source:'beta-preview'}:{plan:demo?'trial':'free',source:'local-preview'});
   const accessGate=useRef(createRequestGate()).current;
   const refreshAccess=async()=>{

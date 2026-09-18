@@ -238,10 +238,11 @@ async function main(){
     C.client.from('household_members').insert({household_id:hA.id,user_id:C.user.id,role:'admin'}).select('household_id'),
   );
 
-  // Lightweight member flow: organizer-only phone data, opaque one-use links and atomic takeover.
+  // Lightweight member flow: organizer-only phone data, opaque editable links and atomic take-charge.
   const lightMemberId=String(await callRpc(A.client,'create_light_member',{p_household_id:hA.id,p_display_name:'Smoke Light One',p_phone_number:'+15550000001'},'create_light_member'));
   if(!lightMemberId)throw new Error('Light member RPC did not return an id.');
   await callRpc(A.client,'update_light_member',{p_light_member_id:lightMemberId,p_display_name:'Smoke Light One Updated',p_phone_number:'+15550000011',p_active:true},'update_light_member');
+  await callRpc(A.client,'set_lia_family_birthday',{p_household_id:hA.id,p_subject_kind:'light_member',p_subject_id:lightMemberId,p_month:3,p_day:12,p_year:null},'set_lia_family_birthday');
   await expectDenied('Light member update admin guard',B.client.rpc('update_light_member',{p_light_member_id:lightMemberId,p_display_name:'Forbidden',p_phone_number:'+15550000011',p_active:true}));
   const adminLightRead=await A.client.from('light_members').select('id,display_name,phone_number,active').eq('id',lightMemberId).single();
   if(adminLightRead.error||adminLightRead.data?.phone_number!=='+15550000011')throw adminLightRead.error??new Error('Household admin could not read managed light-member phone data.');
@@ -249,7 +250,7 @@ async function main(){
 
   const lightMealDate=addUtcDays(isoDate(new Date()),2);
   const lightExpiresAt=new Date(Date.now()+3*24*60*60*1000).toISOString();
-  const lightQuestionId=String(await callRpc(A.client,'upsert_light_meal_question',{p_household_id:hA.id,p_meal_date:lightMealDate,p_meal_type:'dinner',p_desire_options:['pizza','surprise'],p_expires_at:lightExpiresAt},'upsert_light_meal_question'));
+  const lightQuestionId=String(await callRpc(A.client,'upsert_light_meal_question',{p_household_id:hA.id,p_meal_date:lightMealDate,p_meal_type:'dinner',p_desire_options:['pizza','home'],p_expires_at:lightExpiresAt},'upsert_light_meal_question'));
   if(!lightQuestionId)throw new Error('Light meal question RPC did not return an id.');
   await expectDenied('Light question admin guard',B.client.rpc('upsert_light_meal_question',{p_household_id:hA.id,p_meal_date:lightMealDate,p_meal_type:'dinner',p_desire_options:['pizza'],p_expires_at:lightExpiresAt}));
   const firstToken=String(await callRpc(A.client,'issue_light_response_token',{p_question_id:lightQuestionId,p_light_member_id:lightMemberId},'issue_light_response_token'));
@@ -260,21 +261,21 @@ async function main(){
   if(firstContext.status!==200||firstContext.data?.member_name!=='Smoke Light One Updated'||firstContext.data?.phone_number!==undefined||firstContext.data?.light_member_id!==undefined)throw new Error('Light response Edge context leaked identifiers or lost the display name.');
   const firstSubmit=await callLightResponse({action:'submit',token:firstToken,presence:'yes',desire:'pizza'});
   if(firstSubmit.status!==200||firstSubmit.data?.ok!==true)throw new Error('Light response Edge submit failed.');
-  const replay=await callLightResponse({action:'submit',token:firstToken,presence:'yes',desire:'pizza'});
-  if(replay.status!==410||replay.data?.error!=='LINK_INVALID_OR_EXPIRED')throw new Error('Light response Edge replay guard failed.');
+  const replay=await callLightResponse({action:'submit',token:firstToken,presence:'yes',desire:'home',note:'changed my mind'});
+  if(replay.status!==200||replay.data?.ok!==true)throw new Error('Light response editable-link update failed.');
   const firstSummary=await A.client.rpc('get_light_meal_summary',{p_question_id:lightQuestionId});
-  if(firstSummary.error||Number(firstSummary.data?.total)!==1||Number(firstSummary.data?.presence?.yes)!==1||Number(firstSummary.data?.desires?.pizza)!==1)throw firstSummary.error??new Error('Light meal summary did not aggregate the response.');
+  if(firstSummary.error||Number(firstSummary.data?.total)!==1||Number(firstSummary.data?.presence?.yes)!==1||Number(firstSummary.data?.desires?.home)!==1||Number(firstSummary.data?.desires?.pizza)!==0)throw firstSummary.error??new Error('Light meal summary did not reflect the edited response.');
 
   const lightMemberTwo=String(await callRpc(A.client,'create_light_member',{p_household_id:hA.id,p_display_name:'Smoke Light Two',p_phone_number:'+15550000002'},'create_light_member second'));
-  await callRpc(A.client,'upsert_light_meal_question',{p_household_id:hA.id,p_meal_date:lightMealDate,p_meal_type:'dinner',p_desire_options:['surprise'],p_expires_at:lightExpiresAt},'upsert_light_meal_question reset');
+  await callRpc(A.client,'upsert_light_meal_question',{p_household_id:hA.id,p_meal_date:lightMealDate,p_meal_type:'dinner',p_desire_options:['home'],p_expires_at:lightExpiresAt},'upsert_light_meal_question reset');
   const [takeTokenOne,takeTokenTwo]=await Promise.all([
     A.client.rpc('issue_light_response_token',{p_question_id:lightQuestionId,p_light_member_id:lightMemberId}),
     A.client.rpc('issue_light_response_token',{p_question_id:lightQuestionId,p_light_member_id:lightMemberTwo}),
   ]);
   if(takeTokenOne.error||takeTokenTwo.error)throw takeTokenOne.error??takeTokenTwo.error;
   const takeoverResults=await Promise.all([
-    callLightResponse({action:'submit',token:String(takeTokenOne.data),presence:'take_charge',desire:null}),
-    callLightResponse({action:'submit',token:String(takeTokenTwo.data),presence:'take_charge',desire:null}),
+    callLightResponse({action:'submit',token:String(takeTokenOne.data),presence:'yes',desire:null,takes_charge:true}),
+    callLightResponse({action:'submit',token:String(takeTokenTwo.data),presence:'yes',desire:null,takes_charge:true}),
   ]);
   const takeoverSuccess=takeoverResults.filter(x=>x.status===200&&x.data?.ok===true);
   const takeoverDenied=takeoverResults.filter(x=>x.status===409&&x.data?.error==='QUESTION_TAKEN_OVER');

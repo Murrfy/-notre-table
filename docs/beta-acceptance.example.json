@@ -1,6 +1,6 @@
 {
   "format_version": 1,
-  "app_version": "0.293.0",
+  "app_version": "0.294.0",
   "source_revision": "REPLACE_WITH_COMMIT_SHA",
   "build_id": "REPLACE_WITH_EAS_BUILD_ID",
   "tested_at": "2026-09-15T12:00:00Z",
@@ -65,19 +65,19 @@
       "status": "pending",
       "evidence": ""
     },
-    "light_member.surprise_one_click_yes": {
-      "status": "pending",
-      "evidence": ""
-    },
     "light_member.take_charge_single_winner": {
       "status": "pending",
       "evidence": ""
     },
-    "light_member.token_replay_rejected": {
+    "light_member.organizer_realtime_summary": {
       "status": "pending",
       "evidence": ""
     },
-    "light_member.organizer_realtime_summary": {
+    "light_member.named_choice_board": {
+      "status": "pending",
+      "evidence": ""
+    },
+    "light_member.response_editable_until_expiry": {
       "status": "pending",
       "evidence": ""
     }

@@ -6,7 +6,7 @@ import {fetchRecipes} from './recipes';
 import {fetchMeals,readCachedMeals} from './planning';
 import {fetchShopping} from './shopping';
 import {listLiaMemos} from './memos';
-import {fetchLightMembers,type LightMember} from './lightParticipation';
+import {fetchLightMealDecisionSnapshots,fetchLightMembers,type LightMealDecisionSnapshot,type LightMember} from './lightParticipation';
 import type {MealSlot,PantryItem,Recipe,ShoppingItem} from '../types';
 import type {LiaMemo} from './memos';
 
@@ -46,6 +46,15 @@ function familyFact(items:LightMember[]):LiaAgentConfirmedFact|null{
   const active=items.filter(item=>item.active);
   return confirmed('app.family_members',active.length?compact(active.map(item=>`${item.display_name}${item.phone_number?.trim()?' (joignable)':' (sans numéro)'}`),12):'Aucun membre actif enregistré pour les messages famille.');
 }
+function familyDecisionsFact(items:LightMealDecisionSnapshot[]):LiaAgentConfirmedFact|null{
+  if(!items.length)return null;
+  const rows=items.map(({question,summary})=>{
+    const choices=summary.recipients.filter(item=>item.responded&&item.desire).map(item=>item.member_name+'='+item.desire);
+    const handled=summary.take_charge_name?'pris en charge par '+summary.take_charge_name:'pas de prise en charge';
+    return question.meal_date+' '+question.meal_type+': '+handled+(choices.length?'; choix: '+choices.join(', '):'');
+  });
+  return confirmed('app.family_meal_decisions',compact(rows,6));
+}
 function matchesFact(recipes:Recipe[],pantry:PantryItem[]):LiaAgentConfirmedFact|null{
   if(!recipes.length||!pantry.length)return null;
   const matches=rankRecipesForPantry(recipes,pantry,3);
@@ -57,7 +66,7 @@ function matchesFact(recipes:Recipe[],pantry:PantryItem[]):LiaAgentConfirmedFact
   }).join(' · '));
 }
 
-type Loaded={pantry?:PantryItem[];recipes?:Recipe[];meals?:MealSlot[];shopping?:ShoppingItem[];memos?:LiaMemo[];family?:LightMember[]};
+type Loaded={pantry?:PantryItem[];recipes?:Recipe[];meals?:MealSlot[];shopping?:ShoppingItem[];memos?:LiaMemo[];family?:{members:LightMember[];decisions:LightMealDecisionSnapshot[]}};
 
 async function loadCapability(capability:LiaAssistantReadCapability,input:{householdId:string;weekStart:string;demo:boolean}):Promise<[LiaAssistantReadCapability,unknown]>{
   switch(capability){
@@ -66,7 +75,7 @@ async function loadCapability(capability:LiaAssistantReadCapability,input:{house
     case'planning.read':return[capability,input.demo?await readCachedMeals(input.householdId,input.weekStart):await fetchMeals(input.householdId,input.weekStart,isoPlusDays(input.weekStart,6))];
     case'shopping.read':return[capability,await fetchShopping(input.householdId,input.weekStart)];
     case'memos.read':return[capability,await listLiaMemos(input.demo)];
-    case'family.read':return[capability,input.demo?[]:await fetchLightMembers(input.householdId)];
+    case'family.read':return[capability,input.demo?{members:[],decisions:[]}:{members:await fetchLightMembers(input.householdId),decisions:await fetchLightMealDecisionSnapshots(input.householdId,input.weekStart,isoPlusDays(input.weekStart,6))}];
   }
 }
 
@@ -88,7 +97,7 @@ export async function collectLiaAssistantAppFacts(input:{
     else if(capability==='planning.read')loaded.meals=value as MealSlot[];
     else if(capability==='shopping.read')loaded.shopping=value as ShoppingItem[];
     else if(capability==='memos.read')loaded.memos=value as LiaMemo[];
-    else if(capability==='family.read')loaded.family=value as LightMember[];
+    else if(capability==='family.read')loaded.family=value as {members:LightMember[];decisions:LightMealDecisionSnapshot[]};
   }
   const facts=[
     loaded.pantry?pantryFact(loaded.pantry):null,
@@ -97,7 +106,8 @@ export async function collectLiaAssistantAppFacts(input:{
     loaded.meals?mealsFact(loaded.meals):null,
     loaded.shopping?shoppingFact(loaded.shopping):null,
     loaded.memos?memosFact(loaded.memos):null,
-    loaded.family?familyFact(loaded.family):null,
+    loaded.family?familyFact(loaded.family.members):null,
+    loaded.family?familyDecisionsFact(loaded.family.decisions):null,
   ];
   return facts.filter((fact):fact is LiaAgentConfirmedFact=>Boolean(fact));
 }

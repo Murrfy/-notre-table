@@ -1,3 +1,16 @@
+## V0.294 — Guidage contextuel + tableau famille + profil progressif
+
+- Message famille : tableau nominatif partagé avec cinq choix actifs — Fait maison, Pizza, Pâtes, Sushi, Chinois — et compteurs par option.
+- « Surprends-moi » est retiré du modèle actif et des parcours de test.
+- Les liens de réponse restent modifiables jusqu’à expiration ; chaque membre voit les choix des autres sans voir leurs numéros de téléphone.
+- « Je m’occupe de tout » est un état séparé, mono-responsable, qui suspend les relances d’organisation pour le repas tant qu’il reste actif.
+- LIA explique Message famille une seule fois, puis guide seulement si la personne semble bloquée ; elle suit les événements réels de l’écran au lieu de réciter un tutoriel.
+- LIA réagit aux vraies réponses : Fait maison → accompagnement « facile ou épater la galerie ? » ; prise en charge → information à l’organisatrice et humour léger optionnel.
+- Le formulaire d’inscription n’est pas rallongé : LIA complète le profil familial progressivement après coup.
+- Premier enrichissement : anniversaires. Jour/mois suffisent, année facultative ; une seule petite question après un moment calme, au maximum une initiative tous les deux jours.
+- « Plus tard » reporte la question ; un refus la clôt sans insistance. La réponse peut être donnée sans répéter « LIA ».
+- Même LIA, même voix, même pipeline ; aucun second assistant ni moteur d’aide parallèle.
+
 ## V0.293 — Manque temporaire → ordre explicite aux courses
 
 - « LIA, il me manque du lait » mémorise seulement « lait » en session pendant 2 minutes ; aucune écriture n’est faite.

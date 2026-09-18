@@ -41,7 +41,7 @@ export function planLiaAssistantObjective(text:string):LiaAssistantObjectivePlan
 
   if(pantry)addRead(reads,'pantry.read');
   if(recipe)addRead(reads,'recipes.read');
-  if(planning)addRead(reads,'planning.read');
+  if(planning){addRead(reads,'planning.read');addRead(reads,'family.read');}
   if(shopping)addRead(reads,'shopping.read');
   if(memos)addRead(reads,'memos.read');
 

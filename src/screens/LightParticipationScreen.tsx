@@ -5,21 +5,21 @@ import type {TranslationKey} from '../i18n';
 import type {MealType} from '../types';
 import {colors,radius} from '../theme';
 import {familyMessageCapabilities} from '../domain/familyMessageEligibility';
+import {emitLiaContextualGuidance,emitLiaFamilyMessageFirstUse} from '../services/liaContextualGuidance';
 import {
   createLightMember,fetchLightMealQuestion,fetchLightMealSummary,fetchLightMembers,issueLightResponseToken,
   lightResponseLink,LightDesire,LightMealQuestion,LightMealSummary,LightMember,saveLightMealQuestion,
   subscribeLightMealResponses,updateLightMember,
 } from '../services/lightParticipation';
 
-const desires:Array<{key:LightDesire;label:TranslationKey}>=[
-  {key:'home',label:'light.choice.home'},
-  {key:'pizza',label:'light.choice.pizza'},
-  {key:'pasta',label:'light.choice.pasta'},
-  {key:'sushi',label:'light.choice.sushi'},
-  {key:'chinese',label:'light.choice.chinese'},
-  {key:'surprise',label:'light.choice.surprise'},
+const desires:Array<{key:LightDesire;label:TranslationKey;icon:string}>=[
+  {key:'home',label:'light.choice.home',icon:'🍲'},
+  {key:'pizza',label:'light.choice.pizza',icon:'🍕'},
+  {key:'pasta',label:'light.choice.pasta',icon:'🍝'},
+  {key:'sushi',label:'light.choice.sushi',icon:'🍣'},
+  {key:'chinese',label:'light.choice.chinese',icon:'🥡'},
 ];
-const emptySummary:LightMealSummary={total:0,presence:{yes:0,no:0,maybe:0,take_charge:0},desires:{home:0,pizza:0,pasta:0,sushi:0,chinese:0,surprise:0},take_charge_name:null,notes:[]};
+const emptySummary:LightMealSummary={total:0,presence:{yes:0,no:0,maybe:0,take_charge:0},desires:{home:0,pizza:0,pasta:0,sushi:0,chinese:0},take_charge_name:null,notes:[],responses:[],recipients:[]};
 
 function expiryForMealDate(mealDate:string){
   const end=new Date(`${mealDate}T23:59:59.999`);
@@ -27,7 +27,7 @@ function expiryForMealDate(mealDate:string){
   return end.toISOString();
 }
 
-export function LightParticipationScreen({householdId,householdName,mealDate,mealType,demo=false,onClose,onFamilyRequired}:{householdId:string;householdName:string;mealDate:string;mealType:MealType;demo?:boolean;onClose:()=>void;onFamilyRequired?:()=>void}){
+export function LightParticipationScreen({householdId,householdName,organizerName='',mealDate,mealType,demo=false,onClose,onFamilyRequired}:{householdId:string;householdName:string;organizerName?:string;mealDate:string;mealType:MealType;demo?:boolean;onClose:()=>void;onFamilyRequired?:()=>void}){
   const locale=useLocale();
   const rtl=locale.textDirection==='rtl';
   const [members,setMembers]=useState<LightMember[]>(demo?[{id:'demo-light-1',household_id:householdId,display_name:'Lina',phone_number:'+33 6 00 00 00 00',age:16,relation:'child',relation_label:null,active:true}]:[]);
@@ -40,9 +40,55 @@ export function LightParticipationScreen({householdId,householdName,mealDate,mea
   const [editingId,setEditingId]=useState<string|null>(null);
   const [busy,setBusy]=useState(false);
   const actionInFlight=useRef(false);
+  const previousRecipientStateRef=useRef<Map<string,{desire:LightDesire|null;takesCharge:boolean;responded:boolean}>|null>(null);
+  const helpedPrepareRef=useRef(false);
+  const helpedShareRef=useRef(false);
   const [message,setMessage]=useState('');
   const dateLabel=useMemo(()=>locale.formatDate(new Date(`${mealDate}T12:00:00`),{weekday:'long',day:'numeric',month:'long'}),[locale,mealDate]);
   const mealLabel=locale.t(`meal.${mealType}` as TranslationKey);
+
+  useEffect(()=>{
+    void emitLiaFamilyMessageFirstUse({householdId,organizerName});
+  },[householdId,organizerName]);
+
+  useEffect(()=>{
+    previousRecipientStateRef.current=null;
+    helpedPrepareRef.current=false;
+    helpedShareRef.current=false;
+  },[question?.id]);
+
+  useEffect(()=>{
+    const timer=setTimeout(()=>{
+      if(!question&&!helpedPrepareRef.current){
+        helpedPrepareRef.current=true;
+        emitLiaContextualGuidance({kind:'family_message_help',householdId,organizerName,step:'prepare'});
+        return;
+      }
+      if(question&&!summary.recipients.length&&!helpedShareRef.current){
+        helpedShareRef.current=true;
+        emitLiaContextualGuidance({kind:'family_message_help',householdId,organizerName,step:'share'});
+      }
+    },25_000);
+    return()=>clearTimeout(timer);
+  },[question,summary.recipients.length,householdId,organizerName]);
+
+  useEffect(()=>{
+    if(!question||dirty)return;
+    const current=new Map(summary.recipients.map(recipient=>[recipient.member_id,{desire:recipient.desire,takesCharge:recipient.takes_charge,responded:recipient.responded}]));
+    const previous=previousRecipientStateRef.current;
+    if(previous===null){previousRecipientStateRef.current=current;return;}
+    for(const recipient of summary.recipients){
+      const before=previous.get(recipient.member_id);
+      if(!recipient.responded)continue;
+      if(recipient.desire&&before?.desire!==recipient.desire){
+        emitLiaContextualGuidance({kind:'family_choice_changed',householdId,organizerName,memberName:recipient.member_name,mealDate,mealType,desire:recipient.desire});
+      }
+      if(Boolean(before?.takesCharge)!==recipient.takes_charge){
+        emitLiaContextualGuidance({kind:'family_take_charge_changed',householdId,organizerName,memberName:recipient.member_name,mealDate,mealType,active:recipient.takes_charge});
+      }
+    }
+    previousRecipientStateRef.current=current;
+  },[question,dirty,summary.recipients,householdId,organizerName,mealDate,mealType]);
 
   const refreshSummary=useCallback(async(qid?:string)=>{
     const id=qid??question?.id;if(!id)return;
@@ -130,6 +176,7 @@ export function LightParticipationScreen({householdId,householdName,mealDate,mea
     try{
       if(demo){setMessage(locale.t('light.demoShare'));return;}
       const token=await issueLightResponseToken(question.id,member.id);
+      await refreshSummary(question.id);
       const link=lightResponseLink(token);
       const text=locale.t('light.shareMessage',{name:member.display_name,meal:mealLabel,date:dateLabel,link});
       await Share.share({message:text});
@@ -154,13 +201,35 @@ export function LightParticipationScreen({householdId,householdName,mealDate,mea
     <Pressable accessibilityRole="button" onPress={prepareQuestion} disabled={busy} accessibilityState={{disabled:busy,busy:busy}} style={[styles.primary,busy&&styles.disabled]}><Text style={styles.primaryText}>{locale.t(question?'light.updateQuestion':'light.prepare')}</Text></Pressable>
     {question&&!dirty?<Text style={[styles.ready,rtl&&styles.rtl]}>{locale.t('light.ready')}</Text>:null}
 
-    {question&&!dirty?<><Text style={[styles.section,rtl&&styles.rtl]}>{locale.t('light.summary')}</Text>{summary.total?<><Text style={[styles.responseCount,rtl&&styles.rtl]}>{locale.t('light.responses',{count:summary.total})}</Text><View style={styles.stats}><Stat label={locale.t('light.yes')} value={summary.presence.yes}/><Stat label={locale.t('light.no')} value={summary.presence.no}/><Stat label={locale.t('light.maybe')} value={summary.presence.maybe}/><Stat label={locale.t('light.takeCharge')} value={summary.presence.take_charge}/></View>{summary.take_charge_name?<Text style={[styles.takeCharge,rtl&&styles.rtl]}>{locale.t('light.takeChargeBy',{name:summary.take_charge_name})}</Text>:null}<Text style={[styles.subsection,rtl&&styles.rtl]}>{locale.t('light.desires')}</Text><View style={styles.stats}>{desires.filter(d=>selected.includes(d.key)&&summary.desires[d.key]>0).map(d=><Stat key={d.key} label={locale.t(d.label)} value={summary.desires[d.key]}/>)}</View>{summary.notes.length?<><Text style={[styles.subsection,rtl&&styles.rtl]}>{locale.t('light.notes')}</Text>{summary.notes.map((item,i)=><View key={`${item.member_name}-${item.responded_at}-${i}`} style={styles.familyNote}><Text style={[styles.familyNoteName,rtl&&styles.rtl]}>{item.member_name}</Text><Text style={[styles.familyNoteText,rtl&&styles.rtl]}>{item.note}</Text></View>)}</>:null}</>:<Text style={[styles.hint,rtl&&styles.rtl]}>{locale.t('light.noResponses')}</Text>}</>:null}
+    {question&&!dirty?<><Text style={[styles.section,rtl&&styles.rtl]}>{locale.t('light.summary')}</Text>
+      {summary.recipients.length?<FamilyChoiceBoard summary={summary} selected={selected} rtl={rtl} labelFor={key=>locale.t(key)}/>:<Text style={[styles.hint,rtl&&styles.rtl]}>{locale.t('light.noResponses')}</Text>}
+      {summary.take_charge_name?<View style={styles.takeChargePanel}><Text style={styles.takeChargeTitle}>✓ {locale.t('light.takeCharge')}</Text><Text style={styles.takeChargeName}>{summary.take_charge_name}</Text></View>:null}
+      {summary.total?<><Text style={[styles.responseCount,rtl&&styles.rtl]}>{locale.t('light.responses',{count:summary.total})}</Text><View style={styles.stats}><Stat label={locale.t('light.yes')} value={summary.presence.yes}/><Stat label={locale.t('light.no')} value={summary.presence.no}/><Stat label={locale.t('light.maybe')} value={summary.presence.maybe}/></View>
+      {summary.notes.length?<><Text style={[styles.subsection,rtl&&styles.rtl]}>{locale.t('light.notes')}</Text>{summary.notes.map((item,i)=><View key={`${item.member_name}-${item.responded_at}-${i}`} style={styles.familyNote}><Text style={[styles.familyNoteName,rtl&&styles.rtl]}>{item.member_name}</Text><Text style={[styles.familyNoteText,rtl&&styles.rtl]}>{item.note}</Text></View>)}</>:null}</>:null}
+    </>:null}
     {message?<Text accessibilityLiveRegion="polite" style={[styles.message,rtl&&styles.rtl]}>{message}</Text>:null}
   </ScrollView>;
 }
 
 function Stat({label,value}:{label:string;value:number}){return <View style={styles.stat}><Text style={styles.statValue}>{value}</Text><Text style={styles.statLabel}>{label}</Text></View>;}
+function FamilyChoiceBoard({summary,selected,rtl,labelFor}:{summary:LightMealSummary;selected:LightDesire[];rtl:boolean;labelFor:(key:TranslationKey)=>string}){
+  const columns=desires.filter(option=>selected.includes(option.key));
+  if(!columns.length||!summary.recipients.length)return null;
+  return <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.choiceBoardScroll}>
+    <View style={styles.choiceBoard}>
+      <View style={styles.choiceBoardHeader}>
+        <View style={styles.choiceBoardNameCell}><Text style={[styles.choiceBoardHeaderName,rtl&&styles.rtl]}>Famille</Text></View>
+        {columns.map(option=><View key={option.key} style={styles.choiceBoardChoiceCell}><Text style={styles.choiceBoardIcon}>{option.icon}</Text><Text style={styles.choiceBoardLabel}>{labelFor(option.label)}</Text><Text style={styles.choiceBoardCount}>{summary.desires[option.key]}</Text></View>)}
+      </View>
+      {summary.recipients.map(recipient=><View key={recipient.member_id} style={styles.choiceBoardRow}>
+        <View style={styles.choiceBoardNameCell}><Text numberOfLines={1} style={[styles.choiceBoardName,rtl&&styles.rtl]}>{recipient.member_name}</Text></View>
+        {columns.map(option=><View key={option.key} style={styles.choiceBoardChoiceCell}>{recipient.desire===option.key?<Text accessibilityLabel="choix sélectionné" style={styles.choiceBoardTick}>✓</Text>:null}</View>)}
+      </View>)}
+    </View>
+  </ScrollView>;
+}
+
 
 const styles=StyleSheet.create({
-  content:{padding:22,paddingTop:58,paddingBottom:56,backgroundColor:colors.cream,minHeight:'100%'},header:{flexDirection:'row',gap:12,alignItems:'flex-start'},kicker:{color:colors.sageDark,fontSize:10,fontWeight:'900',letterSpacing:1.1},title:{color:colors.ink,fontSize:28,lineHeight:34,fontWeight:'900',marginTop:6},meta:{color:colors.muted,fontSize:11,fontWeight:'700',marginTop:7,textTransform:'capitalize'},close:{color:colors.sageDark,fontWeight:'900',paddingTop:6},subtitle:{color:colors.muted,fontSize:12,lineHeight:18,marginTop:14},section:{color:colors.muted,fontSize:11,fontWeight:'900',letterSpacing:1,marginTop:24,marginBottom:9,textTransform:'uppercase'},hint:{color:colors.muted,fontSize:11,lineHeight:17,marginBottom:10},memberCard:{backgroundColor:colors.paper,borderWidth:1,borderColor:colors.border,borderRadius:radius.md,padding:13,marginTop:8},inactiveCard:{opacity:.62},memberNameRow:{flexDirection:'row',alignItems:'center',gap:7},memberName:{color:colors.ink,fontSize:14,fontWeight:'900'},phone:{color:colors.muted,fontSize:10,marginTop:3},inactiveBadge:{color:colors.muted,fontSize:8,fontWeight:'900',borderWidth:1,borderColor:colors.border,borderRadius:999,paddingHorizontal:6,paddingVertical:3},memberActions:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:10},smallAction:{minHeight:34,borderWidth:1,borderColor:colors.border,borderRadius:11,paddingHorizontal:10,alignItems:'center',justifyContent:'center'},smallActionText:{color:colors.sageDark,fontSize:9,fontWeight:'900'},shareAction:{minHeight:34,borderRadius:11,paddingHorizontal:11,alignItems:'center',justifyContent:'center',backgroundColor:colors.sageDark},shareActionText:{color:colors.onAccent,fontSize:9,fontWeight:'900'},formCard:{backgroundColor:colors.paper,borderWidth:1,borderColor:colors.border,borderRadius:radius.md,padding:14,marginTop:12},formTitle:{color:colors.ink,fontSize:13,fontWeight:'900',marginBottom:8},input:{backgroundColor:colors.input,borderRadius:13,minHeight:47,paddingHorizontal:12,color:colors.ink,marginTop:7,borderWidth:1,borderColor:colors.border},primary:{backgroundColor:colors.sageDark,minHeight:48,borderRadius:14,alignItems:'center',justifyContent:'center',paddingHorizontal:14,marginTop:12},primaryText:{color:colors.onAccent,fontSize:12,fontWeight:'900'},disabled:{opacity:.4},cancelEdit:{minHeight:40,alignItems:'center',justifyContent:'center'},cancelEditText:{color:colors.muted,fontSize:10,fontWeight:'800'},chips:{flexDirection:'row',flexWrap:'wrap',gap:8},chip:{borderWidth:1,borderColor:colors.border,borderRadius:999,paddingHorizontal:12,paddingVertical:9,backgroundColor:colors.paper},chipActive:{backgroundColor:colors.sageDark,borderColor:colors.sageDark},chipText:{color:colors.ink,fontSize:11,fontWeight:'800'},chipTextActive:{color:colors.onAccent},resetWarning:{color:colors.warningText,fontSize:10,lineHeight:15,backgroundColor:colors.orangeSoft,borderRadius:12,padding:10,marginTop:11},ready:{color:colors.sageDark,fontSize:11,lineHeight:17,fontWeight:'800',backgroundColor:colors.sageSoft,borderRadius:12,padding:11,marginTop:10},responseCount:{color:colors.ink,fontSize:13,fontWeight:'900',marginBottom:9},stats:{flexDirection:'row',flexWrap:'wrap',gap:8},stat:{minWidth:74,flexGrow:1,backgroundColor:colors.paper,borderWidth:1,borderColor:colors.border,borderRadius:14,padding:10},statValue:{color:colors.sageDark,fontSize:18,fontWeight:'900'},statLabel:{color:colors.muted,fontSize:9,fontWeight:'800',marginTop:3},takeCharge:{color:colors.sageDark,fontSize:11,fontWeight:'900',lineHeight:17,backgroundColor:colors.sageSoft,borderRadius:12,padding:11,marginTop:10},subsection:{color:colors.muted,fontSize:10,fontWeight:'900',marginTop:15,marginBottom:7},familyNote:{backgroundColor:colors.paper,borderWidth:1,borderColor:colors.border,borderRadius:12,padding:11,marginTop:7},familyNoteName:{color:colors.sageDark,fontSize:10,fontWeight:'900'},familyNoteText:{color:colors.ink,fontSize:12,lineHeight:18,marginTop:3},message:{color:colors.error,fontSize:11,fontWeight:'800',lineHeight:17,textAlign:'center',marginTop:14},rtl:{textAlign:'right',writingDirection:'rtl'},
+  content:{padding:22,paddingTop:58,paddingBottom:56,backgroundColor:colors.cream,minHeight:'100%'},header:{flexDirection:'row',gap:12,alignItems:'flex-start'},kicker:{color:colors.sageDark,fontSize:10,fontWeight:'900',letterSpacing:1.1},title:{color:colors.ink,fontSize:28,lineHeight:34,fontWeight:'900',marginTop:6},meta:{color:colors.muted,fontSize:11,fontWeight:'700',marginTop:7,textTransform:'capitalize'},close:{color:colors.sageDark,fontWeight:'900',paddingTop:6},subtitle:{color:colors.muted,fontSize:12,lineHeight:18,marginTop:14},section:{color:colors.muted,fontSize:11,fontWeight:'900',letterSpacing:1,marginTop:24,marginBottom:9,textTransform:'uppercase'},hint:{color:colors.muted,fontSize:11,lineHeight:17,marginBottom:10},memberCard:{backgroundColor:colors.paper,borderWidth:1,borderColor:colors.border,borderRadius:radius.md,padding:13,marginTop:8},inactiveCard:{opacity:.62},memberNameRow:{flexDirection:'row',alignItems:'center',gap:7},memberName:{color:colors.ink,fontSize:14,fontWeight:'900'},phone:{color:colors.muted,fontSize:10,marginTop:3},inactiveBadge:{color:colors.muted,fontSize:8,fontWeight:'900',borderWidth:1,borderColor:colors.border,borderRadius:999,paddingHorizontal:6,paddingVertical:3},memberActions:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:10},smallAction:{minHeight:34,borderWidth:1,borderColor:colors.border,borderRadius:11,paddingHorizontal:10,alignItems:'center',justifyContent:'center'},smallActionText:{color:colors.sageDark,fontSize:9,fontWeight:'900'},shareAction:{minHeight:34,borderRadius:11,paddingHorizontal:11,alignItems:'center',justifyContent:'center',backgroundColor:colors.sageDark},shareActionText:{color:colors.onAccent,fontSize:9,fontWeight:'900'},formCard:{backgroundColor:colors.paper,borderWidth:1,borderColor:colors.border,borderRadius:radius.md,padding:14,marginTop:12},formTitle:{color:colors.ink,fontSize:13,fontWeight:'900',marginBottom:8},input:{backgroundColor:colors.input,borderRadius:13,minHeight:47,paddingHorizontal:12,color:colors.ink,marginTop:7,borderWidth:1,borderColor:colors.border},primary:{backgroundColor:colors.sageDark,minHeight:48,borderRadius:14,alignItems:'center',justifyContent:'center',paddingHorizontal:14,marginTop:12},primaryText:{color:colors.onAccent,fontSize:12,fontWeight:'900'},disabled:{opacity:.4},cancelEdit:{minHeight:40,alignItems:'center',justifyContent:'center'},cancelEditText:{color:colors.muted,fontSize:10,fontWeight:'800'},chips:{flexDirection:'row',flexWrap:'wrap',gap:8},chip:{borderWidth:1,borderColor:colors.border,borderRadius:999,paddingHorizontal:12,paddingVertical:9,backgroundColor:colors.paper},chipActive:{backgroundColor:colors.sageDark,borderColor:colors.sageDark},chipText:{color:colors.ink,fontSize:11,fontWeight:'800'},chipTextActive:{color:colors.onAccent},resetWarning:{color:colors.warningText,fontSize:10,lineHeight:15,backgroundColor:colors.orangeSoft,borderRadius:12,padding:10,marginTop:11},ready:{color:colors.sageDark,fontSize:11,lineHeight:17,fontWeight:'800',backgroundColor:colors.sageSoft,borderRadius:12,padding:11,marginTop:10},responseCount:{color:colors.ink,fontSize:13,fontWeight:'900',marginBottom:9},stats:{flexDirection:'row',flexWrap:'wrap',gap:8},stat:{minWidth:74,flexGrow:1,backgroundColor:colors.paper,borderWidth:1,borderColor:colors.border,borderRadius:14,padding:10},statValue:{color:colors.sageDark,fontSize:18,fontWeight:'900'},statLabel:{color:colors.muted,fontSize:9,fontWeight:'800',marginTop:3},takeCharge:{color:colors.sageDark,fontSize:11,fontWeight:'900',lineHeight:17,backgroundColor:colors.sageSoft,borderRadius:12,padding:11,marginTop:10},subsection:{color:colors.muted,fontSize:10,fontWeight:'900',marginTop:15,marginBottom:7},familyNote:{backgroundColor:colors.paper,borderWidth:1,borderColor:colors.border,borderRadius:12,padding:11,marginTop:7},familyNoteName:{color:colors.sageDark,fontSize:10,fontWeight:'900'},familyNoteText:{color:colors.ink,fontSize:12,lineHeight:18,marginTop:3},choiceBoardScroll:{paddingVertical:5},choiceBoard:{borderWidth:1,borderColor:colors.border,borderRadius:16,overflow:'hidden',backgroundColor:colors.paper,minWidth:520},choiceBoardHeader:{flexDirection:'row',backgroundColor:colors.sageSoft,borderBottomWidth:1,borderBottomColor:colors.border},choiceBoardRow:{flexDirection:'row',minHeight:58,borderBottomWidth:1,borderBottomColor:colors.border},choiceBoardNameCell:{width:128,paddingHorizontal:10,paddingVertical:8,justifyContent:'center',borderRightWidth:1,borderRightColor:colors.border},choiceBoardChoiceCell:{width:78,paddingHorizontal:4,paddingVertical:7,alignItems:'center',justifyContent:'center',borderRightWidth:1,borderRightColor:colors.border},choiceBoardHeaderName:{color:colors.sageDark,fontSize:10,fontWeight:'900'},choiceBoardIcon:{fontSize:23},choiceBoardLabel:{color:colors.ink,fontSize:8,fontWeight:'800',textAlign:'center',lineHeight:10,marginTop:2},choiceBoardCount:{color:colors.sageDark,fontSize:12,fontWeight:'900',marginTop:3},choiceBoardName:{color:colors.ink,fontSize:12,fontWeight:'900'},choiceBoardTick:{color:'#2f8a4b',fontSize:25,fontWeight:'900'},takeChargePanel:{backgroundColor:colors.sageSoft,borderRadius:14,padding:12,marginTop:12},takeChargeTitle:{color:colors.sageDark,fontSize:10,fontWeight:'900'},takeChargeName:{color:colors.ink,fontSize:14,fontWeight:'900',marginTop:3},message:{color:colors.error,fontSize:11,fontWeight:'800',lineHeight:17,textAlign:'center',marginTop:14},rtl:{textAlign:'right',writingDirection:'rtl'},
 });

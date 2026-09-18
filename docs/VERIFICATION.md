@@ -1,13 +1,13 @@
-# Vérifications techniques — état courant V0.293
-- Checkpoint V0.293 : contexte temporaire d’un ingrédient manquant, sans écriture, suivi d’un ordre explicite de l’ajouter aux courses.
+# Vérifications techniques — état courant V0.294
+- Checkpoint V0.294 : tableau famille nominatif et modifiable, guidage contextuel de LIA, prise en charge du repas et enrichissement progressif du profil familial.
 - `npm ci` : **PASS** sur runner GitHub avec Node 22.16.0 / npm 10.9.2.
 - `expo install --check` : **PASS**, dépendances SDK 57 à jour.
 - TypeScript installé (`tsc --noEmit`) : **PASS**.
 - `npm run verify` : **PASS**.
-- Régressions : **698/698 PASS**.
+- Régressions : **709/709 PASS**.
 - Gates EAS : **17/17 PASS**.
 - Matrice d’acceptation : **53 scénarios / 33 invariants critiques PASS**.
-- Audit TypeScript/TSX : **219 fichiers transpilés, 0 diagnostic**.
+- Audit TypeScript/TSX : **222 fichiers transpilés, 0 diagnostic**.
 - Expo Android : **export PASS**.
 - Expo iOS : **export PASS**.
-- Release evidence : **593 fichiers hashés**, contrat SHA-256 `2e7a93972629379d5f3a9c9ea60bfba4cc946be526494bd6c017f487802cb3f2`.
+- Release evidence : **599 fichiers hashés**, contrat SHA-256 `402a953993c42439836c752c3c4aa918e06f16d082ad11e2e37c45fc1dfbb8fd`.

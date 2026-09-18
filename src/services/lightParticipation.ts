@@ -2,7 +2,7 @@ import { supabase } from '../lib/supabase';
 import { runtimeConfig } from '../lib/runtimeConfig';
 import type { MealType } from '../types';
 
-export type LightDesire='home'|'pizza'|'pasta'|'sushi'|'chinese'|'surprise';
+export type LightDesire='home'|'pizza'|'pasta'|'sushi'|'chinese';
 export type LightMember={
   id:string;
   household_id:string;
@@ -25,13 +25,35 @@ export type LightMealQuestion={
   closed_at?:string|null;
   updated_at?:string;
 };
+export type LightMealResponse={
+  member_id:string;
+  member_name:string;
+  presence:'yes'|'no'|'maybe';
+  desire:LightDesire|null;
+  note:string|null;
+  takes_charge:boolean;
+  responded_at:string;
+};
+export type LightMealRecipient={
+  member_id:string;
+  member_name:string;
+  responded:boolean;
+  presence:'yes'|'no'|'maybe'|null;
+  desire:LightDesire|null;
+  note:string|null;
+  takes_charge:boolean;
+  responded_at:string|null;
+};
 export type LightMealSummary={
   total:number;
   presence:{yes:number;no:number;maybe:number;take_charge:number};
   desires:Record<LightDesire,number>;
   take_charge_name:string|null;
   notes:Array<{member_name:string;note:string;responded_at:string}>;
+  responses:LightMealResponse[];
+  recipients:LightMealRecipient[];
 };
+export type LightMealDecisionSnapshot={question:LightMealQuestion;summary:LightMealSummary};
 
 function client(){
   if(!supabase)throw new Error('SUPABASE_NOT_CONFIGURED');
@@ -83,10 +105,33 @@ export async function fetchLightMealSummary(questionId:string):Promise<LightMeal
   return {
     total:Number(raw.total??0),
     presence:{yes:Number(raw.presence?.yes??0),no:Number(raw.presence?.no??0),maybe:Number(raw.presence?.maybe??0),take_charge:Number(raw.presence?.take_charge??0)},
-    desires:{home:Number(raw.desires?.home??0),pizza:Number(raw.desires?.pizza??0),pasta:Number(raw.desires?.pasta??0),sushi:Number(raw.desires?.sushi??0),chinese:Number(raw.desires?.chinese??0),surprise:Number(raw.desires?.surprise??0)},
+    desires:{home:Number(raw.desires?.home??0),pizza:Number(raw.desires?.pizza??0),pasta:Number(raw.desires?.pasta??0),sushi:Number(raw.desires?.sushi??0),chinese:Number(raw.desires?.chinese??0)},
     take_charge_name:typeof raw.take_charge_name==='string'?raw.take_charge_name:null,
     notes:Array.isArray(raw.notes)?raw.notes.filter((x:any)=>x&&typeof x.member_name==='string'&&typeof x.note==='string').map((x:any)=>({member_name:x.member_name,note:x.note,responded_at:typeof x.responded_at==='string'?x.responded_at:''})):[],
+    responses:Array.isArray(raw.responses)?raw.responses.filter((x:any)=>x&&typeof x.member_id==='string'&&typeof x.member_name==='string').map((x:any)=>({
+      member_id:x.member_id,member_name:x.member_name,
+      presence:x.presence==='no'||x.presence==='maybe'?x.presence:'yes',
+      desire:x.desire==='home'||x.desire==='pizza'||x.desire==='pasta'||x.desire==='sushi'||x.desire==='chinese'?x.desire:null,
+      note:typeof x.note==='string'?x.note:null,takes_charge:Boolean(x.takes_charge),responded_at:typeof x.responded_at==='string'?x.responded_at:'',
+    })):[],
+    recipients:Array.isArray(raw.recipients)?raw.recipients.filter((x:any)=>x&&typeof x.member_id==='string'&&typeof x.member_name==='string').map((x:any)=>({
+      member_id:x.member_id,member_name:x.member_name,responded:Boolean(x.responded),
+      presence:x.presence==='yes'||x.presence==='no'||x.presence==='maybe'?x.presence:null,
+      desire:x.desire==='home'||x.desire==='pizza'||x.desire==='pasta'||x.desire==='sushi'||x.desire==='chinese'?x.desire:null,
+      note:typeof x.note==='string'?x.note:null,takes_charge:Boolean(x.takes_charge),responded_at:typeof x.responded_at==='string'?x.responded_at:null,
+    })):[],
   };
+}
+
+export async function fetchLightMealDecisionSnapshots(householdId:string,fromDate:string,toDate:string):Promise<LightMealDecisionSnapshot[]>{
+  const {data,error}=await client().from('light_meal_questions')
+    .select('id,household_id,meal_date,meal_type,desire_options,expires_at,closed_at,updated_at')
+    .eq('household_id',householdId).gte('meal_date',fromDate).lte('meal_date',toDate)
+    .is('closed_at',null).order('meal_date',{ascending:true}).limit(8);
+  if(error)throw error;
+  const questions=(data??[]) as LightMealQuestion[];
+  const settled=await Promise.allSettled(questions.map(async question=>({question,summary:await fetchLightMealSummary(question.id)})));
+  return settled.filter((item):item is PromiseFulfilledResult<LightMealDecisionSnapshot>=>item.status==='fulfilled').map(item=>item.value);
 }
 
 export function lightResponseLink(token:string):string{
