@@ -726,54 +726,57 @@ test('brand remains invariant in every supported language',()=>{
   for(const lang of ['fr','en','es','he']) assert.strictEqual(i18n.translate(lang,'brand'),'NOTRE TABLE');
 });
 
-test('light-member tokens are cryptographically random, stored hashed and one-use',()=>{
-  const sql=fs.readFileSync(path.join(root,'supabase','migrations','202609150012_light_members_response_foundation.sql'),'utf8');
-  assert.ok(sql.includes("encode(gen_random_bytes(32),'hex')"));
-  assert.ok(sql.includes("encode(digest(v_token,'sha256'),'hex')"));
-  assert.ok(!/create table[^;]+light_response_tokens[\s\S]*?\btoken\s+text\b/i.test(sql));
-  assert.ok(/where token_hash=v_hash[\s\S]*?for update/i.test(sql));
-  assert.ok(sql.includes('v_token_row.consumed_at is not null'));
-  assert.ok(sql.includes('set consumed_at=now()'));
+test('light-member tokens remain cryptographically random and stored only as hashes while V0.294 keeps a valid bearer editable until expiry',()=>{
+  const foundation=fs.readFileSync(path.join(root,'supabase','migrations','202609150012_light_members_response_foundation.sql'),'utf8');
+  const current=fs.readFileSync(path.join(root,'supabase','migrations','202609190029_lia_contextual_family_guidance.sql'),'utf8');
+  assert.ok(foundation.includes("encode(gen_random_bytes(32),'hex')"));
+  assert.ok(foundation.includes("encode(digest(v_token,'sha256'),'hex')"));
+  assert.ok(!/create table[^;]+light_response_tokens[\s\S]*?\btoken\s+text\b/i.test(foundation));
+  assert.ok(current.includes('Keep the same opaque token alive until its existing expiry'));
+  assert.ok(current.includes('update public.light_response_tokens set consumed_at=null'));
+  assert.ok(!/v_token_row\.consumed_at\s+is\s+not\s+null/i.test((current.match(/create or replace function public\.submit_light_response[\s\S]*?end; \$\$;/i)||[])[0]||''));
 });
 
-test('light-member public context never exposes phone numbers or internal ids',()=>{
-  const sql=fs.readFileSync(path.join(root,'supabase','migrations','202609150012_light_members_response_foundation.sql'),'utf8');
-  const fn=(sql.match(/create or replace function public\.get_light_response_context[\s\S]*?end; \$\$;/i)||[])[0]||'';
-  assert.ok(fn.includes("'member_name'"));
-  assert.ok(fn.includes("'household_name'"));
-  assert.ok(!fn.includes("'phone_number'"));
-  assert.ok(!fn.includes("'light_member_id'"));
-  assert.ok(!fn.includes("'household_id'"));
+test('V0.294 token-scoped family context exposes names and choices but never phone numbers',()=>{
+  const sql=fs.readFileSync(path.join(root,'supabase','migrations','202609190029_lia_contextual_family_guidance.sql'),'utf8');
+  const context=(sql.match(/create or replace function public\.get_light_response_context[\s\S]*?end; \$\$;/i)||[])[0]||'';
+  const board=(sql.match(/create or replace function public\.get_light_family_decisions[\s\S]*?end; \$\$;/i)||[])[0]||'';
+  assert.ok(context.includes("'member_name'")&&context.includes("'household_name'")&&context.includes("'recipients'"));
+  assert.ok(board.includes("'member_name'")&&board.includes("'desire'")&&board.includes("'takes_charge'"));
+  assert.ok(!context.includes("'phone_number'"));
+  assert.ok(!board.includes("'phone_number'"));
 });
 
-test('organizer controls the optional desire list and stale answers are reset when it changes',()=>{
-  const sql=fs.readFileSync(path.join(root,'supabase','migrations','202609150012_light_members_response_foundation.sql'),'utf8');
+test('V0.294 organizer controls only the five active meal choices and reconfiguring the question resets stale answers',()=>{
+  const sql=fs.readFileSync(path.join(root,'supabase','migrations','202609190029_lia_contextual_family_guidance.sql'),'utf8');
   assert.ok(sql.includes('p_desire_options text[]'));
-  assert.ok(sql.includes("desire_options <@ array['home','pizza','pasta','sushi','chinese','surprise']::text[]"));
+  assert.ok(sql.includes("desire_options <@ array['home','pizza','pasta','sushi','chinese']::text[]"));
+  assert.ok(sql.includes('cardinality(desire_options)<=5'));
   assert.ok(sql.includes('delete from public.light_response_tokens where question_id=v_id'));
   assert.ok(sql.includes('delete from public.light_meal_responses where question_id=v_id'));
   assert.ok(sql.includes('v_desire=any(v_question.desire_options)'));
-  assert.ok(sql.includes('get_light_meal_summary'));
-  assert.ok(sql.includes("'presence',jsonb_build_object('yes',v_yes,'no',v_no,'maybe',v_maybe,'take_charge',v_take)"));
+  assert.ok(!/desire_options <@ array\[[^\]]*surprise/i.test(sql));
 });
 
-test('take-charge remains a one-click answer with no follow-up desire',()=>{
-  const sql=fs.readFileSync(path.join(root,'supabase','migrations','202609150012_light_members_response_foundation.sql'),'utf8');
+test('V0.294 take-charge is a separate editable checkbox with a single concurrent winner',()=>{
+  const sql=fs.readFileSync(path.join(root,'supabase','migrations','202609190029_lia_contextual_family_guidance.sql'),'utf8');
   const edge=fs.readFileSync(path.join(root,'supabase','functions','light-response','index.ts'),'utf8');
-  assert.ok(sql.includes("p_presence in ('no','take_charge')"));
-  assert.ok(edge.includes('data-presence="take_charge"'));
-  assert.ok(!edge.includes('cook / order'));
-  assert.ok(/where id=v_token_row\.question_id for update/i.test(sql));
-  assert.ok(sql.includes("raise exception 'QUESTION_TAKEN_OVER'"));
-  assert.ok(edge.includes('c.take_charge_name'));
-  assert.ok(edge.includes('t.taken(c.take_charge_name)'));
+  assert.ok(sql.includes('takes_charge boolean not null default false'));
+  assert.ok(sql.includes('light_meal_responses_one_take_charge_idx'));
+  assert.ok(sql.includes("raise exception 'QUESTION_TAKEN_OVER:%'"));
+  assert.ok(edge.includes("takes_charge:takesCharge"));
+  assert.ok(edge.includes("takesCharge=!takesCharge"));
+  assert.ok(edge.includes("☑ "));
 });
 
-test('surprise-me is a one-click yes while other desires remain optional two-click choices',()=>{
+test('V0.294 retired surprise choice is migrated to home and absent from the active UI/type contract',()=>{
+  const sql=fs.readFileSync(path.join(root,'supabase','migrations','202609190029_lia_contextual_family_guidance.sql'),'utf8');
   const edge=fs.readFileSync(path.join(root,'supabase','functions','light-response','index.ts'),'utf8');
-  assert.ok(edge.includes("if(o==='surprise'){submit('yes','surprise');return}"));
-  assert.ok(edge.includes('selected=selected===o?null:o'));
-  assert.ok(edge.includes("pb.forEach(b=>b.addEventListener('click',()=>submit(b.dataset.presence)))"));
+  const service=fs.readFileSync(path.join(root,'src','services','lightParticipation.ts'),'utf8');
+  assert.ok(sql.includes("update public.light_meal_responses set desire='home' where desire='surprise'"));
+  assert.ok(!service.includes("|'surprise'"));
+  assert.ok(!edge.includes("surprise:'"));
+  assert.ok(!edge.includes("data-choice=\"surprise\""));
 });
 
 test('light-response bearer token stays out of the HTTP URL and referrer',()=>{
@@ -791,6 +794,7 @@ test('light-response edge is intentionally public but delegates all data access 
   assert.ok(/\[functions\.light-response\][\s\S]*verify_jwt\s*=\s*false/.test(config));
   assert.ok(edge.includes("admin.rpc('get_light_response_context'"));
   assert.ok(edge.includes("admin.rpc('submit_light_response'"));
+  assert.ok(edge.includes("admin.rpc('get_light_family_decisions'"));
   assert.ok(!edge.includes(".from('light_response_tokens')"));
 });
 
@@ -809,7 +813,8 @@ test('backend live smoke crosses the deployed light-response Edge Function',()=>
   assert.ok(smoke.includes('assertLightResponseShell()'));
   assert.ok(smoke.includes("callLightResponse({action:'context'"));
   assert.ok(smoke.includes("callLightResponse({action:'submit'"));
-  assert.ok(smoke.includes("replay.status!==410"));
+  assert.ok(smoke.includes("replay.status!==200"));
+  assert.ok(smoke.includes("takes_charge:true"));
 });
 
 test('backend live smoke verifies light-response browser security headers',()=>{
