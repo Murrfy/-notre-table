@@ -145,7 +145,7 @@ export function liaCookingIngredientFollowupQuery(text:string):string|null{
     const match=folded.match(pattern);
     if(!match)continue;
     const target=match[1].trim();
-    if(!target)return null;
+    if(!target||/^(?:pour|for|para)\b/i.test(target))return null;
     const key=canonicalIngredientKey(target);
     if(['pour','for','para','personne','personnes','portion','portions','people','serving','servings','temps','time','minute','minutes','etape','etapes','step','steps','minuteur','timer'].includes(key))return null;
     return target;
