@@ -140,7 +140,7 @@ function stripCookingServingTarget(text:string):string{
 export type LiaCookingApproximationConsent='yes'|'no'|'unknown';
 
 export function liaCookingApproximationConsent(text:string):LiaCookingApproximationConsent{
-  const folded=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’']/g,' ').replace(/[!?.,;:]+/g,' ').replace(/\s+/g,' ').trim();
+  const folded=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[-’']/g,' ').replace(/[!?.,;:]+/g,' ').replace(/\s+/g,' ').trim();
   if(/^(?:oui|ok|d accord|vas y|tu peux|yes|yeah|yep|sure|go ahead|si|claro|dale|כן|בטח|אפשר)$/.test(folded))return'yes';
   if(/^(?:non|pas la peine|laisse tomber|ne fais pas|no|nope|don t|do not|לא|עזוב)$/.test(folded))return'no';
   return'unknown';
