@@ -1,13 +1,13 @@
-# Vérifications techniques — état courant V0.294
-- Checkpoint V0.294 : tableau famille nominatif et modifiable, guidage contextuel de LIA, prise en charge du repas et enrichissement progressif du profil familial.
+# Vérifications techniques — état courant V0.295
+- Checkpoint V0.295 : LIA utilise les anniversaires appris avec une intervention légère dans les 7 jours puis le jour J, sans action automatique.
 - `npm ci` : **PASS** sur runner GitHub avec Node 22.16.0 / npm 10.9.2.
 - `expo install --check` : **PASS**, dépendances SDK 57 à jour.
 - TypeScript installé (`tsc --noEmit`) : **PASS**.
 - `npm run verify` : **PASS**.
-- Régressions : **709/709 PASS**.
+- Régressions : **712/712 PASS**.
 - Gates EAS : **17/17 PASS**.
 - Matrice d’acceptation : **53 scénarios / 33 invariants critiques PASS**.
-- Audit TypeScript/TSX : **222 fichiers transpilés, 0 diagnostic**.
+- Audit TypeScript/TSX : **224 fichiers transpilés, 0 diagnostic**.
 - Expo Android : **export PASS**.
 - Expo iOS : **export PASS**.
-- Release evidence : **599 fichiers hashés**, contrat SHA-256 `402a953993c42439836c752c3c4aa918e06f16d082ad11e2e37c45fc1dfbb8fd`.
+- Release evidence : **602 fichiers hashés**, contrat SHA-256 `554893d80253223a38af193469411805902e22c60abd55b2559b3db293c24248`.
