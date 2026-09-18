@@ -139,6 +139,9 @@ export function parseLiaDirectAppAction(text:string,now=new Date(),seed:LiaDirec
     /^(?:add|put)\s+(.+?)\s+(?:to|on)\s+(?:the\s+)?(?:shopping|grocery)\s+list\s*[.!?]*$/i,
   ];
   for(const pattern of shoppingPatterns){const match=raw.match(pattern);if(match){const draft:LiaDirectAppActionDraft={type:'shopping.add_item',label:stripArticle(match[1])||null};return{recognized:true,draft,missing:missingFor(draft)};}}
+  if(liaShoppingReferenceAddRequested(raw)){
+    const draft:LiaDirectAppActionDraft={type:'shopping.add_item',label:null};return{recognized:true,draft,missing:'label'};
+  }
   if(/^(?:ajoute|mets)\s+(?:aux\s+courses|dans\s+(?:la\s+)?liste\s+de\s+courses)\s*[.!?]*$/i.test(raw)){
     const draft:LiaDirectAppActionDraft={type:'shopping.add_item',label:null};return{recognized:true,draft,missing:'label'};
   }
