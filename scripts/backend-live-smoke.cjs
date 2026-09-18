@@ -242,6 +242,7 @@ async function main(){
   const lightMemberId=String(await callRpc(A.client,'create_light_member',{p_household_id:hA.id,p_display_name:'Smoke Light One',p_phone_number:'+15550000001'},'create_light_member'));
   if(!lightMemberId)throw new Error('Light member RPC did not return an id.');
   await callRpc(A.client,'update_light_member',{p_light_member_id:lightMemberId,p_display_name:'Smoke Light One Updated',p_phone_number:'+15550000011',p_active:true},'update_light_member');
+  await callRpc(A.client,'set_lia_family_birthday',{p_household_id:hA.id,p_subject_kind:'light_member',p_subject_id:lightMemberId,p_month:3,p_day:12,p_year:null},'set_lia_family_birthday');
   await expectDenied('Light member update admin guard',B.client.rpc('update_light_member',{p_light_member_id:lightMemberId,p_display_name:'Forbidden',p_phone_number:'+15550000011',p_active:true}));
   const adminLightRead=await A.client.from('light_members').select('id,display_name,phone_number,active').eq('id',lightMemberId).single();
   if(adminLightRead.error||adminLightRead.data?.phone_number!=='+15550000011')throw adminLightRead.error??new Error('Household admin could not read managed light-member phone data.');
