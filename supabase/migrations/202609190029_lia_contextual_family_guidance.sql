@@ -44,7 +44,7 @@ begin
   return jsonb_build_object(
     'total',v_total,
     'presence',jsonb_build_object('yes',v_yes,'no',v_no,'maybe',v_maybe,'take_charge',v_take),
-    'desires',jsonb_build_object('home',v_home,'pizza',v_pizza,'pasta',v_pasta,'sushi',v_sushi,'chinese',v_chinese,'surprise',v_surprise),
+    'desires',jsonb_build_object('home',v_home,'home_total',v_home+v_surprise,'pizza',v_pizza,'pasta',v_pasta,'sushi',v_sushi,'chinese',v_chinese,'surprise',v_surprise),
     'take_charge_name',v_take_charge_name,
     'notes',v_notes,
     'responses',v_responses
