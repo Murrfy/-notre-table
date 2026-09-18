@@ -1,5 +1,13 @@
-# Notre Table — V0.293
+# Notre Table — V0.294
 
+
+## V0.294 — LIA accompagne l’utilisation et apprend la famille progressivement
+
+V0.294 transforme Message famille en tableau vivant : les choix actifs sont uniquement **Fait maison, Pizza, Pâtes, Sushi et Chinois**. Chaque destinataire peut modifier sa réponse jusqu’à l’expiration du lien, et chacun voit les choix nominatifs des autres ainsi que les totaux. « Surprends-moi » est retiré du modèle actif. « Je m’occupe de tout » reste une décision séparée du choix de repas et ne peut avoir qu’un seul responsable à la fois.
+
+LIA n’est plus un tutoriel récité. À la première utilisation, elle explique brièvement comment utiliser Message famille ; ensuite elle se tait si la personne avance normalement et intervient seulement si elle semble bloquée. Quand une réponse réelle arrive, LIA peut réagir : **Fait maison** déclenche un accompagnement du type « facile ou épater la galerie ? » ; **Je m’occupe de tout** fait considérer le repas comme pris en charge et coupe les relances d’organisation inutiles. L’humour reste contextuel, par exemple « n’oubliez pas de m’inviter à table 😏 », jamais mécanique.
+
+Le formulaire initial reste court. LIA peut ensuite compléter doucement le profil familial, une petite question à la fois, dans un moment calme. Le premier fait ajouté est l’anniversaire : jour et mois suffisent, l’année reste facultative. Elle peut demander « Au fait, pour que je pense aux anniversaires… c’est quand celui de Myriam ? Le jour et le mois me suffisent. Et le poids… non je plaisante 😏 ». Ces initiatives sont espacées, peuvent être repoussées ou refusées, et réutilisent le même moteur vocal LIA.
 
 ## V0.293 — « Il me manque du lait » puis « ajoute-le aux courses »
 
