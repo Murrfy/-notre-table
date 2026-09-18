@@ -1,5 +1,11 @@
-# Notre Table — V0.286
+# Notre Table — V0.287
 
+
+## V0.287 — Demander une quantité d’ingrédient à LIA
+
+V0.287 reprend V0.286 sans créer de nouveau moteur cuisine. Pendant une recette ouverte, LIA comprend désormais des questions ciblées comme « combien de farine ? », « il faut combien d’œufs ? » ou « how much milk do I need? ».
+
+La réponse est calculée uniquement depuis les ingrédients réellement enregistrés dans la recette ouverte. Si l’ingrédient n’est pas présent, si sa quantité n’est pas renseignée ou s’il apparaît plusieurs fois avec des usages potentiellement différents, LIA le dit explicitement au lieu d’inventer ou d’additionner silencieusement des valeurs.
 
 ## V0.286 — Aller directement à une étape précise
 
