@@ -11,6 +11,7 @@ import { mergePantryVisionItems, scanPantryPhoto, type PantryVisionItem } from '
 import { fetchPantry, readCachedPantry } from '../services/pantry';
 import { fetchMeals } from '../services/planning';
 import { fetchLightMealQuestion, fetchLightMealSummary } from '../services/lightParticipation';
+import { clearLiaPantryVisionSession, updateLiaPantryVisionSession } from '../services/liaPantryVisionSession';
 import { LightParticipationScreen } from './LightParticipationScreen';
 import { colors, radius } from '../theme';
 import type { PantryItem, Recipe } from '../types';
