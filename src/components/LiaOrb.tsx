@@ -5,7 +5,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useLocale} from '../context/LocaleContext';
 import {colors} from '../theme';
 import type {LiaSocialLevel,LiaSurfaceMode} from '../lib/lia';
-import {DEFAULT_LIA_NAMING_CONTEXT,liaDirectAddressNames} from '../lib/liaIdentity';
+import {DEFAULT_LIA_NAMING_CONTEXT,detectLiaPlayfulWrongNameAddress,liaDirectAddressNames,liaPlayfulNameTeasePrefix} from '../lib/liaIdentity';
 import {liaChooseLaughterReaction} from '../lib/liaSocialPresence';
 import {liaAudioHumanSpeechActive,liaAudioLooksLikeGroupLaughter,nextLiaAudioRuntimeState,type LiaAudioRuntimeState} from '../lib/liaAudioRuntime';
 import {addLiaListeningEventListener,getLiaListeningCapability,isHumanSpeechClassification,isLaughterClassification,isMusicClassification,startLiaListening,stopLiaListening} from '../services/liaListening';
@@ -80,14 +80,23 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
     const text=rawText.trim();
     if(!text||!enabled||!primaryAssistant)return;
     const clarificationPending=phoneNameRetryRef.current>0||liaPhoneCallClarificationPending()||liaMessageClarificationPending()||liaReminderClarificationPending()||liaTimerClarificationPending()||liaDirectAppActionClarificationPending()||liaMusicClarificationPending()||liaNavigationClarificationPending()||liaCalendarClarificationPending();
-    const directlyAddressed=detectLiaDirectAddress(text,directNames).addressed;
+    const playfulNameTease=clarificationPending?null:detectLiaPlayfulWrongNameAddress(text,directNames);
+    const directlyAddressed=detectLiaDirectAddress(text,directNames).addressed||Boolean(playfulNameTease?.addressed);
     if(!clarificationPending&&!directlyAddressed)return;
+    const effectiveDirectNames=playfulNameTease?.usedName?[...directNames,playfulNameTease.usedName]:directNames;
+    const responseText=playfulNameTease?.addressed?playfulNameTease.cleanedText:text;
 
     const generation=++tableResponseGenerationRef.current;
+    let playfulReplyPending=Boolean(playfulNameTease?.addressed&&playfulNameTease.mirrorNickname);
     const speakReply=async(reply:string,sensitive=false)=>{
       if(generation!==tableResponseGenerationRef.current||!reply.trim()||!enabled)return;
+      let spokenReply=reply;
+      if(playfulReplyPending){
+        playfulReplyPending=false;
+        if(!sensitive&&playfulNameTease?.mirrorNickname)spokenReply=`${liaPlayfulNameTeasePrefix(locale.languageTag,playfulNameTease.mirrorNickname)} ${reply}`;
+      }
       if(!liaMaySpeakDuringMusic({musicActive:musicPresenceRef.current.musicActive,directlyAddressed:true,userExplicitlyRequestedComment:true}))return;
-      await speakLia(reply,locale.languageTag,currentVoice?.identifier,{
+      await speakLia(spokenReply,locale.languageTag,currentVoice?.identifier,{
         onStart:()=>setVoiceSpeaking(true),
         onDone:()=>setVoiceSpeaking(false),
         onStopped:()=>setVoiceSpeaking(false),
@@ -110,7 +119,7 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
         awaitingPhoneName:phoneNameRetryRef.current>0,
         awaitingPhoneClarification:liaPhoneCallClarificationPending(),
         awaitingMessageClarification:liaMessageClarificationPending(),
-        directNames,
+        directNames:effectiveDirectNames,
         householdId,
         weekStart,
         demo,
@@ -151,11 +160,11 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
         return;
       }
 
-      const personalReply=liaPersonalPresenceReply(text,locale.languageTag);
+      const personalReply=liaPersonalPresenceReply(responseText,locale.languageTag);
       if(personalReply){await speakReply(personalReply);return;}
 
       const result=await generateLiaTableResponse({
-        turn:{text,speakerTrackId:'foreground',memberId:null,identityConfidence:0,speechConfidence:1,mayUseMemberName:false},
+        turn:{text:responseText,speakerTrackId:'foreground',memberId:null,identityConfidence:0,speechConfidence:1,mayUseMemberName:false},
         context:{
           mode:mode==='cooking'?'cooking':'table',
           languageTag:locale.languageTag,
@@ -341,9 +350,19 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
       }),
       onEligibleTurn:(turn)=>{
         const generation=++tableResponseGenerationRef.current;
-        const directlyAddressed=phoneNameRetryRef.current>0||liaPhoneCallClarificationPending()||liaMessageClarificationPending()||liaReminderClarificationPending()||liaTimerClarificationPending()||liaDirectAppActionClarificationPending()||liaMusicClarificationPending()||liaNavigationClarificationPending()||detectLiaDirectAddress(turn.text,directNames).addressed;
+        const clarificationPending=phoneNameRetryRef.current>0||liaPhoneCallClarificationPending()||liaMessageClarificationPending()||liaReminderClarificationPending()||liaTimerClarificationPending()||liaDirectAppActionClarificationPending()||liaMusicClarificationPending()||liaNavigationClarificationPending();
+        const playfulNameTease=clarificationPending?null:detectLiaPlayfulWrongNameAddress(turn.text,directNames);
+        const directlyAddressed=clarificationPending||detectLiaDirectAddress(turn.text,directNames).addressed||Boolean(playfulNameTease?.addressed);
+        const effectiveDirectNames=playfulNameTease?.usedName?[...directNames,playfulNameTease.usedName]:directNames;
+        const responseTurn=playfulNameTease?.addressed?{...turn,text:playfulNameTease.cleanedText}:turn;
+        let playfulReplyPending=Boolean(playfulNameTease?.addressed&&playfulNameTease.mirrorNickname);
         const speakIfStillFree=async(text:string,sensitive=false)=>{
           if(generation!==tableResponseGenerationRef.current||!text.trim())return;
+          let spokenText=text;
+          if(playfulReplyPending){
+            playfulReplyPending=false;
+            if(!sensitive&&playfulNameTease?.mirrorNickname)spokenText=`${liaPlayfulNameTeasePrefix(locale.languageTag,playfulNameTease.mirrorNickname)} ${text}`;
+          }
           if(!liaMaySpeakDuringMusic({musicActive:musicPresenceRef.current.musicActive,directlyAddressed,userExplicitlyRequestedComment:directlyAddressed}))return;
           const maySpeak=maySpeakGeneratedTableResponse({
             responseReady:true,
@@ -368,7 +387,7 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
             if(namingTurn.reply)await speakIfStillFree(namingTurn.reply);
             return;
           }
-          const assistant=await executeLiaAssistantVoiceRequest({text:turn.text,languageTag:locale.languageTag,awaitingPhoneName:phoneNameRetryRef.current>0,awaitingPhoneClarification:liaPhoneCallClarificationPending(),awaitingMessageClarification:liaMessageClarificationPending(),directNames,householdId,weekStart,demo});
+          const assistant=await executeLiaAssistantVoiceRequest({text:turn.text,languageTag:locale.languageTag,awaitingPhoneName:phoneNameRetryRef.current>0,awaitingPhoneClarification:liaPhoneCallClarificationPending(),awaitingMessageClarification:liaMessageClarificationPending(),directNames:effectiveDirectNames,householdId,weekStart,demo});
           if(generation!==tableResponseGenerationRef.current)return;
           if(assistant.status==='phone'){
             if(assistant.result.status==='no_match'||assistant.result.status==='invalid_target'){
