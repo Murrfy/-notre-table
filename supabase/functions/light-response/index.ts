@@ -72,6 +72,7 @@ function updateControls(){
   document.querySelectorAll('.choice').forEach(b=>b.classList.toggle('on',b.dataset.choice===selected));
   document.querySelectorAll('[data-presence]').forEach(b=>b.classList.toggle('on',b.dataset.presence===presence));
   $('takeBtn').classList.toggle('on',takesCharge);
+  $('takeBtn').textContent=(takesCharge?'☑ ':'☐ ')+t.take;
   const other=context?.take_charge_name&&context.take_charge_name!==context.member_name?context.take_charge_name:null;
   $('takeBtn').disabled=busy||Boolean(other);
   $('takeInfo').textContent=other?t.takeBy(other):(takesCharge?t.takeBy(context.member_name):t.takeFree);
