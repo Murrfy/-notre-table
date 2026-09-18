@@ -25,6 +25,7 @@ import {runLiaOpenLoopReengagement} from '../services/liaReengagementRuntime';
 import {LiaNavigationScreen} from './LiaNavigationScreen';
 import {LiaCalendarScreen} from './LiaCalendarScreen';
 import {maybeLiaCalendarForegroundNudge} from '../services/liaCalendarProactive';
+import {startLiaFamilyMealDecisionMonitor} from '../services/liaFamilyMealMonitor';
 
 export function MainScreen({ household, demo=false, onSignOut }:{household:Household;demo?:boolean;onSignOut:()=>void}) {
   const locale=useLocale();
@@ -38,6 +39,7 @@ export function MainScreen({ household, demo=false, onSignOut }:{household:House
   const lastOpenRefreshRef=useRef(0);
   const [weekStart,setWeekStart]=useState<Date>(()=>startOfWeek(new Date(),locale.firstWeekday));
   useEffect(()=>{setWeekStart(current=>startOfWeek(current,locale.firstWeekday));},[locale.firstWeekday]);
+  useEffect(()=>startLiaFamilyMealDecisionMonitor({householdId:household.id,demo}),[household.id,demo]);
   useEffect(()=>{
     const refresh=async()=>{
       const now=Date.now();if(now-lastOpenRefreshRef.current<2_000)return;lastOpenRefreshRef.current=now;
