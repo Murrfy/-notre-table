@@ -6,7 +6,7 @@ import { Recipe } from '../types';
 import { useLocale } from '../context/LocaleContext';
 import { convertQuantity } from '../lib/units';
 import { normalizeUnit } from '../domain/catalog';
-import {formatCookingClock,liaCookingApproximationConsent,liaCookingCue,liaCookingIngredientMatches} from '../lib/liaCookingCompanion';
+import {formatCookingClock,liaCookingApproximationConsent,liaCookingCue,liaCookingIngredientMatches,liaCookingServingFollowupTarget} from '../lib/liaCookingCompanion';
 import {runLiaCookingCommand,type LiaCookingSpeechAdapter} from '../services/liaCookingRuntime';
 import {setLiaCookingSessionVoiceHandler,type LiaCookingApproximationRequest} from '../services/liaCookingSession';
 
@@ -20,6 +20,7 @@ export function CookingModeScreen({recipe,onClose,speechAdapter}:{recipe:Recipe;
   const [clockNow,setClockNow]=useState(()=>Date.now());
   const [voiceListening,setVoiceListening]=useState(false);
   const approximationPendingRef=useRef<LiaCookingApproximationRequest|null>(null);
+  const lastServingQueryRef=useRef<{kind:'ingredient_quantity'|'scale_ingredients';ingredientQuery:string|null;atMs:number}|null>(null);
   const current=steps[index]??locale.t('cooking.noStep');
   const cue=useMemo(()=>liaCookingCue(current,index,steps.length),[current,index,steps.length]);
   const remainingSeconds=timerEndsAt===null?0:Math.max(0,Math.ceil((timerEndsAt-clockNow)/1000));
@@ -53,7 +54,26 @@ export function CookingModeScreen({recipe,onClose,speechAdapter}:{recipe:Recipe;
       }
       return{handled:true,spokenReply:fr?'Dis-moi simplement oui ou non : tu veux que je te fasse une approximation ?':'Just tell me yes or no: do you want me to make an approximation?',clarificationPending:true};
     }
-    const result=handleHandsFreeCommand(text);
+    const now=Date.now();
+    const followupTarget=liaCookingServingFollowupTarget(text);
+    const previousServingQuery=lastServingQueryRef.current;
+    const previousFresh=previousServingQuery!==null&&now-previousServingQuery.atMs<=120_000;
+    if(followupTarget!==null&&!previousFresh){
+      return{handled:true,spokenReply:fr?'Tu veux adapter quel ingrédient, ou toute la liste ?':'Which ingredient do you want to scale, or the whole list?'};
+    }
+    const commandText=followupTarget!==null&&previousServingQuery
+      ?previousServingQuery.kind==='scale_ingredients'
+        ?`adapte les ingrédients pour ${followupTarget} personnes`
+        :previousServingQuery.ingredientQuery
+          ?`combien de ${previousServingQuery.ingredientQuery} pour ${followupTarget} personnes`
+          :text
+      :text;
+    const result=handleHandsFreeCommand(commandText);
+    if(result.action.kind==='ingredient_quantity'&&result.action.ingredientQuery){
+      lastServingQueryRef.current={kind:'ingredient_quantity',ingredientQuery:result.action.ingredientQuery,atMs:now};
+    }else if(result.action.kind==='scale_ingredients'){
+      lastServingQueryRef.current={kind:'scale_ingredients',ingredientQuery:null,atMs:now};
+    }
     if(result.action.kind==='unknown'||result.action.kind==='music')return{handled:false,spokenReply:null};
     if(result.action.kind==='repeat_step')return{handled:true,spokenReply:current};
     if(result.action.kind==='step_status'){
@@ -177,7 +197,7 @@ export function CookingModeScreen({recipe,onClose,speechAdapter}:{recipe:Recipe;
     }
     if(result.action.kind==='stop_voice')return{handled:true,spokenReply:null};
     return{handled:false,spokenReply:null};
-  },()=>{approximationPendingRef.current=null;}),[current,index,steps,timerEndsAt,recipe.ingredients,recipe.portions,recipe.title,onClose,locale]);
+  },()=>{approximationPendingRef.current=null;lastServingQueryRef.current=null;}),[current,index,steps,timerEndsAt,recipe.ingredients,recipe.portions,recipe.title,onClose,locale]);
 
   const toggleVoiceListening=async()=>{
     if(!speechAdapter?.available)return;
