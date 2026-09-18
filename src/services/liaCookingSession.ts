@@ -1,10 +1,14 @@
+export type LiaCookingApproximationItem={name:string;quantity:number|null;unit:string|null};
+
 export type LiaCookingApproximationRequest={
+  scope:'ingredient'|'ingredient_list';
   recipeTitle:string;
   ingredientName:string;
   targetServings:number|null;
   baseServings:number|null;
   recordedQuantity:number|null;
   recordedUnit:string|null;
+  ingredients?:LiaCookingApproximationItem[];
   reason:'missing_base_servings'|'missing_quantity';
 };
 
