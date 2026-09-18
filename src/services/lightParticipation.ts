@@ -53,6 +53,7 @@ export type LightMealSummary={
   responses:LightMealResponse[];
   recipients:LightMealRecipient[];
 };
+export type LightMealDecisionSnapshot={question:LightMealQuestion;summary:LightMealSummary};
 
 function client(){
   if(!supabase)throw new Error('SUPABASE_NOT_CONFIGURED');
@@ -120,6 +121,17 @@ export async function fetchLightMealSummary(questionId:string):Promise<LightMeal
       note:typeof x.note==='string'?x.note:null,takes_charge:Boolean(x.takes_charge),responded_at:typeof x.responded_at==='string'?x.responded_at:null,
     })):[],
   };
+}
+
+export async function fetchLightMealDecisionSnapshots(householdId:string,fromDate:string,toDate:string):Promise<LightMealDecisionSnapshot[]>{
+  const {data,error}=await client().from('light_meal_questions')
+    .select('id,household_id,meal_date,meal_type,desire_options,expires_at,closed_at,updated_at')
+    .eq('household_id',householdId).gte('meal_date',fromDate).lte('meal_date',toDate)
+    .is('closed_at',null).order('meal_date',{ascending:true}).limit(8);
+  if(error)throw error;
+  const questions=(data??[]) as LightMealQuestion[];
+  const settled=await Promise.allSettled(questions.map(async question=>({question,summary:await fetchLightMealSummary(question.id)})));
+  return settled.filter((item):item is PromiseFulfilledResult<LightMealDecisionSnapshot>=>item.status==='fulfilled').map(item=>item.value);
 }
 
 export function lightResponseLink(token:string):string{
