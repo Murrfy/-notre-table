@@ -5825,6 +5825,36 @@ test('V0.288 approximation consent stays inside the global LIA clarification lan
 });
 
 
+test('V0.289 cooking recognizes full ingredient-list scaling without stealing single-ingredient queries',()=>{
+  assert.equal(liaCookingCompanion.liaHandsFreeCookingIntent('LIA, adapte les ingrédients pour 6 personnes'),'scale_ingredients');
+  assert.equal(liaCookingCompanion.liaHandsFreeCookingIntent('adjust the ingredients for 8 servings'),'scale_ingredients');
+  assert.equal(liaCookingCompanion.liaHandsFreeCookingScaleIngredientsTarget('adapte les ingrédients pour 6 personnes'),6);
+  const action=liaCookingCompanion.liaHandsFreeCookingAction('adapte les ingrédients pour 6 personnes');
+  assert.equal(action.kind,'scale_ingredients');assert.equal(action.targetServings,6);assert.equal(action.safeToExecuteLocally,true);
+  assert.equal(liaCookingCompanion.liaHandsFreeCookingIntent('combien de farine pour 6 personnes ?'),'ingredient_quantity');
+});
+
+test('V0.289 full-list scaling keeps exact values local and asks before approximating missing quantities',()=>{
+  const source=fs.readFileSync(path.join(root,'src/screens/CookingModeScreen.tsx'),'utf8');
+  assert.ok(source.includes("if(result.action.kind==='scale_ingredients')"));
+  assert.ok(source.includes('ingredient.quantity*targetServings/recipe.portions'));
+  assert.ok(source.includes("scope:'ingredient_list'"));
+  assert.ok(source.includes('Je peux calculer exactement :'));
+  assert.ok(source.includes('Tu veux que je fasse une approximation pour ce qui manque ?'));
+  assert.ok(source.includes('clarificationPending:true'));
+});
+
+test('V0.289 list approximation carries real recipe data and remains explicitly consent-gated',()=>{
+  const session=fs.readFileSync(path.join(root,'src/services/liaCookingSession.ts'),'utf8');
+  const orb=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
+  assert.ok(session.includes("scope:'ingredient'|'ingredient_list'"));
+  assert.ok(session.includes('ingredients?:LiaCookingApproximationItem[]'));
+  assert.ok(orb.includes("const listScope=approximation.scope==='ingredient_list'"));
+  assert.ok(orb.includes('N’approxime que les quantités manquantes'));
+  assert.ok(orb.includes("key:'cooking_approximation_permission',value:'explicit_yes'"));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
