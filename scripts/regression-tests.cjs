@@ -5794,12 +5794,34 @@ test('V0.288 serving scaling stays a pure proportion from the real recipe base',
   assert.equal(liaCookingCompanion.liaHandsFreeCookingIntent('il reste combien ?'),'timer_remaining');
 });
 
-test('V0.288 cooking screen scales only known quantities and fails closed without a serving base',()=>{
+test('V0.288 cooking screen scales exact data and asks permission before any approximation',()=>{
   const source=fs.readFileSync(path.join(root,'src/screens/CookingModeScreen.tsx'),'utf8');
   assert.ok(source.includes('ingredient.quantity*targetServings/recipe.portions'));
   assert.ok(source.includes('recipe.portions<=0'));
-  assert.ok(source.includes('mais sans quantité précise à adapter.'));
+  assert.ok(source.includes('Tu veux que je te fasse une approximation ?'));
+  assert.ok(source.includes('approximationPendingRef.current=approximationRequest'));
+  assert.ok(source.includes('clarificationPending:true'));
   assert.ok(source.includes('Pour ${targetServings} personnes, il faut ${scaledLabel} de ${ingredient.name}.'));
+});
+
+test('V0.288 cooking approximation requires an explicit yes and accepts a clear no',()=>{
+  assert.equal(liaCookingCompanion.liaCookingApproximationConsent('oui'),'yes');
+  assert.equal(liaCookingCompanion.liaCookingApproximationConsent('vas-y'),'yes');
+  assert.equal(liaCookingCompanion.liaCookingApproximationConsent('yes'),'yes');
+  assert.equal(liaCookingCompanion.liaCookingApproximationConsent('non'),'no');
+  assert.equal(liaCookingCompanion.liaCookingApproximationConsent('peut-être'),'unknown');
+});
+
+test('V0.288 approximation consent stays inside the global LIA clarification lane',()=>{
+  const session=fs.readFileSync(path.join(root,'src/services/liaCookingSession.ts'),'utf8');
+  const execution=fs.readFileSync(path.join(root,'src/services/liaAssistantVoiceExecution.ts'),'utf8');
+  const orb=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
+  assert.ok(session.includes('liaCookingSessionClarificationPending'));
+  assert.ok(session.includes('clearLiaCookingSessionClarification'));
+  assert.ok(execution.includes("status:'cooking_approximation_requested'"));
+  assert.ok(orb.includes('liaCookingSessionClarificationPending()'));
+  assert.ok(orb.includes("key:'cooking_approximation_permission',value:'explicit_yes'"));
+  assert.ok(orb.includes('Ne présente jamais cette estimation comme une quantité écrite dans la recette.'));
 });
 
 
