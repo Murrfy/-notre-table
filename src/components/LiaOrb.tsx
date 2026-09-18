@@ -148,12 +148,18 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
       if(assistant.status==='cooking_approximation_requested'){
         const approximation=assistant.request;
         const target=approximation.targetServings?String(approximation.targetServings):null;
+        const ingredientSummary=(approximation.ingredients??[]).map(item=>`${item.name}: ${item.quantity??'quantité inconnue'}${item.unit?` ${item.unit}`:''}`).join('; ');
+        const listScope=approximation.scope==='ingredient_list';
         const requestText=locale.languageTag.startsWith('fr')
-          ?`L’utilisateur a explicitement accepté une approximation culinaire pour ${approximation.ingredientName}${target?` pour ${target} personnes`:''} dans la recette « ${approximation.recipeTitle} ». Donne une estimation prudente, dis clairement que c’est approximatif et indique l’hypothèse utilisée. Ne présente jamais cette estimation comme une quantité écrite dans la recette. Si tu n’as pas de base raisonnable pour estimer, dis-le au lieu d’inventer.`
-          :`The user explicitly accepted a cooking approximation for ${approximation.ingredientName}${target?` for ${target} people`:''} in the recipe “${approximation.recipeTitle}”. Give a cautious estimate, clearly say it is approximate, and state the assumption used. Never present the estimate as a quantity written in the recipe. If there is no reasonable basis to estimate, say so instead of inventing one.`;
+          ?listScope
+            ?`L’utilisateur a explicitement accepté une approximation pour adapter toute la liste d’ingrédients de « ${approximation.recipeTitle} »${target?` à ${target} personnes`:''}. Données réelles de la recette : ${ingredientSummary||'aucune quantité exploitable'}. N’approxime que les quantités manquantes ou ce qui dépend du nombre de portions absent. Garde les quantités calculables comme exactes, indique clairement chaque valeur approximative et l’hypothèse utilisée. N’invente rien si tu n’as pas de base culinaire raisonnable.`
+            :`L’utilisateur a explicitement accepté une approximation culinaire pour ${approximation.ingredientName}${target?` pour ${target} personnes`:''} dans la recette « ${approximation.recipeTitle} ». Donne une estimation prudente, dis clairement que c’est approximatif et indique l’hypothèse utilisée. Ne présente jamais cette estimation comme une quantité écrite dans la recette. Si tu n’as pas de base raisonnable pour estimer, dis-le au lieu d’inventer.`
+          :listScope
+            ?`The user explicitly approved an approximation to scale the full ingredient list for “${approximation.recipeTitle}”${target?` to ${target} people`:''}. Real recipe data: ${ingredientSummary||'no usable quantities'}. Approximate only missing quantities or values blocked by a missing base serving count. Keep calculable quantities exact, clearly label every approximation and state the assumption. Do not invent values without a reasonable culinary basis.`
+            :`The user explicitly accepted a cooking approximation for ${approximation.ingredientName}${target?` for ${target} people`:''} in the recipe “${approximation.recipeTitle}”. Give a cautious estimate, clearly say it is approximate, and state the assumption used. Never present the estimate as a quantity written in the recipe. If there is no reasonable basis to estimate, say so instead of inventing one.`;
         const confirmedFacts=[
           {key:'cooking_recipe_title',value:approximation.recipeTitle,scope:'session' as const,confirmed:true,relevant:true,sensitive:false},
-          {key:'cooking_ingredient',value:approximation.ingredientName,scope:'session' as const,confirmed:true,relevant:true,sensitive:false},
+          {key:listScope?'cooking_ingredient_list':'cooking_ingredient',value:listScope?(ingredientSummary||approximation.ingredientName):approximation.ingredientName,scope:'session' as const,confirmed:true,relevant:true,sensitive:false},
           {key:'cooking_approximation_permission',value:'explicit_yes',scope:'session' as const,confirmed:true,relevant:true,sensitive:false},
           ...(approximation.targetServings!==null?[{key:'cooking_target_servings',value:String(approximation.targetServings),scope:'session' as const,confirmed:true,relevant:true,sensitive:false}]:[]),
           ...(approximation.baseServings!==null?[{key:'cooking_base_servings',value:String(approximation.baseServings),scope:'session' as const,confirmed:true,relevant:true,sensitive:false}]:[]),
@@ -163,7 +169,7 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
         ];
         const result=await generateLiaTableResponse({
           turn:{text:requestText,speakerTrackId:'foreground',memberId:null,identityConfidence:0,speechConfidence:1,mayUseMemberName:false},
-          context:{mode:'cooking',languageTag:locale.languageTag,topicKey:'cooking_approximation',memberId:null,mayUseMemberName:false,naming,householdId,weekStart,demo,confirmedFacts},
+          context:{mode:'cooking',languageTag:locale.languageTag,topicKey:listScope?'cooking_list_approximation':'cooking_approximation',memberId:null,mayUseMemberName:false,naming,householdId,weekStart,demo,confirmedFacts},
         });
         if(generation!==tableResponseGenerationRef.current)return;
         if(result.status==='ready'){await speakReply(result.text,result.sensitive);return;}
