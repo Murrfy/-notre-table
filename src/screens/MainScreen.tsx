@@ -27,6 +27,7 @@ import {LiaCalendarScreen} from './LiaCalendarScreen';
 import {maybeLiaCalendarForegroundNudge} from '../services/liaCalendarProactive';
 import {getMyDisplayName} from '../services/profiles';
 import {maybeEmitLiaProfileEnrichmentQuestion} from '../services/liaProfileEnrichment';
+import {maybeEmitLiaBirthdayAwareness} from '../services/liaBirthdayAwareness';
 import {liaCookingSessionActive} from '../services/liaCookingSession';
 import {startLiaFamilyMealDecisionMonitor} from '../services/liaFamilyMealMonitor';
 
@@ -85,6 +86,8 @@ export function MainScreen({ household, demo=false, onSignOut }:{household:House
         if(cancelled||!quiet||liaQuietNow(quiet))return;
         const organizerName=await getMyDisplayName().catch(()=>'');
         if(cancelled)return;
+        const birthdaySurfaced=await maybeEmitLiaBirthdayAwareness({householdId:household.id,organizerName,demo:false}).catch(()=>false);
+        if(cancelled||birthdaySurfaced)return;
         await maybeEmitLiaProfileEnrichmentQuestion({householdId:household.id,organizerName,demo:false}).catch(()=>false);
       })();
     },90_000);
