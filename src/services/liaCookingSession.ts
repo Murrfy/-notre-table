@@ -15,7 +15,7 @@ export type LiaCookingSessionVoiceResult={
   approximationRequest?:LiaCookingApproximationRequest;
 };
 
-type Handler=(text:string,languageTag:string)=>LiaCookingSessionVoiceResult;
+type Handler=(text:string,languageTag:string)=>LiaCookingSessionVoiceResult|Promise<LiaCookingSessionVoiceResult>;
 let handler:Handler|null=null;
 let clearHandlerClarification:(()=>void)|null=null;
 let clarificationPending=false;
@@ -37,8 +37,8 @@ export function clearLiaCookingSessionClarification():void{
   clarificationPending=false;
   clearHandlerClarification?.();
 }
-export function runLiaCookingSessionVoiceCommand(text:string,languageTag:string):LiaCookingSessionVoiceResult{
-  const result=handler?.(text,languageTag)??{handled:false,spokenReply:null};
+export async function runLiaCookingSessionVoiceCommand(text:string,languageTag:string):Promise<LiaCookingSessionVoiceResult>{
+  const result=handler?await handler(text,languageTag):{handled:false,spokenReply:null};
   clarificationPending=Boolean(result.clarificationPending);
   return result;
 }
