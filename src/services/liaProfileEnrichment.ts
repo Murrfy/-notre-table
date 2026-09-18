@@ -167,6 +167,15 @@ export function parseLiaBirthdayAnswer(text:string,now=new Date()):LiaBirthdayVa
   return null;
 }
 
+function postBirthdayJoke(subjectName:string,languageTag:string):string{
+  if(!fr(languageTag))return'';
+  let sum=0;for(const ch of subjectName)sum+=ch.charCodeAt(0);
+  const variant=sum%3;
+  if(variant===0)return' Et le poids aussi ?… Non, je plaisante 😏';
+  if(variant===1)return' Et la couleur de ses cheveux aussi ?… Je plaisante 😏';
+  return'';
+}
+
 function birthdayLabel(value:LiaBirthdayValue,languageTag:string):string{
   const frMonths=['','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
   const enMonths=['','January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -230,7 +239,8 @@ export async function continueLiaProfileEnrichmentClarification(input:{
   }
   pending=null;
   const label=birthdayLabel(birthday,input.languageTag);
+  const joke=postBirthdayJoke(target.subjectName,input.languageTag);
   return{status:'saved',spokenReply:fr(input.languageTag)
-    ?`Parfait, je retiens que l’anniversaire de ${target.subjectName} est le ${label}.`
+    ?`Parfait, je retiens que l’anniversaire de ${target.subjectName} est le ${label}.${joke}`
     :`Perfect. I’ll remember that ${target.subjectName}'s birthday is ${label}.`};
 }
