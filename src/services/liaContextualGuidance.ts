@@ -7,7 +7,8 @@ export type LiaContextualGuidanceEvent=
   |{kind:'family_message_help';householdId:string;organizerName:string;step:'prepare'|'share'}
   |{kind:'family_choice_changed';householdId:string;organizerName:string;memberName:string;mealDate:string;mealType:MealType;desire:LightDesire}
   |{kind:'family_take_charge_changed';householdId:string;organizerName:string;memberName:string;mealDate:string;mealType:MealType;active:boolean}
-  |{kind:'profile_enrichment_question';householdId:string;organizerName:string;subjectName:string;fact:'birthday'};
+  |{kind:'profile_enrichment_question';householdId:string;organizerName:string;subjectName:string;fact:'birthday'}
+  |{kind:'birthday_awareness';householdId:string;organizerName:string;subjectName:string;daysUntil:number};
 
 type Listener=(event:LiaContextualGuidanceEvent)=>void;
 const listeners=new Set<Listener>();
@@ -25,7 +26,8 @@ function eventKey(event:LiaContextualGuidanceEvent):string{
   if(event.kind==='family_message_help')return event.kind+':'+event.householdId+':'+event.step;
   if(event.kind==='family_choice_changed')return event.kind+':'+event.householdId+':'+event.mealDate+':'+event.mealType+':'+event.memberName+':'+event.desire;
   if(event.kind==='family_take_charge_changed')return event.kind+':'+event.householdId+':'+event.mealDate+':'+event.mealType+':'+event.memberName+':'+String(event.active);
-  return event.kind+':'+event.householdId+':'+event.subjectName+':'+event.fact;
+  if(event.kind==='profile_enrichment_question')return event.kind+':'+event.householdId+':'+event.subjectName+':'+event.fact;
+  return event.kind+':'+event.householdId+':'+event.subjectName+':'+String(event.daysUntil);
 }
 
 export function emitLiaContextualGuidance(event:LiaContextualGuidanceEvent):void{
@@ -79,6 +81,12 @@ export function liaContextualGuidancePrompt(event:LiaContextualGuidanceEvent,lan
       ?`${prefix}profite d’un moment calme pour apprendre une petite information familiale manquante, sans donner l’impression d’un formulaire. Demande simplement quand est l’anniversaire de ${event.subjectName}. Précise que le jour et le mois suffisent et que l’année est facultative. Une seule question, ton naturel et chaleureux, aucune insistance. Ne fais pas encore la blague : attends d’abord la réponse.`
       :`${prefix}use a calm moment to learn one small missing family detail without sounding like a form. Simply ask when ${event.subjectName}'s birthday is. Say that day and month are enough and the year is optional. Ask one question only, warmly, with no pressure.`;
   }
+  if(event.kind==='birthday_awareness'){
+    const timing=event.daysUntil===0?(fr?'aujourd’hui':'today'):event.daysUntil===1?(fr?'demain':'tomorrow'):(fr?`dans ${event.daysUntil} jours`:`in ${event.daysUntil} days`);
+    return fr
+      ?`${prefix}tu sais maintenant que l’anniversaire de ${event.subjectName} est ${timing}. Fais une intervention courte et naturelle. Ne mentionne jamais son âge. Si c’est pertinent, demande simplement si la cliente veut prévoir quelque chose pour le repas ou l’occasion, sans créer de rappel, achat, réservation ou planning sans demande explicite.`
+      :`${prefix}you know that ${event.subjectName}'s birthday is ${timing}. Make one short natural intervention. Never mention their age. If useful, simply ask whether the organizer wants to plan something for the meal or occasion, without creating reminders, purchases, reservations, or plans unless explicitly asked.`;
+  }
   if(event.kind==='family_choice_changed'){
     const label:Record<LightDesire,string>={home:'Plat fait maison',pizza:'Pizza',pasta:'Pâtes',sushi:'Sushi',chinese:'Chinois'};
     if(event.desire==='home'){
@@ -102,7 +110,7 @@ export function liaContextualGuidancePrompt(event:LiaContextualGuidanceEvent,lan
 
 function samePerson(a:string,b:string):boolean{return cleanName(a).toLocaleLowerCase()===cleanName(b).toLocaleLowerCase();}
 function stableJoke(event:LiaContextualGuidanceEvent):boolean{
-  const seed=event.kind==='family_take_charge_changed'?event.memberName+event.mealDate:event.kind==='profile_enrichment_question'?event.subjectName+event.fact:event.kind;
+  const seed=event.kind==='family_take_charge_changed'?event.memberName+event.mealDate:event.kind==='profile_enrichment_question'?event.subjectName+event.fact:event.kind==='birthday_awareness'?event.subjectName+event.daysUntil:event.kind;
   let sum=0;for(const ch of seed)sum+=ch.charCodeAt(0);return sum%3===0;
 }
 
@@ -123,6 +131,18 @@ export function liaContextualGuidanceFallback(event:LiaContextualGuidanceEvent,l
     return fr
       ?`${prefix}au fait, pour que je pense aux anniversaires… c’est quand celui de ${event.subjectName} ? Le jour et le mois me suffisent.`
       :`${prefix}by the way, so I can keep birthdays in mind: when is ${event.subjectName}'s birthday? Day and month are enough; the year is optional.`;
+  }
+  if(event.kind==='birthday_awareness'){
+    const self=samePerson(event.organizerName,event.subjectName);
+    if(event.daysUntil===0){
+      return fr
+        ?self?`Joyeux anniversaire ${event.subjectName} 🎂. Si tu veux, on peut rendre le repas un peu spécial aujourd’hui.`:`${prefix}c’est l’anniversaire de ${event.subjectName} aujourd’hui 🎂. Tu veux qu’on prévoie quelque chose de spécial pour le repas ?`
+        :self?`Happy birthday ${event.subjectName} 🎂. If you want, we can make today's meal a little special.`:`${prefix}it’s ${event.subjectName}'s birthday today 🎂. Want to plan something special for the meal?`;
+    }
+    const timing=event.daysUntil===1?(fr?'demain':'tomorrow'):(fr?`dans ${event.daysUntil} jours`:`in ${event.daysUntil} days`);
+    return fr
+      ?`${prefix}petit rappel : l’anniversaire de ${event.subjectName}, c’est ${timing}. Si tu veux prévoir quelque chose, je suis là.`
+      :`${prefix}quick heads-up: ${event.subjectName}'s birthday is ${timing}. If you want to plan something, I’m here.`;
   }
   if(event.kind==='family_choice_changed'){
     if(event.desire!=='home')return'';
