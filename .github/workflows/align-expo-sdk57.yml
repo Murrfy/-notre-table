@@ -1,4 +1,5 @@
 name: Align Expo SDK 57 dependencies
+# validation trigger after SDK invariant alignment
 
 on:
   workflow_dispatch:
