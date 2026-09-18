@@ -5746,6 +5746,36 @@ test('V0.286 global cooking handler reads the targeted step and reports real bou
 });
 
 
+test('V0.287 cooking recognizes a precise ingredient quantity question without stealing timer or step questions',()=>{
+  assert.equal(liaCookingCompanion.liaHandsFreeCookingIntent('LIA, combien de farine ?'),'ingredient_quantity');
+  assert.equal(liaCookingCompanion.liaHandsFreeCookingIntent("il faut combien d’œufs ?"),'ingredient_quantity');
+  assert.equal(liaCookingCompanion.liaHandsFreeCookingIntent('how much milk do I need?'),'ingredient_quantity');
+  assert.equal(liaCookingCompanion.liaHandsFreeCookingIntent('il reste combien ?'),'timer_remaining');
+  assert.equal(liaCookingCompanion.liaHandsFreeCookingIntent("il reste combien d'étapes ?"),'step_status');
+});
+
+test('V0.287 ingredient quantity lookup matches only the real recipe ingredient key',()=>{
+  const items=[
+    {name:'Farine',quantity:250,unit:'g',ingredient_key:'flour'},
+    {name:'Lait',quantity:300,unit:'ml',ingredient_key:'milk'},
+  ];
+  const flour=liaCookingCompanion.liaCookingIngredientMatches('farine',items);
+  assert.equal(flour.length,1);assert.equal(flour[0].quantity,250);
+  assert.equal(liaCookingCompanion.liaCookingIngredientMatches('sucre',items).length,0);
+  const action=liaCookingCompanion.liaHandsFreeCookingAction('quelle quantité de farine ?');
+  assert.equal(action.kind,'ingredient_quantity');assert.equal(action.ingredientQuery,'farine');assert.equal(action.safeToExecuteLocally,true);
+});
+
+test('V0.287 cooking screen answers from the recipe and refuses to invent or merge ambiguous quantities',()=>{
+  const source=fs.readFileSync(path.join(root,'src/screens/CookingModeScreen.tsx'),'utf8');
+  assert.ok(source.includes("if(result.action.kind==='ingredient_quantity')"));
+  assert.ok(source.includes('liaCookingIngredientMatches(query,recipe.ingredients??[])'));
+  assert.ok(source.includes("Je ne vois pas ${query||'cet ingrédient'} dans cette recette."));
+  assert.ok(source.includes('apparaît plusieurs fois dans la recette'));
+  assert.ok(source.includes('mais sans quantité précise.'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
