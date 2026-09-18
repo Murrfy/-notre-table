@@ -5976,6 +5976,88 @@ test('V0.293 the global LIA lane accepts only the brief explicit shortage follow
 });
 
 
+test('V0.294 family board shows the five named meal columns with live green ticks and recipient rows',()=>{
+  const screen=fs.readFileSync(path.join(root,'src/screens/LightParticipationScreen.tsx'),'utf8');
+  assert.ok(screen.includes("icon:'🍲'")&&screen.includes("icon:'🍕'")&&screen.includes("icon:'🍝'")&&screen.includes("icon:'🍣'")&&screen.includes("icon:'🥡'"));
+  assert.ok(screen.includes('summary.recipients.map'));
+  assert.ok(screen.includes('recipient.desire===option.key'));
+  assert.ok(screen.includes("color:'#2f8a4b'"));
+  assert.ok(screen.includes('summary.desires[option.key]'));
+});
+
+test('V0.294 public family response link is editable until expiry with free note and separate take-charge checkbox',()=>{
+  const edge=fs.readFileSync(path.join(root,'supabase','functions','light-response','index.ts'),'utf8');
+  const sql=fs.readFileSync(path.join(root,'supabase','migrations','202609190029_lia_contextual_family_guidance.sql'),'utf8');
+  assert.ok(edge.includes("selected=selected===o?null:o"));
+  assert.ok(edge.includes("takesCharge=!takesCharge"));
+  assert.ok(edge.includes("id=\"note\""));
+  assert.ok(edge.includes("setInterval(()=>void refreshBoard(),4000)"));
+  assert.ok(sql.includes('takes_charge boolean not null default false'));
+  assert.ok(sql.includes('Keep the same opaque token alive until its existing expiry'));
+  assert.ok(sql.includes('set consumed_at=null'));
+});
+
+test('V0.294 family members see the same token-scoped named board without phone numbers',()=>{
+  const edge=fs.readFileSync(path.join(root,'supabase','functions','light-response','index.ts'),'utf8');
+  const sql=fs.readFileSync(path.join(root,'supabase','migrations','202609190029_lia_contextual_family_guidance.sql'),'utf8');
+  assert.ok(edge.includes("action:'board'"));
+  assert.ok(edge.includes("admin.rpc('get_light_family_decisions'"));
+  assert.ok(sql.includes("'recipients',v_recipients"));
+  assert.ok(sql.includes("'member_name',m.display_name"));
+  const board=(sql.match(/create or replace function public\.get_light_family_decisions[\s\S]*?end; \$\$;/i)||[])[0]||'';
+  assert.ok(!board.includes("'phone_number'"));
+});
+
+test('V0.294 LIA explains Family Message once, then can guide a stuck organizer one step at a time',()=>{
+  const guidance=fs.readFileSync(path.join(root,'src/services/liaContextualGuidance.ts'),'utf8');
+  const screen=fs.readFileSync(path.join(root,'src/screens/LightParticipationScreen.tsx'),'utf8');
+  assert.ok(guidance.includes('@notre-table/lia-contextual-guidance-seen-v1'));
+  assert.ok(guidance.includes('family_message_first_use'));
+  assert.ok(guidance.includes("step:'prepare'|'share'"));
+  assert.ok(screen.includes('emitLiaFamilyMessageFirstUse'));
+  assert.ok(screen.includes('25_000'));
+  assert.ok(screen.includes("kind:'family_message_help'"));
+});
+
+test('V0.294 LIA reacts to a real home-cooked choice with the agreed easy-or-impress tone',()=>{
+  const guidance=fs.readFileSync(path.join(root,'src/services/liaContextualGuidance.ts'),'utf8');
+  const screen=fs.readFileSync(path.join(root,'src/screens/LightParticipationScreen.tsx'),'utf8');
+  assert.ok(guidance.includes('faire facile ou épater la galerie'));
+  assert.ok(guidance.includes('attendre les autres'));
+  assert.ok(screen.includes("kind:'family_choice_changed'"));
+  assert.ok(screen.includes('before?.desire!==recipient.desire'));
+});
+
+test('V0.294 take-charge informs the organizer, suppresses organizational prompting in LIA context, and keeps humor optional',()=>{
+  const guidance=fs.readFileSync(path.join(root,'src/services/liaContextualGuidance.ts'),'utf8');
+  const appContext=fs.readFileSync(path.join(root,'src/services/liaAssistantAppContext.ts'),'utf8');
+  const objective=fs.readFileSync(path.join(root,'src/lib/liaAssistantObjective.ts'),'utf8');
+  assert.ok(guidance.includes('évite les relances d’organisation'));
+  assert.ok(guidance.includes('n’oubliez pas de m’inviter à table'));
+  assert.ok(guidance.includes('pas systématiquement'));
+  assert.ok(appContext.includes('app.family_meal_decisions'));
+  assert.ok(appContext.includes('pris en charge par'));
+  assert.ok(objective.includes("if(planning){addRead(reads,'planning.read');addRead(reads,'family.read');}"));
+});
+
+test('V0.294 global family monitor keeps LIA aware of replies even when Message famille is closed',()=>{
+  const monitor=fs.readFileSync(path.join(root,'src/services/liaFamilyMealMonitor.ts'),'utf8');
+  const main=fs.readFileSync(path.join(root,'src/screens/MainScreen.tsx'),'utf8');
+  assert.ok(monitor.includes('fetchLightMealDecisionSnapshots'));
+  assert.ok(monitor.includes('subscribeLightMealResponses'));
+  assert.ok(monitor.includes("kind:'family_take_charge_changed'"));
+  assert.ok(main.includes('startLiaFamilyMealDecisionMonitor'));
+});
+
+test('V0.294 contextual guidance uses the existing LIA voice and model lane, not a parallel assistant',()=>{
+  const orb=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
+  assert.ok(orb.includes('addLiaContextualGuidanceListener'));
+  assert.ok(orb.includes('generateLiaTableResponse'));
+  assert.ok(orb.includes('liaContextualGuidanceFallback'));
+  assert.ok(orb.includes('speakLia(reply'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
