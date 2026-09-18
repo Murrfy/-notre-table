@@ -55,6 +55,7 @@ const sources=[
   'src/lib/liaReminderRequest.ts',
   'src/lib/liaAssistantTimer.ts',
   'src/lib/liaPersonalPresence.ts',
+  'src/lib/liaBirthdayAwareness.ts',
   'src/services/liaNavigationLiveSession.ts',
   'src/lib/liaPhoneContactResolver.ts',
   'src/i18n/index.ts',
@@ -129,6 +130,7 @@ const liaMusicPresence=require(path.join(temp,'src/lib/liaMusicPresence.js'));
 const liaReminderRequest=require(path.join(temp,'src/lib/liaReminderRequest.js'));
 const liaAssistantTimer=require(path.join(temp,'src/lib/liaAssistantTimer.js'));
 const liaPersonalPresence=require(path.join(temp,'src/lib/liaPersonalPresence.js'));
+const liaBirthdayAwareness=require(path.join(temp,'src/lib/liaBirthdayAwareness.js'));
 const liaPhoneContactResolver=require(path.join(temp,'src/lib/liaPhoneContactResolver.js'));
 const i18n=require(path.join(temp,'src/i18n/index.js'));
 
@@ -6095,6 +6097,33 @@ test('V0.294 birthday question stays simple, then LIA may joke only after the an
   assert.ok(voice.includes('liaProfileEnrichmentClarificationPending'));
   assert.ok(voice.includes('continueLiaProfileEnrichmentClarification'));
   assert.ok(orb.includes('liaProfileEnrichmentClarificationPending()'));
+});
+
+
+test('V0.295 birthday distance handles today, upcoming dates, year rollover and leap-day families',()=>{
+  assert.deepStrictEqual(liaBirthdayAwareness.liaDaysUntilBirthday(9,19,new Date(2026,8,19)),{days:0,year:2026});
+  assert.deepStrictEqual(liaBirthdayAwareness.liaDaysUntilBirthday(9,20,new Date(2026,8,19)),{days:1,year:2026});
+  assert.deepStrictEqual(liaBirthdayAwareness.liaDaysUntilBirthday(1,1,new Date(2026,11,31)),{days:1,year:2027});
+  assert.deepStrictEqual(liaBirthdayAwareness.liaDaysUntilBirthday(2,29,new Date(2027,1,27)),{days:1,year:2027});
+  assert.strictEqual(liaBirthdayAwareness.liaDaysUntilBirthday(13,1,new Date(2026,8,19)),null);
+});
+
+test('V0.295 birthday awareness speaks at most once per upcoming stage and once on the birthday itself',()=>{
+  const service=fs.readFileSync(path.join(root,'src/services/liaBirthdayAwareness.ts'),'utf8');
+  assert.ok(service.includes('UPCOMING_DAYS=7'));
+  assert.ok(service.includes("candidate.when.days===0?'today':'upcoming'"));
+  assert.ok(service.includes('@notre-table/lia-birthday-awareness-v1'));
+  assert.ok(service.includes('if(ledger.shown[key])continue'));
+  assert.ok(service.includes("kind:'birthday_awareness'"));
+});
+
+test('V0.295 birthday awareness is useful but non-autonomous and wins over a new profile question in the same calm moment',()=>{
+  const guidance=fs.readFileSync(path.join(root,'src/services/liaContextualGuidance.ts'),'utf8');
+  const main=fs.readFileSync(path.join(root,'src/screens/MainScreen.tsx'),'utf8');
+  assert.ok(guidance.includes('Ne mentionne jamais son âge'));
+  assert.ok(guidance.includes('sans créer de rappel, achat, réservation ou planning sans demande explicite'));
+  assert.ok(main.indexOf('maybeEmitLiaBirthdayAwareness')<main.indexOf('maybeEmitLiaProfileEnrichmentQuestion'));
+  assert.ok(main.includes('if(cancelled||birthdaySurfaced)return'));
 });
 
 
