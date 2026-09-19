@@ -1,3 +1,14 @@
+## V0.301 — Souvenirs privés réutilisables avec surprise bornée
+
+- Les faits relationnels privés ne sont injectés que dans une conversation directe explicitement marquée comme privée.
+- Le mode table n’a aucun accès à ces souvenirs personnels.
+- Les faits rapides V0.300 sont filtrés par foyer et par identité stable avant réutilisation.
+- Sans personne nommée, une demande sur parfum/couleur/shampoing utilise uniquement les faits de l’organisatrice.
+- Un autre membre doit être clairement nommé pour que ses faits deviennent pertinents.
+- Un rappel complice spontané peut être proposé au modèle au maximum une fois toutes les 24 h.
+- Le modèle reste libre de ne pas utiliser ce rappel s’il ne colle pas naturellement au moment.
+- Aucun souvenir sensible n’est injecté par ce mécanisme.
+
 ## V0.300 — Curiosité relationnelle « tic-tac »
 
 - Les petites questions personnelles ne sont jamais posées en mode table partagé.
