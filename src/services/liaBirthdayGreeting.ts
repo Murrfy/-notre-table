@@ -101,3 +101,37 @@ export function liaBirthdayOrganizerReminder(input:{name:string;languageTag:stri
  const list=language(input.languageTag)==='fr'?fr:language(input.languageTag)==='he'?he:en;
  return list[Math.abs(input.variantSeed??0)%list.length];
 }
+
+
+const organizerReminder={
+ fr:[
+  (n:string)=>`Petit rappel : aujourd'hui, c'est l'anniversaire de ${n}.`,
+  (n:string)=>`N'oublie pas : ${n} fête son anniversaire aujourd'hui.`,
+  (n:string)=>`Au fait, aujourd'hui c'est l'anniversaire de ${n}.`,
+  (n:string)=>`Pense à ${n} aujourd'hui : c'est son anniversaire.`,
+  (n:string)=>`Rappel du jour : anniversaire de ${n}.`,
+  (n:string)=>`${n} est à l'honneur aujourd'hui : c'est son anniversaire.`,
+ ],
+ en:[
+  (n:string)=>`Quick reminder: today's ${n}'s birthday.`,
+  (n:string)=>`Don't forget: ${n} is celebrating a birthday today.`,
+  (n:string)=>`By the way, today's ${n}'s birthday.`,
+  (n:string)=>`Remember ${n} today — it's their birthday.`,
+  (n:string)=>`Today's reminder: ${n}'s birthday.`,
+  (n:string)=>`${n} gets the spotlight today — it's their birthday.`,
+ ],
+ he:[
+  (n:string)=>`תזכורת קטנה: היום יום ההולדת של ${n}.`,
+  (n:string)=>`לא לשכוח: ${n} חוגג היום יום הולדת.`,
+  (n:string)=>`דרך אגב, היום יום ההולדת של ${n}.`,
+  (n:string)=>`כדאי לזכור את ${n} היום — זה יום ההולדת שלו.`,
+  (n:string)=>`תזכורת להיום: יום ההולדת של ${n}.`,
+  (n:string)=>`${n} במרכז היום — זה יום ההולדת שלו.`,
+ ],
+};
+
+export function liaBirthdayOrganizerReminder(input:{name:string;languageTag:string;variantSeed?:number;birthdayKnown:boolean}):string|null{
+ if(!input.birthdayKnown)return null;
+ const list=organizerReminder[language(input.languageTag)];
+ return list[Math.abs(input.variantSeed??0)%list.length](clean(input.name));
+}
