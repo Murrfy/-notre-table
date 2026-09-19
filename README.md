@@ -1,5 +1,9 @@
-# Notre Table — V0.311
+# Notre Table — V0.312
 
+
+## V0.312 — Identification sans harcèlement
+
+LIA conserve la règle d'identification des locuteurs inconnus à table et en cuisine, mais ne répète pas la question d'identité en boucle. Une même piste vocale bénéficie d'un délai de 90 secondes avant qu'une nouvelle demande puisse être formulée.
 
 ## V0.311 — Sécurité de continuité du locuteur
 

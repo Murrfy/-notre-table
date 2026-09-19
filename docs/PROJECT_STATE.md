@@ -1,3 +1,9 @@
+## V0.312 — Identification sans harcèlement
+
+- Les demandes « qui me parle ? » sont temporisées par piste vocale.
+- Une piste déjà interrogée ne peut pas être réinterrogée pendant 90 secondes.
+- La temporisation ne transforme jamais une piste inconnue en identité connue : elle évite seulement la répétition.
+
 ## V0.311 — Sécurité de continuité du locuteur
 
 - Une piste restaurée exige une parole non superposée et une confiance audio élevée.

@@ -103,3 +103,21 @@ export function consumeLiaSpeakerIdentification():LiaPendingSpeakerIdentificatio
 export function clearLiaSpeakerIdentification():void{
   pendingIdentity=null;
 }
+
+
+const recentlyAskedIdentity=new Map<string,number>();
+const IDENTITY_ASK_COOLDOWN_MS=90_000;
+
+export function mayAskLiaSpeakerIdentityAgain(trackId:string,now=Date.now()):boolean{
+  const last=recentlyAskedIdentity.get(trackId);
+  return last===undefined||now-last>=IDENTITY_ASK_COOLDOWN_MS;
+}
+
+export function noteLiaSpeakerIdentityAsked(trackId:string,now=Date.now()):void{
+  recentlyAskedIdentity.set(trackId,now);
+}
+
+export function clearLiaSpeakerIdentityAskCooldown(trackId?:string):void{
+  if(trackId)recentlyAskedIdentity.delete(trackId);
+  else recentlyAskedIdentity.clear();
+}
