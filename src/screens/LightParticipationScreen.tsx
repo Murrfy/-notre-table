@@ -81,14 +81,15 @@ export function LightParticipationScreen({householdId,householdName,organizerNam
       const before=previous.get(recipient.member_id);
       if(!recipient.responded)continue;
       if(recipient.desire&&before?.desire!==recipient.desire){
-        emitLiaContextualGuidance({kind:'family_choice_changed',householdId,organizerName,memberName:recipient.member_name,mealDate,mealType,desire:recipient.desire});
+        const favoriteMeal=members.find(member=>member.id===recipient.member_id)?.favorite_meal?.trim()||null;
+        emitLiaContextualGuidance({kind:'family_choice_changed',householdId,organizerName,memberName:recipient.member_name,mealDate,mealType,desire:recipient.desire,favoriteMeal});
       }
       if(Boolean(before?.takesCharge)!==recipient.takes_charge){
         emitLiaContextualGuidance({kind:'family_take_charge_changed',householdId,organizerName,memberName:recipient.member_name,mealDate,mealType,active:recipient.takes_charge});
       }
     }
     previousRecipientStateRef.current=current;
-  },[question,dirty,summary.recipients,householdId,organizerName,mealDate,mealType]);
+  },[question,dirty,summary.recipients,members,householdId,organizerName,mealDate,mealType]);
 
   const refreshSummary=useCallback(async(qid?:string)=>{
     const id=qid??question?.id;if(!id)return;
