@@ -1,3 +1,9 @@
+## V0.313 — Continuité des clarifications d'identité
+
+- Nom incompris : la piste reste en attente d'identification.
+- Nom ambigu : la piste reste en attente pendant la question de désambiguïsation.
+- Seule une résolution effective ou une sortie explicite clôt le rattachement en cours.
+
 ## V0.312 — Identification sans harcèlement
 
 - Les demandes « qui me parle ? » sont temporisées par piste vocale.

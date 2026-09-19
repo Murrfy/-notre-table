@@ -6573,6 +6573,15 @@ test('V0.312 speaker identity prompt is throttled per track',()=>{
 });
 
 
+test('V0.313 identity clarification keeps the same speaker track pending',()=>{
+ const source=fs.readFileSync(path.join(root,'src/services/liaSpeakerIdentificationFlow.ts'),'utf8');
+ const matches=source.match(/beginLiaSpeakerIdentification\(pending\.trackId\)/g)??[];
+ assert.ok(matches.length>=2);
+ assert.ok(source.includes("if(!name){beginLiaSpeakerIdentification(pending.trackId)"));
+ assert.ok(source.includes("resolution.status==='ambiguous'){beginLiaSpeakerIdentification(pending.trackId)"));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}

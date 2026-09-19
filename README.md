@@ -1,5 +1,9 @@
-# Notre Table — V0.312
+# Notre Table — V0.313
 
+
+## V0.313 — Continuité des clarifications d'identité
+
+Quand un nom est incompris ou correspond à plusieurs personnes, LIA conserve la même piste vocale en attente pendant la clarification. La réponse suivante poursuit donc l'identification au lieu de repartir dans la conversation normale.
 
 ## V0.312 — Identification sans harcèlement
 
