@@ -20,13 +20,16 @@ export async function startLiaTableLiveCoordinator(input:{
   directCallForTurn?:(turn:LiaResolvedTableTurn)=>{directlyAddressed:boolean;speechUnderstood:boolean;sensitive:boolean;humanSpeechActive:boolean};
   topicKeyForTurn?:(turn:LiaResolvedTableTurn)=>string|null;
   onEligibleTurn:(turn:LiaResolvedTableTurn,decision:LiaTableParticipationDecision)=>void;
+  onEveryTurn?:(turn:LiaResolvedTableTurn,runtime:LiaTableConversationRuntime)=>boolean|void;
   onError?:(error:Error)=>void;
 }):Promise<LiaTableConversationRuntime|null>{
   let interventionHistory=createLiaTableInterventionHistory();
   let topicState=createLiaTableTopicState();
-  return startLiaTableConversationRuntime({
+  let runtime:LiaTableConversationRuntime|null=null;
+  runtime=await startLiaTableConversationRuntime({
     onError:input.onError,
     onTurn:(turn)=>{
+      if(runtime&&input.onEveryTurn?.(turn,runtime)===true)return;
       const detected=detectLiaDirectAddress(turn.text);
       const direct=input.directCallForTurn?.(turn)??{
         directlyAddressed:detected.addressed,
@@ -56,4 +59,5 @@ export async function startLiaTableLiveCoordinator(input:{
       }
     },
   });
+  return runtime;
 }
