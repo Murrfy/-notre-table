@@ -1,5 +1,13 @@
-# Notre Table — V0.296
+# Notre Table — V0.297
 
+
+## V0.297 — LIA réutilise les goûts appris dans Message famille
+
+V0.297 fait passer l’apprentissage progressif du stockage à l’usage quotidien. Quand une vraie réponse **Fait maison** arrive dans Message famille, LIA peut désormais récupérer le plat préféré explicitement appris pour cette personne et l’utiliser comme simple piste dans sa réaction.
+
+Exemple : « J’ai vu que tu as choisi Plat fait maison 😏. Tu veux qu’on fasse facile ou qu’on épate la galerie ? Je sais que tu adores le couscous… ça peut être une piste. On attend de voir ce que veulent les autres. » Le goût appris ne devient jamais automatiquement le menu du soir.
+
+Le comportement fonctionne aussi lorsque Message famille est fermé : le moniteur familial existant charge les mêmes préférences confirmées et alimente la même LIA. Aucun nouveau moteur, aucune inférence depuis un vote ponctuel et aucune écriture supplémentaire ne sont créés.
 
 ## V0.296 — LIA apprend les goûts petit à petit
 
