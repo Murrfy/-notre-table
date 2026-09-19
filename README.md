@@ -1,5 +1,13 @@
-# Notre Table — V0.296
+# Notre Table — V0.297
 
+
+## V0.297 — LIA guide Planning, Courses et Recettes sans devenir envahissante
+
+V0.297 généralise le moteur de guidage contextuel déjà utilisé par Message famille. **Planning, Courses et Recettes** ont désormais la même logique : une courte explication lors de la première utilisation, puis LIA se tait tant que la personne avance normalement.
+
+L’aide se déclenche uniquement sur des signaux concrets : **18 secondes** dans l’éditeur d’un repas encore sans choix, **12 secondes** avec un article de courses saisi mais non ajouté, ou **15 secondes** avec une recherche de recette qui reste sans résultat. Dès que l’état change, le timer est annulé. Un même type d’aide ne peut pas revenir avant **10 minutes**.
+
+LIA utilise le prénom réel de la cliente lorsqu’il est connu, mais un changement de prénom ne réinitialise pas l’explication de première utilisation. Tout passe par le moteur `liaContextualGuidance` existant, le même `LiaOrb`, la même voix et le même pipeline vocal. Les enrichissements progressifs déjà validés — anniversaires puis plats préférés — restent intacts.
 
 ## V0.296 — LIA apprend les goûts petit à petit
 
