@@ -2256,3 +2256,5 @@ Avant toute instruction au porteur du projet : vérifier ce fichier + l'état r�
 - `NotificationSettingsScreen.save` capture désormais les échecs de stockage/permissions/programmation native.
 - Une erreur localisée remplace les rejets asynchrones non gérés.
 - Validation locale V0.144 : 154/154 régressions, 17/17 gates EAS, 82 TS/TSX ; audits continuité/hygiène/backend/release PASS.
+
+- Anniversaires connus : 6 variantes par langue pour le souhait parlé, 6 pour la notification et 6 pour le rappel à l’organisateur ; aucune date n’est inventée.
