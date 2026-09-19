@@ -1,7 +1,7 @@
 import {addDays,localIsoDate} from '../lib/dates';
 import {supabase} from '../lib/supabase';
 import {emitLiaContextualGuidance} from './liaContextualGuidance';
-import {fetchLightMealDecisionSnapshots,subscribeLightMealResponses,type LightMealDecisionSnapshot,type LightMealRecipient} from './lightParticipation';
+import {fetchLightMealDecisionSnapshots,fetchLightMembers,subscribeLightMealResponses,type LightMealDecisionSnapshot,type LightMealRecipient} from './lightParticipation';
 import {getMyDisplayName} from './profiles';
 
 type RecipientState={desire:LightMealRecipient['desire'];takesCharge:boolean;responded:boolean;memberName:string};
@@ -18,6 +18,7 @@ export function startLiaFamilyMealDecisionMonitor(input:{householdId:string;demo
   let active=true;
   let previous:Map<string,Map<string,RecipientState>>|null=null;
   let organizerName='';
+  let favoriteByMemberId=new Map<string,string>();
   let responseUnsubs:Array<()=>void>=[];
   let subscribedQuestionIds='';
   let running=false;
@@ -51,6 +52,7 @@ export function startLiaFamilyMealDecisionMonitor(input:{householdId:string;demo
               mealDate:snapshot.question.meal_date,
               mealType:snapshot.question.meal_type,
               desire:item.desire,
+              favoriteMeal:favoriteByMemberId.get(memberId)??null,
             });
           }
           if(Boolean(before?.takesCharge)!==item.takesCharge){
@@ -76,12 +78,17 @@ export function startLiaFamilyMealDecisionMonitor(input:{householdId:string;demo
     try{
       const today=localIsoDate(new Date());
       const to=localIsoDate(addDays(new Date(),7));
-      const [nameResult,snapshots]=await Promise.all([
+      const [nameResult,snapshots,lightMembers]=await Promise.all([
         organizerName?Promise.resolve(organizerName):getMyDisplayName().catch(()=>''),
         fetchLightMealDecisionSnapshots(input.householdId,today,to).catch(()=>[]),
+        fetchLightMembers(input.householdId).catch(()=>[]),
       ]);
       if(!active)return;
       organizerName=nameResult;
+      favoriteByMemberId=new Map(lightMembers.flatMap(member=>{
+        const value=member.favorite_meal?.trim();
+        return value?[[member.id,value] as [string,string]]:[];
+      }));
       syncResponseSubscriptions(snapshots);
       if(emitChanges)compareAndEmit(snapshots);
       else previous=new Map(snapshots.map(snapshot=>[snapshot.question.id,recipientMap(snapshot)]));
