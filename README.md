@@ -1,5 +1,13 @@
-# Notre Table — V0.298
+# Notre Table — V0.299
 
+
+## V0.299 — LIA accompagne toute l’appli sans devenir envahissante
+
+V0.299 généralise le guidage contextuel inauguré avec Message famille. La première fois qu’une grande fonction est ouverte — **Planning, Courses, Recettes, Famille, Commander ou Mémos** — LIA donne une explication courte, personnalisée avec le prénom réel de la cliente lorsqu’il est disponible, puis considère cette présentation comme acquise.
+
+Après cette première fois, LIA ne récite plus le mode d’emploi. Sur les parcours où un blocage est objectivement détectable, elle suit la progression réelle : Planning sans plat choisi, Courses vide ou produit saisi non validé, création d’un Mémo incomplète, Commander bloqué sur la localisation ou l’adresse. Une progression à l’écran réinitialise l’attente ; LIA aide sur **une seule étape**, puis se tait. Recettes et Famille bénéficient de l’explication initiale mais aucun faux blocage n’est déduit tant qu’un signal suffisamment fiable n’existe pas.
+
+Le moteur reste celui de LIA déjà présent dans l’application et conserve le suivi V0.298 quand toutes les réponses famille sont arrivées. Le formulaire d’inscription reste court : l’enrichissement progressif anniversaire / plat préféré continue ensuite une petite question à la fois, toujours facultative et espacée.
 
 ## V0.298 — LIA reprend le fil quand les réponses famille sont arrivées
 

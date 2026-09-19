@@ -6,10 +6,13 @@ import {ScreenHeader} from '../components/ScreenHeader';
 import {useLocale} from '../context/LocaleContext';
 import {colors,radius} from '../theme';
 import {createLiaMemo,deleteLiaMemo,listLiaMemos,setLiaMemoStatus,type LiaMemo} from '../services/memos';
+import {useLiaFeatureHelp} from '../hooks/useLiaFeatureHelp';
 
-export function MemosScreen({demo=false,onClose,onOpenLinkedContext}:{demo?:boolean;onClose:()=>void;onOpenLinkedContext?:(memo:LiaMemo)=>void}){
+export function MemosScreen({householdId,organizerName='',demo=false,onClose,onOpenLinkedContext}:{householdId:string;organizerName?:string;demo?:boolean;onClose:()=>void;onOpenLinkedContext?:(memo:LiaMemo)=>void}){
   const locale=useLocale();const rtl=locale.textDirection==='rtl';
   const[rows,setRows]=useState<LiaMemo[]>([]);const[loading,setLoading]=useState(true);const[error,setError]=useState('');const[editing,setEditing]=useState(false);const[title,setTitle]=useState('');const[summary,setSummary]=useState('');const[busy,setBusy]=useState(false);const actionInFlight=useRef(false);
+  const memoHelpStep=editing?(!title.trim()?'write_memo' as const:!summary.trim()?'complete_memo' as const:null):null;
+  useLiaFeatureHelp({active:Boolean(memoHelpStep)&&!busy,householdId,organizerName,feature:'memos',step:memoHelpStep,progressKey:`${editing}:${title.trim()}:${summary.trim().length}`});
   const refresh=async()=>{setLoading(true);setError('');try{setRows(await listLiaMemos(demo));}catch{setError(locale.t('memos.error'));}finally{setLoading(false);}};
   useEffect(()=>{void refresh();},[demo]);
   const save=async()=>{if(actionInFlight.current||!title.trim()||!summary.trim())return;actionInFlight.current=true;setBusy(true);setError('');try{await createLiaMemo({title,summary},demo);setTitle('');setSummary('');setEditing(false);await refresh();}catch{setError(locale.t('memos.error'));}finally{actionInFlight.current=false;setBusy(false);}};
