@@ -2,7 +2,12 @@ import {isRecord,readStoredJson,writeStoredJson} from '../lib/storage';
 import type {MealType} from '../types';
 import type {LightDesire} from './lightParticipation';
 
+export type LiaGuidedFeature='planning'|'shopping'|'recipes';
+export type LiaGuidedFeatureStep='meal_choice'|'add_item'|'search_no_result';
+
 export type LiaContextualGuidanceEvent=
+  |{kind:'feature_first_use';householdId:string;organizerName:string;feature:LiaGuidedFeature}
+  |{kind:'feature_help';householdId:string;organizerName:string;feature:LiaGuidedFeature;step:LiaGuidedFeatureStep}
   |{kind:'family_message_first_use';householdId:string;organizerName:string}
   |{kind:'family_message_help';householdId:string;organizerName:string;step:'prepare'|'share'}
   |{kind:'family_choice_changed';householdId:string;organizerName:string;memberName:string;mealDate:string;mealType:MealType;desire:LightDesire}
@@ -14,7 +19,9 @@ type Listener=(event:LiaContextualGuidanceEvent)=>void;
 const listeners=new Set<Listener>();
 const pending:LiaContextualGuidanceEvent[]=[];
 const recentEventAt=new Map<string,number>();
+const recentFeatureHelpAt=new Map<string,number>();
 const SEEN_KEY='@notre-table/lia-contextual-guidance-seen-v1';
+const FEATURE_HELP_COOLDOWN_MS=10*60_000;
 
 function cleanName(value:string):string{return value.trim().replace(/\s+/g,' ').slice(0,80);}
 function validSeen(value:unknown):value is Record<string,boolean>{
@@ -22,6 +29,8 @@ function validSeen(value:unknown):value is Record<string,boolean>{
 }
 
 function eventKey(event:LiaContextualGuidanceEvent):string{
+  if(event.kind==='feature_first_use')return event.kind+':'+event.householdId+':'+event.feature+':'+event.organizerName;
+  if(event.kind==='feature_help')return event.kind+':'+event.householdId+':'+event.feature+':'+event.step;
   if(event.kind==='family_message_first_use')return event.kind+':'+event.householdId+':'+event.organizerName;
   if(event.kind==='family_message_help')return event.kind+':'+event.householdId+':'+event.step;
   if(event.kind==='family_choice_changed')return event.kind+':'+event.householdId+':'+event.mealDate+':'+event.mealType+':'+event.memberName+':'+event.desire;
@@ -61,10 +70,62 @@ export async function emitLiaFamilyMessageFirstUse(input:{householdId:string;org
   return true;
 }
 
+
+export async function emitLiaFeatureFirstUse(input:{householdId:string;organizerName:string;feature:LiaGuidedFeature}):Promise<boolean>{
+  const organizerName=cleanName(input.organizerName);
+  const key=`feature:${input.feature}:${input.householdId}`;
+  const seen=await readStoredJson<Record<string,boolean>>(SEEN_KEY,{},validSeen);
+  if(seen[key])return false;
+  await writeStoredJson(SEEN_KEY,{...seen,[key]:true});
+  emitLiaContextualGuidance({kind:'feature_first_use',householdId:input.householdId,organizerName,feature:input.feature});
+  return true;
+}
+
+export function emitLiaFeatureHelp(input:{householdId:string;organizerName:string;feature:LiaGuidedFeature;step:LiaGuidedFeatureStep;nowMs?:number}):boolean{
+  const organizerName=cleanName(input.organizerName);
+  const now=input.nowMs??Date.now();
+  const key=`${input.householdId}:${input.feature}:${input.step}`;
+  const last=recentFeatureHelpAt.get(key)??0;
+  if(now-last<FEATURE_HELP_COOLDOWN_MS)return false;
+  recentFeatureHelpAt.set(key,now);
+  emitLiaContextualGuidance({kind:'feature_help',householdId:input.householdId,organizerName,feature:input.feature,step:input.step});
+  return true;
+}
+
 export function liaContextualGuidancePrompt(event:LiaContextualGuidanceEvent,languageTag:string):string{
   const fr=languageTag.toLowerCase().startsWith('fr');
   const who=event.organizerName.trim();
   const prefix=who?`${who}, `:'';
+  if(event.kind==='feature_first_use'){
+    const instruction:Record<LiaGuidedFeature,string>=fr?{
+      planning:'Explique en une seule intervention courte que Planning sert à choisir un repas, préciser qui mange et qui cuisine, ajuster les portions puis enregistrer. Mentionne que Message famille peut aider quand on veut décider ensemble.',
+      shopping:'Explique en une seule intervention courte que Courses rassemble les articles de la semaine : on peut ajouter un article en haut, cocher au fur et à mesure et laisser les recettes alimenter la liste.',
+      recipes:'Explique en une seule intervention courte que Recettes permet de chercher une recette, cuisiner avec ce qu’on a, ou ajouter/importer une recette. Ne détaille pas tout tant que la personne n’en a pas besoin.',
+    }:{
+      planning:'In one short intervention explain that Planning is where you choose a meal, set who is eating and cooking, adjust servings, then save. Mention Family Message only as an option when the household wants to decide together.',
+      shopping:'In one short intervention explain that Shopping gathers the week’s items: add an item at the top, check items off while shopping, and let recipes feed the list.',
+      recipes:'In one short intervention explain that Recipes lets you search recipes, cook with what is on hand, or add/import a recipe. Do not explain every control before it is needed.',
+    };
+    return fr
+      ?`${prefix}${instruction[event.feature]} Ton chaleureux et naturel. C’est une aide de première utilisation : ne la répète pas plus tard sauf signe réel de blocage.`
+      :`${prefix}${instruction[event.feature]} Keep it warm and natural. This is first-use guidance: do not repeat it later unless there is a real sign the person is stuck.`;
+  }
+  if(event.kind==='feature_help'){
+    const help=fr
+      ?event.step==='meal_choice'
+        ?'la personne est restée dans l’édition d’un repas sans choisir quoi manger. Guide seulement l’étape suivante : choisir une recette, saisir un plat libre ou choisir des restes. Ensuite laisse-la avancer seule.'
+        :event.step==='add_item'
+          ?'un article est saisi dans Courses mais n’est pas ajouté. Dis simplement d’appuyer sur le + ou valider le clavier, puis tais-toi dès que l’action est faite.'
+          :'la recherche Recettes ne donne aucun résultat depuis un moment. Suggère brièvement d’enlever les filtres, chercher par ingrédient ou utiliser « Cuisiner avec ce que j’ai ».'
+      :event.step==='meal_choice'
+        ?'the person has stayed in meal editing without choosing what to eat. Guide only the next step: choose a recipe, enter a custom dish, or choose leftovers. Then let them continue alone.'
+        :event.step==='add_item'
+          ?'an item is typed in Shopping but has not been added. Simply say to tap + or submit from the keyboard, then stop once they move on.'
+          :'the Recipes search has had no result for a while. Briefly suggest clearing filters, searching by ingredient, or using “Cook with what I have”.';
+    return fr
+      ?`${prefix}${help} Une seule étape à la fois, sans réciter le reste de l’application.`
+      :`${prefix}${help} One step at a time, without reciting the rest of the app.`;
+  }
   if(event.kind==='family_message_first_use'){
     return fr
       ?`${prefix}c’est la première utilisation de Message famille. Explique en une seule intervention courte : choisir les options du repas, sélectionner les personnes à qui demander, envoyer, puis laisser LIA suivre les réponses et aider pour la suite. Ton chaleureux, naturel, pas de tutoriel récité. Ne répète pas cette explication plus tard sauf si la personne semble bloquée.`
@@ -124,6 +185,16 @@ export function liaContextualGuidanceFallback(event:LiaContextualGuidanceEvent,l
   const fr=languageTag.toLowerCase().startsWith('fr');
   const who=event.organizerName.trim();
   const prefix=who?`${who}, `:'';
+  if(event.kind==='feature_first_use'){
+    if(event.feature==='planning')return fr?`${prefix}ici, choisis le repas, qui sera là, qui cuisine et les portions, puis enregistre. Si vous voulez décider ensemble, Message famille peut prendre le relais.`:`${prefix}here, choose the meal, who will be there, who is cooking and the servings, then save. Family Message can help when you want to decide together.`;
+    if(event.feature==='shopping')return fr?`${prefix}dans Courses, ajoute un article en haut avec le +, puis coche les produits au fur et à mesure. Les recettes peuvent aussi alimenter la liste.`:`${prefix}in Shopping, add an item at the top with +, then check products off as you go. Recipes can also feed the list.`;
+    return fr?`${prefix}dans Recettes, tu peux chercher, cuisiner avec ce que tu as, ou ajouter/importer une recette. Je te guiderai seulement quand tu en as besoin.`:`${prefix}in Recipes, you can search, cook with what you have, or add/import a recipe. I’ll guide you only when you need it.`;
+  }
+  if(event.kind==='feature_help'){
+    if(event.step==='meal_choice')return fr?`${prefix}commence juste par choisir une recette, écrire un plat, ou prendre des restes. Après, on laisse le reste venir tranquillement.`:`${prefix}start by choosing a recipe, entering a dish, or picking leftovers. Then continue from there.`;
+    if(event.step==='add_item')return fr?`${prefix}ton article est prêt : appuie sur le +, ou valide avec le clavier.`:`${prefix}your item is ready: tap +, or submit from the keyboard.`;
+    return fr?`${prefix}aucun résultat pour l’instant. Essaie sans les filtres, avec un ingrédient, ou ouvre « Cuisiner avec ce que j’ai ».`:`${prefix}no result yet. Try clearing filters, searching by ingredient, or open “Cook with what I have”.`;
+  }
   if(event.kind==='family_message_first_use'){
     return fr
       ?`${prefix}dans Message famille, choisis les options du repas et les personnes à qui tu veux demander. Envoie, et ensuite je m’occupe de suivre les réponses avec toi.`
