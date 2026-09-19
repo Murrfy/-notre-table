@@ -1,5 +1,6 @@
 import {addDays,localIsoDate} from '../lib/dates';
 import {isRecord,readStoredJson,writeStoredJson} from '../lib/storage';
+import {liaFamilyRepliesReady} from '../lib/liaFamilyFollowthrough';
 import {supabase} from '../lib/supabase';
 import {emitLiaContextualGuidance} from './liaContextualGuidance';
 import {fetchLightMealDecisionSnapshots,subscribeLightMealResponses,type LightMealDecisionSnapshot,type LightMealRecipient} from './lightParticipation';
@@ -25,7 +26,7 @@ async function emitReadyRepliesOnce(input:{snapshots:LightMealDecisionSnapshot[]
       if(next[key]){delete next[key];changed=true;}
       continue;
     }
-    if(snapshot.summary.take_charge_name||recipients.some(item=>item.takes_charge))continue;
+    if(!liaFamilyRepliesReady({recipients:recipients.map(item=>({responded:item.responded,takesCharge:item.takes_charge})),takeChargeName:snapshot.summary.take_charge_name}))continue;
     if(next[key])continue;
     emitLiaContextualGuidance({
       kind:'family_replies_ready',
