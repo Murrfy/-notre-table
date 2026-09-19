@@ -133,7 +133,7 @@ export async function fetchLightMealSummary(questionId:string):Promise<LightMeal
 
 export async function fetchLightMealDecisionSnapshots(householdId:string,fromDate:string,toDate:string):Promise<LightMealDecisionSnapshot[]>{
   const {data,error}=await client().from('light_meal_questions')
-    .select('id,household_id,meal_date,meal_type,desire_options,expires_at,closed_at,updated_at')
+    .select('id,household_id,meal_date,meal_type,desire_options,expires_at,closed_at,lia_home_style,lia_home_style_updated_at,updated_at')
     .eq('household_id',householdId).gte('meal_date',fromDate).lte('meal_date',toDate)
     .is('closed_at',null).order('meal_date',{ascending:true}).limit(8);
   if(error)throw error;
