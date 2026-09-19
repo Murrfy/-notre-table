@@ -6,6 +6,12 @@
 
 ## V0.314 — Famille et invités
 
+### Anniversaires V0.314
+- 6 formulations parlées et 6 notifications par langue (FR/HE/EN).
+- Rappel organisateur jusqu'à 7 jours avant, uniquement si la date est réellement connue.
+- Le souhait direct vise la personne concernée ; le rappel calendrier vise l'organisateur.
+
+
 - Famille : salut bref avec prénom, sans formule de retrouvailles d'invité.
 - Nouvel extérieur : prise de connaissance naturelle avec variantes de formulation.
 - Extérieur déjà rencontré : mémoire minimale distincte (prénom, première/dernière rencontre, lien éventuel).
