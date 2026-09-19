@@ -3675,7 +3675,7 @@ test('V0.230 table speech keeps understanding separate from uncertain speaker id
  const source=fs.readFileSync(path.join(root,'src/services/liaTableSpeechAdapter.ts'),'utf8');
  assert.ok(source.includes('export function liaResolveTableSpeechTurn'));
  assert.ok(source.includes('memberId:string|null'));
- assert.ok(source.includes('mayUseMemberName:!segment.overlappingSpeech&&!!memberId&&identityConfidence>=.9'));
+ assert.ok(source.includes('mayUseMemberName:policy.mayUseSpeakerName'));
  assert.ok(source.includes('text:segment.text.trim()'));
 });
 
