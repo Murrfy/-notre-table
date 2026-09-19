@@ -6596,6 +6596,17 @@ test('V0.314 family and guest social greetings stay separate',()=>{
 });
 
 
+test('V0.314 birthday messages are varied, multilingual, and require a known date',()=>{
+ const source=fs.readFileSync(path.join(root,'src/services/liaBirthdayGreeting.ts'),'utf8');
+ assert.ok(source.includes("surface:BirthdaySurface"));
+ assert.ok(source.includes('if(!input.birthdayKnown)return null'));
+ assert.ok(source.includes('liaBirthdayOrganizerReminder'));
+ assert.ok((source.match(/\(n:string\)=>/g)??[]).length>=36);
+ assert.ok(source.includes('daysUntil:number'));
+ assert.ok(source.includes('input.daysUntil>7'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}

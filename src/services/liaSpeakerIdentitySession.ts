@@ -240,3 +240,20 @@ export function liaFamilyMemberGreeting(name:string,languageTag:string,variantSe
   const list=languageTag.toLowerCase().startsWith('fr')?fr:languageTag.toLowerCase().startsWith('he')?he:en;
   return list[Math.abs(variantSeed)%list.length];
 }
+
+
+export function liaBirthdayGreeting(name:string,languageTag:string,variantSeed=0):string{
+  const n=clean(name);
+  const fr=[`Joyeux anniversaire ${n} ! Je te souhaite une magnifique journée.`,`Très joyeux anniversaire ${n} ! Profite bien de ta journée.`,`Bon anniversaire ${n} ! Plein de belles choses pour cette nouvelle année.`,`${n}, aujourd’hui c’est ta journée ! Très joyeux anniversaire.`,`Joyeux anniversaire ${n} ! J’espère que cette journée sera aussi belle que possible.`,`Bon anniversaire ${n} ! Une très belle journée à toi, et profite-en bien.`];
+  const en=[`Happy birthday ${n}! Have a wonderful day.`,`A very happy birthday, ${n}! Enjoy your day.`,`Happy birthday ${n}! Wishing you lots of good things this year.`,`${n}, today's your day! Happy birthday.`,`Happy birthday ${n}! I hope you have a beautiful day.`,`Happy birthday ${n}! Have a great day and enjoy it.`];
+  const he=[`יום הולדת שמח ${n}! שיהיה לך יום נפלא.`,`${n}, יום הולדת שמח מאוד! שיהיה יום מקסים.`,`יום הולדת שמח ${n}! המון דברים טובים בשנה החדשה שלך.`,`${n}, היום זה היום שלך! יום הולדת שמח.`,`יום הולדת שמח ${n}! מקווה שיהיה לך יום נהדר.`,`מזל טוב ${n}! שיהיה לך יום יפה ומהנה.`];
+  const list=languageTag.toLowerCase().startsWith('fr')?fr:languageTag.toLowerCase().startsWith('he')?he:en;
+  return list[Math.abs(variantSeed)%list.length];
+}
+
+export function liaBirthdayNotification(name:string,languageTag:string):string{
+  const n=clean(name);
+  if(languageTag.toLowerCase().startsWith('fr'))return `Aujourd’hui, c’est l’anniversaire de ${n} 🎂`;
+  if(languageTag.toLowerCase().startsWith('he'))return `היום יום ההולדת של ${n} 🎂`;
+  return `Today is ${n}'s birthday 🎂`;
+}
