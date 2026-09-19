@@ -199,3 +199,34 @@ export function liaUnknownGuestIntroductionQuestion(name:string,languageTag:stri
   const list=languageTag.toLowerCase().startsWith('fr')?fr:languageTag.toLowerCase().startsWith('he')?he:en;
   return list[Math.abs(variantSeed)%list.length];
 }
+
+
+export function liaReturningGuestGreeting(name:string,languageTag:string,variantSeed=0):string{
+  const n=clean(name);
+  const fr=[
+    `David`===n?`${n}, ça fait plaisir de te revoir !`:`${n}, ça fait plaisir de te revoir !`,
+    `Ah, ${n} ! Contente de te retrouver.`,
+    `Tiens, ${n} ! Ça me fait plaisir de te revoir par ici.`,
+    `Salut ${n} ! Cette fois, je sais très bien qui tu es.`,
+    `Ah ${n}, te revoilà ! Bienvenue à la maison.`,
+    `${n} ! Ça faisait un petit moment. Contente de te revoir.`,
+  ];
+  const en=[
+    `${n}, it's good to see you again!`,
+    `Ah, ${n}! Nice to have you back.`,
+    `Well, ${n}! Good to see you around again.`,
+    `Hi ${n}! This time I know exactly who you are.`,
+    `Ah ${n}, you're back! Welcome.`,
+    `${n}! It's been a little while. Good to see you again.`,
+  ];
+  const he=[
+    `${n}, כיף לראות אותך שוב!`,
+    `אה, ${n}! שמחה לראות אותך שוב.`,
+    `הנה ${n}! כיף שחזרת.`,
+    `שלום ${n}! הפעם אני כבר יודעת מצוין מי אתה.`,
+    `אה ${n}, חזרת! ברוך הבא.`,
+    `${n}! עבר קצת זמן. כיף לראות אותך שוב.`,
+  ];
+  const list=languageTag.toLowerCase().startsWith('fr')?fr:languageTag.toLowerCase().startsWith('he')?he:en;
+  return list[Math.abs(variantSeed)%list.length];
+}
