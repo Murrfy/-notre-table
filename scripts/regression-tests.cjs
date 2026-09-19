@@ -6505,6 +6505,24 @@ test('V0.307 explicit speaker confirmation updates the live table runtime',()=>{
 });
 
 
+test('V0.308 unknown table or cooking speaker triggers one identification flow',()=>{
+ const source=fs.readFileSync(path.join(root,'src/services/liaSpeakerIdentificationFlow.ts'),'utf8');
+ assert.ok(source.includes('maybeAskLiaSpeakerIdentity'));
+ assert.ok(source.includes("kind:'ask_identity'"));
+ assert.ok(source.includes('beginLiaSpeakerIdentification(input.trackId)'));
+ assert.ok(source.includes('answerFirst:policy.answerBeforeIdentityQuestion'));
+});
+
+test('V0.308 pending identity answer resolves, clarifies, or stays unattributed',()=>{
+ const source=fs.readFileSync(path.join(root,'src/services/liaSpeakerIdentificationFlow.ts'),'utf8');
+ assert.ok(source.includes('resolvePendingLiaSpeakerIdentity'));
+ assert.ok(source.includes("resolution.status==='matched'"));
+ assert.ok(source.includes("resolution.status==='ambiguous'"));
+ assert.ok(source.includes("kind:'unknown_name'"));
+ assert.ok(source.includes('ne vais rien t’attribuer au hasard'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
