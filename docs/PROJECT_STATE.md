@@ -4,7 +4,7 @@
 - Le prénom affiché et sa prononciation préférée sont deux données distinctes.
 - Une correction de prononciation confirmée devient un fait relationnel `name_pronunciation` rattaché à la personne.
 - Une nouvelle correction remplace la précédente via l'identité stable sujet + clé ; elle ne modifie pas le nom affiché.
-- Si aucune correction fiable n'existe, LIA utilise le premier prénom issu du profil et n'invente aucune prononciation personnalisée.
+- Si aucune correction fiable n'existe, LIA utilise le premier prénom issu du profil et n'invente aucune prononciation personnalisée. Si la prononciation est réellement incertaine, elle peut demander une fois comment le prononcer ; une préférence déjà confirmée ou une question déjà posée bloque toute redemande.
 
 ## V0.302 — Continuité des recherches interrompues
 
