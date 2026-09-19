@@ -4468,7 +4468,7 @@ test('V0.245 response runtime gathers read-only Notre Table context before the m
   const runtime=fs.readFileSync(path.join(root,'src/services/liaTableResponseRuntime.ts'),'utf8');
   assert(runtime.includes('planLiaAssistantObjective(input.turn.text)'));
   assert(runtime.includes('collectLiaAssistantAppFacts'));
-  assert(runtime.includes('confirmedFacts:[...(input.context.confirmedFacts??[]),...appFacts]'));
+  assert(runtime.includes('confirmedFacts:[...(input.context.confirmedFacts??[]),...relationshipFacts,...appFacts]'));
   assert(runtime.indexOf('collectLiaAssistantAppFacts')<runtime.indexOf('buildLiaAgentRequest({'));
 });
 test('V0.245 app context bridge is read-only and uses existing pantry recipe planning shopping and Memo services',()=>{
