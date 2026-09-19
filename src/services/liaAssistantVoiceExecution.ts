@@ -12,7 +12,7 @@ import {clearLiaNavigationAlongRoutePending,continueLiaNavigationAlongRoute,liaN
 import {clearLiaCalendarClarification,continueLiaCalendarClarification,liaCalendarClarificationPending,prepareLiaCalendarFromSpeech} from './liaAssistantCalendarExecution';
 import {prepareLiaCalendarNavigationFromSpeech} from './liaCalendarNavigation';
 import {clearLiaCookingSessionClarification,liaCookingSessionActive,liaCookingSessionClarificationPending,liaCookingSessionFollowupActive,runLiaCookingSessionVoiceCommand,type LiaCookingApproximationRequest} from './liaCookingSession';
-import {clearLiaProfileEnrichmentClarification,continueLiaProfileEnrichmentClarification,liaProfileEnrichmentClarificationPending} from './liaProfileEnrichment';
+import {clearLiaProfileEnrichmentClarification,continueLiaProfileEnrichmentClarification,liaProfileEnrichmentClarificationPending,type LiaProfileSavedFact} from './liaProfileEnrichment';
 import {clearLiaHomeMealStyleClarification,continueLiaHomeMealStyleClarification,liaHomeMealStyleClarificationPending} from './liaHomeMealStyle';
 import {liaPantryVisionFollowupReply} from './liaPantryVisionSession';
 import {prepareLiaPantryVisionStockFromSpeech} from './liaPantryVisionStock';
@@ -47,7 +47,8 @@ export type LiaAssistantVoiceExecution=
   |{status:'cooking_approximation_requested';request:LiaCookingApproximationRequest}
   |{status:'action_cancelled';spokenReply:string}
   |{status:'app_action_context_noted'|'app_action_completed'|'app_action_needs_clarification'|'app_action_unavailable'|'app_action_failed';spokenReply:string}
-  |{status:'profile_enrichment_saved'|'profile_enrichment_needs_clarification'|'profile_enrichment_skipped'|'profile_enrichment_unavailable';spokenReply:string}
+  |{status:'profile_enrichment_saved';spokenReply:string;savedFact?:LiaProfileSavedFact}
+  |{status:'profile_enrichment_needs_clarification'|'profile_enrichment_skipped'|'profile_enrichment_unavailable';spokenReply:string}
   |{status:'home_style_saved'|'home_style_needs_clarification'|'home_style_skipped'|'home_style_unavailable';spokenReply:string}
   |{status:'phone';result:LiaPhoneCallResult;spokenReply:string|null};
 
@@ -104,7 +105,8 @@ export async function executeLiaAssistantVoiceRequest(input:{text:string;languag
   }else if(profileEnrichmentPending){
     const enrichment=await continueLiaProfileEnrichmentClarification({text:request.directAddressed?request.cleanedText:input.text,languageTag:input.languageTag});
     if(enrichment.status!=='not_pending'){
-      return{status:enrichment.status==='saved'?'profile_enrichment_saved':enrichment.status==='needs_clarification'?'profile_enrichment_needs_clarification':enrichment.status==='skipped'?'profile_enrichment_skipped':'profile_enrichment_unavailable',spokenReply:enrichment.spokenReply};
+      if(enrichment.status==='saved')return{status:'profile_enrichment_saved',spokenReply:enrichment.spokenReply,savedFact:enrichment.savedFact};
+      return{status:enrichment.status==='needs_clarification'?'profile_enrichment_needs_clarification':enrichment.status==='skipped'?'profile_enrichment_skipped':'profile_enrichment_unavailable',spokenReply:enrichment.spokenReply};
     }
   }
   if(cookingPending){
