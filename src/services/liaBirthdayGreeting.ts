@@ -101,3 +101,43 @@ export function liaBirthdayOrganizerReminder(input:{name:string;languageTag:stri
  const list=language(input.languageTag)==='fr'?fr:language(input.languageTag)==='he'?he:en;
  return list[Math.abs(input.variantSeed??0)%list.length];
 }
+
+
+export type LiaBirthdayReminderStage='advance'|'today';
+
+export function liaBirthdayOrganizerReminder(input:{name:string;languageTag:string;stage:LiaBirthdayReminderStage;daysBefore?:number;variantSeed?:number;birthdayKnown:boolean}):string|null{
+ if(!input.birthdayKnown)return null;
+ const n=clean(input.name);
+ const lang=language(input.languageTag);
+ const days=Math.max(1,Math.round(input.daysBefore??7));
+ const messages={
+  fr:{
+   advance:[
+    `Petit rappel : l'anniversaire de ${n} arrive dans ${days} jours.`,
+    `Pense à ${n} : son anniversaire est dans ${days} jours.`,
+    `Dans ${days} jours, c'est l'anniversaire de ${n}. Je te le garde à l'œil.`,
+    `Anniversaire en vue : ${n}, dans ${days} jours.`,
+    `Je te préviens à l'avance : ${n} fête son anniversaire dans ${days} jours.`,
+    `À noter : plus que ${days} jours avant l'anniversaire de ${n}.`,
+   ],
+   today:[
+    `Aujourd'hui, c'est l'anniversaire de ${n}.`,
+    `Petit rappel du jour : c'est l'anniversaire de ${n} !`,
+    `N'oublie pas ${n} aujourd'hui : c'est son anniversaire.`,
+    `Aujourd'hui, ${n} est à l'honneur : c'est son anniversaire.`,
+    `Rappel anniversaire : ${n}, c'est aujourd'hui.`,
+    `LIA pense à tout : aujourd'hui, c'est l'anniversaire de ${n}.`,
+   ],
+  },
+  en:{
+   advance:[`${n}'s birthday is in ${days} days.`,`A reminder: ${n}'s birthday is coming up in ${days} days.`,`Keep ${n} in mind — birthday in ${days} days.`,`Birthday coming up: ${n}, in ${days} days.`,`A little advance notice: ${n}'s birthday is in ${days} days.`,`Worth noting: ${days} days until ${n}'s birthday.`],
+   today:[`Today is ${n}'s birthday.`,`Today's reminder: it's ${n}'s birthday!`,`Don't forget ${n} today — it's their birthday.`,`Today is ${n}'s day: happy birthday to them.`,`Birthday reminder: ${n}, today.`,`LIA remembered: today is ${n}'s birthday.`],
+  },
+  he:{
+   advance:[`תזכורת קטנה: יום ההולדת של ${n} בעוד ${days} ימים.`,`כדאי לזכור את ${n}: יום ההולדת בעוד ${days} ימים.`,`בעוד ${days} ימים יום ההולדת של ${n}.`,`יום הולדת מתקרב: ${n}, בעוד ${days} ימים.`,`מעדכנת מראש: יום ההולדת של ${n} בעוד ${days} ימים.`,`לרשום: עוד ${days} ימים יום ההולדת של ${n}.`],
+   today:[`היום יום ההולדת של ${n}.`,`תזכורת להיום: יום ההולדת של ${n}!`,`לא לשכוח את ${n} היום — יום ההולדת שלו.`,`היום ${n} במרכז: יום ההולדת שלו.`,`תזכורת יום הולדת: ${n}, זה היום.`,`LIA זכרה: היום יום ההולדת של ${n}.`],
+  },
+ } as const;
+ const list=messages[lang][input.stage];
+ return list[Math.abs(input.variantSeed??0)%list.length];
+}
