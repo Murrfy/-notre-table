@@ -139,3 +139,28 @@ export function knownLiaSessionGuest(trackId:string):LiaSessionGuest|null{
 export function clearLiaSessionGuests():void{
   sessionGuests.clear();
 }
+
+
+export function liaUnknownGuestIntroductionQuestion(name:string,languageTag:string,variantSeed=0):string{
+  const n=clean(name);
+  const fr=[
+    `${n} ? On se connaît ?`,
+    `${n}… je crois qu’on ne s’est pas encore présentés, non ?`,
+    `Ah, ${n} ! Première fois qu’on discute tous les deux ?`,
+    `${n} ? Ton prénom me plaît bien, mais je ne crois pas t’avoir encore rencontré.`,
+  ];
+  const en=[
+    `${n}? Do we know each other?`,
+    `${n}… I don't think we've been introduced yet, have we?`,
+    `Ah, ${n}! Is this our first chat together?`,
+    `${n}? Nice name, but I don't think we've met yet.`,
+  ];
+  const he=[
+    `${n}? אנחנו מכירים?`,
+    `${n}… נראה לי שעוד לא הכרנו, נכון?`,
+    `אה, ${n}! זאת הפעם הראשונה שאנחנו מדברים?`,
+    `${n}? שם יפה, אבל נראה לי שעוד לא נפגשנו.`,
+  ];
+  const list=languageTag.toLowerCase().startsWith('fr')?fr:languageTag.toLowerCase().startsWith('he')?he:en;
+  return list[Math.abs(variantSeed)%list.length];
+}
