@@ -7,6 +7,7 @@ import {executeLiaAgentProviderOnce,liaAgentDeadlineMs} from '../lib/liaAgentPro
 import type {LiaAgentTask} from '../lib/liaAgentRouting';
 import {planLiaAssistantObjective} from '../lib/liaAssistantObjective';
 import {collectLiaAssistantAppFacts} from './liaAssistantAppContext';
+import {collectLiaPrivateRelationshipRecall} from './liaRelationshipRecall';
 
 type LiaTableResponseFailureStatus='unavailable'|'deferred_cost_guard'|'empty'|'unverified'|'local_action_required'|'timed_out'|'provider_error';
 
@@ -36,13 +37,22 @@ export async function generateLiaTableResponse(input:{
   const appFacts=input.context.householdId&&input.context.weekStart
     ?await collectLiaAssistantAppFacts({householdId:input.context.householdId,weekStart:input.context.weekStart,demo:Boolean(input.context.demo),plan:assistantObjective})
     :[];
+  const relationshipFacts=input.context.relationshipMemoryAccess==='private'&&input.context.householdId&&route.memoryScope==='relevant_confirmed'
+    ?await collectLiaPrivateRelationshipRecall({
+      householdId:input.context.householdId,
+      userText:input.turn.text,
+      languageTag:input.context.languageTag,
+      demo:Boolean(input.context.demo),
+      allowDelight:task==='simple_conversation'&&!sensitive,
+    }).catch(()=>[])
+    :[];
   const request=buildLiaAgentRequest({
     userText:input.turn.text,
     languageTag:input.context.languageTag,
     topicKey:input.context.topicKey,
     mayUseMemberName:input.context.mayUseMemberName,
     route,
-    confirmedFacts:[...(input.context.confirmedFacts??[]),...appFacts],
+    confirmedFacts:[...(input.context.confirmedFacts??[]),...relationshipFacts,...appFacts],
     naming:input.context.naming,
     assistantObjective,
   });
