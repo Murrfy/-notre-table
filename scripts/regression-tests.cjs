@@ -6472,6 +6472,31 @@ test('V0.305 table session can bind a speaker track after explicit identificatio
 });
 
 
+test('V0.306 speaker names resolve only to one stable family person',()=>{
+ const source=fs.readFileSync(path.join(root,'src/services/liaSpeakerRosterResolution.ts'),'utf8');
+ assert.ok(source.includes('resolveLiaSpeakerFromRoster'));
+ assert.ok(source.includes("status:'ambiguous'"));
+ assert.ok(source.includes("subjectKind:'profile'"));
+ assert.ok(source.includes("subjectKind:'light_member'"));
+ assert.ok(source.includes('fetchLiaSpeakerRoster'));
+});
+
+test('V0.306 duplicate family names require clarification instead of guessed attribution',()=>{
+ const source=fs.readFileSync(path.join(root,'src/services/liaSpeakerRosterResolution.ts'),'utf8');
+ assert.ok(source.includes("if(exact.length>1)return{status:'ambiguous'"));
+ assert.ok(source.includes("if(byFirst.length>1)return{status:'ambiguous'"));
+ assert.ok(source.includes('liaSpeakerDisambiguationQuestion'));
+});
+
+test('V0.306 identity question is tied to the exact pending speaker track',()=>{
+ const source=fs.readFileSync(path.join(root,'src/services/liaSpeakerIdentitySession.ts'),'utf8');
+ assert.ok(source.includes('beginLiaSpeakerIdentification'));
+ assert.ok(source.includes('pendingLiaSpeakerIdentification'));
+ assert.ok(source.includes('consumeLiaSpeakerIdentification'));
+ assert.ok(source.includes('trackId:string'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}

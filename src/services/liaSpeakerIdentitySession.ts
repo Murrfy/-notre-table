@@ -62,3 +62,30 @@ export function liaIdentityAnswerName(text:string):string|null{
   if(/^(oui|non|yes|no|ok|d accord|je sais pas|i don t know)$/i.test(candidate.normalize('NFD').replace(/[\u0300-\u036f]/g,'')))return null;
   return candidate;
 }
+
+
+export type LiaPendingSpeakerIdentification={
+  trackId:string;
+  askedAtIso:string;
+};
+
+let pendingIdentity:LiaPendingSpeakerIdentification|null=null;
+
+export function beginLiaSpeakerIdentification(trackId:string,now=new Date()):LiaPendingSpeakerIdentification{
+  pendingIdentity={trackId,askedAtIso:now.toISOString()};
+  return pendingIdentity;
+}
+
+export function pendingLiaSpeakerIdentification():LiaPendingSpeakerIdentification|null{
+  return pendingIdentity;
+}
+
+export function consumeLiaSpeakerIdentification():LiaPendingSpeakerIdentification|null{
+  const value=pendingIdentity;
+  pendingIdentity=null;
+  return value;
+}
+
+export function clearLiaSpeakerIdentification():void{
+  pendingIdentity=null;
+}

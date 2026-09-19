@@ -1,5 +1,9 @@
-# Notre Table — V0.305
+# Notre Table — V0.306
 
+
+## V0.306 — Résolution du locuteur dans le foyer
+
+Une identité donnée oralement est comparée aux personnes réelles du foyer. Un seul résultat permet le rattachement stable ; plusieurs personnes portant le même prénom provoquent une clarification au lieu d'une attribution hasardeuse. La question d'identité reste liée à la piste vocale exacte qui l'a déclenchée.
 
 ## V0.305 — Identification explicite du locuteur
 
