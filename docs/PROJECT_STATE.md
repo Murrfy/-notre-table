@@ -1,3 +1,10 @@
+## V0.308 — Orchestration d'identification du locuteur
+
+- Table/cuisine : un locuteur incertain déclenche une demande d'identité.
+- La réponse d'identité est rattachée à la piste vocale qui attendait cette réponse.
+- Résultat unique : confirmation ; doublon : clarification ; inconnu : aucune attribution personnelle.
+- Une demande pratique urgente peut recevoir sa réponse avant la question d'identité.
+
 ## V0.307 — Rattachement du locuteur au runtime
 
 - Le runtime de table expose une confirmation explicite `trackId -> memberId`.
