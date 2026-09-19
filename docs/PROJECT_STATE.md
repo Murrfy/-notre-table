@@ -1,3 +1,10 @@
+## V0.306 — Résolution du locuteur dans le foyer
+
+- Le prénom annoncé est résolu contre le profil organisateur et les membres légers actifs du foyer.
+- Un résultat unique fournit une identité stable ; un doublon impose une clarification.
+- La demande « qui me parle ? » conserve la piste vocale concernée jusqu'à la réponse.
+- Aucun souvenir personnel n'est attribué sur une simple ressemblance ambiguë.
+
 ## V0.305 — Identification explicite du locuteur
 
 - Une réponse à « qui me parle ? » peut confirmer l'identité d'une piste vocale de la session.
