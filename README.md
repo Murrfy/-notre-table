@@ -1,5 +1,11 @@
-# Notre Table — V0.296
+# Notre Table — V0.297
 
+
+## V0.297 — « Facile ou épater la galerie ? » a maintenant de vraies conséquences
+
+V0.297 reprend V0.296 et rend le rebond de LIA après un choix **Plat fait maison** réellement actionnable. Quand LIA demande « facile ou épater la galerie ? », la réponse peut être « facile », « épater la galerie » ou « plus tard / attends les autres ». Un choix clair est enregistré sur le repas familial en cours ; « plus tard » ferme simplement la question sans inventer de préférence.
+
+La direction **facile** ou **épater** devient un fait du repas visible par le contexte de planification de LIA. Elle peut donc orienter ses futures propositions de la journée sans reposer la même question à chaque nouvelle réponse familiale. Si le Message famille est reconfiguré, cette direction est remise à zéro. Si quelqu’un prend entre-temps le repas entièrement en charge, LIA abandonne cette clarification et cesse les relances d’organisation inutiles.
 
 ## V0.296 — LIA apprend les goûts petit à petit
 

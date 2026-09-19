@@ -51,7 +51,8 @@ function familyDecisionsFact(items:LightMealDecisionSnapshot[]):LiaAgentConfirme
   const rows=items.map(({question,summary})=>{
     const choices=summary.recipients.filter(item=>item.responded&&item.desire).map(item=>item.member_name+'='+item.desire);
     const handled=summary.take_charge_name?'pris en charge par '+summary.take_charge_name:'pas de prise en charge';
-    return question.meal_date+' '+question.meal_type+': '+handled+(choices.length?'; choix: '+choices.join(', '):'');
+    const homeStyle=question.lia_home_style?'; direction fait maison='+(question.lia_home_style==='easy'?'facile':'épater la galerie'):'';
+    return question.meal_date+' '+question.meal_type+': '+handled+homeStyle+(choices.length?'; choix: '+choices.join(', '):'');
   });
   return confirmed('app.family_meal_decisions',compact(rows,6));
 }

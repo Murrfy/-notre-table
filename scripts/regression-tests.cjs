@@ -57,6 +57,7 @@ const sources=[
   'src/lib/liaPersonalPresence.ts',
   'src/lib/liaBirthdayAwareness.ts',
   'src/lib/liaProfileFacts.ts',
+  'src/lib/liaHomeMealStyle.ts',
   'src/services/liaNavigationLiveSession.ts',
   'src/lib/liaPhoneContactResolver.ts',
   'src/i18n/index.ts',
@@ -133,6 +134,7 @@ const liaAssistantTimer=require(path.join(temp,'src/lib/liaAssistantTimer.js'));
 const liaPersonalPresence=require(path.join(temp,'src/lib/liaPersonalPresence.js'));
 const liaBirthdayAwareness=require(path.join(temp,'src/lib/liaBirthdayAwareness.js'));
 const liaProfileFacts=require(path.join(temp,'src/lib/liaProfileFacts.js'));
+const liaHomeMealStyle=require(path.join(temp,'src/lib/liaHomeMealStyle.js'));
 const liaPhoneContactResolver=require(path.join(temp,'src/lib/liaPhoneContactResolver.js'));
 const i18n=require(path.join(temp,'src/i18n/index.js'));
 
@@ -6168,6 +6170,41 @@ test('V0.296 birthday awareness can use a learned favorite meal as an idea but n
   assert.ok(awareness.includes('favoriteMeal:candidate.person.favoriteMeal'));
   assert.ok(guidance.includes('tu peux t’en servir comme piste, sans présenter ça comme une décision'));
   assert.ok(guidance.includes('sans créer de rappel, achat, réservation ou planning sans demande explicite'));
+});
+
+
+test('V0.297 easy-or-impress follow-up recognizes useful answers and leaves vague yes unresolved',()=>{
+  assert.equal(liaHomeMealStyle.parseLiaHomeMealStyleAnswer('facile et rapide'),'easy');
+  assert.equal(liaHomeMealStyle.parseLiaHomeMealStyleAnswer('on épate la galerie'),'impress');
+  assert.equal(liaHomeMealStyle.parseLiaHomeMealStyleAnswer('attends les autres'),'later');
+  assert.equal(liaHomeMealStyle.parseLiaHomeMealStyleAnswer('on verra plus tard'),'later');
+  assert.equal(liaHomeMealStyle.parseLiaHomeMealStyleAnswer('oui'),null);
+});
+
+test('V0.297 a home choice opens one bounded clarification and a saved direction prevents the same question repeating',()=>{
+  const guidance=fs.readFileSync(path.join(root,'src/services/liaContextualGuidance.ts'),'utf8');
+  const orb=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
+  const voice=fs.readFileSync(path.join(root,'src/services/liaAssistantVoiceExecution.ts'),'utf8');
+  assert.ok(guidance.includes("homeStyle:LightHomeStyle|null"));
+  assert.ok(guidance.includes('Ne repose surtout pas la question'));
+  assert.ok(orb.includes('beginLiaHomeMealStyleClarification'));
+  assert.ok(orb.includes("event.desire==='home'&&!event.homeStyle"));
+  assert.ok(voice.includes('liaHomeMealStyleClarificationPending'));
+  assert.ok(voice.includes('continueLiaHomeMealStyleClarification'));
+});
+
+test('V0.297 meal direction is a real family-question fact, resets on reconfiguration and reaches LIA planning context',()=>{
+  const migration=fs.readFileSync(path.join(root,'supabase','migrations','202609190032_lia_home_style_followup.sql'),'utf8');
+  const participation=fs.readFileSync(path.join(root,'src/services/lightParticipation.ts'),'utf8');
+  const appContext=fs.readFileSync(path.join(root,'src/services/liaAssistantAppContext.ts'),'utf8');
+  assert.ok(migration.includes('lia_home_style text'));
+  assert.ok(migration.includes("p_style not in ('easy','impress')"));
+  assert.ok(migration.includes("where question_id=p_question_id and desire='home'"));
+  assert.ok(migration.includes('lia_home_style=null'));
+  assert.ok(participation.includes('set_lia_family_home_style'));
+  assert.ok(participation.includes('lia_home_style,lia_home_style_updated_at'));
+  assert.ok(appContext.includes('direction fait maison='));
+  assert.ok(appContext.includes("question.lia_home_style==='easy'?'facile':'épater la galerie'"));
 });
 
 

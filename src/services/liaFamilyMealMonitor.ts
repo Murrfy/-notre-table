@@ -50,7 +50,9 @@ export function startLiaFamilyMealDecisionMonitor(input:{householdId:string;demo
               memberName:item.memberName,
               mealDate:snapshot.question.meal_date,
               mealType:snapshot.question.meal_type,
+              questionId:snapshot.question.id,
               desire:item.desire,
+              homeStyle:snapshot.question.lia_home_style??null,
             });
           }
           if(Boolean(before?.takesCharge)!==item.takesCharge){

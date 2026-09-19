@@ -266,6 +266,10 @@ async function main(){
   if(replay.status!==200||replay.data?.ok!==true)throw new Error('Light response editable-link update failed.');
   const firstSummary=await A.client.rpc('get_light_meal_summary',{p_question_id:lightQuestionId});
   if(firstSummary.error||Number(firstSummary.data?.total)!==1||Number(firstSummary.data?.presence?.yes)!==1||Number(firstSummary.data?.desires?.home)!==1||Number(firstSummary.data?.desires?.pizza)!==0)throw firstSummary.error??new Error('Light meal summary did not reflect the edited response.');
+  await callRpc(A.client,'set_lia_family_home_style',{p_question_id:lightQuestionId,p_style:'easy'},'set_lia_family_home_style');
+  await expectDenied('Home-style admin guard',B.client.rpc('set_lia_family_home_style',{p_question_id:lightQuestionId,p_style:'impress'}));
+  const homeStyleRead=await A.client.from('light_meal_questions').select('lia_home_style').eq('id',lightQuestionId).single();
+  if(homeStyleRead.error||homeStyleRead.data?.lia_home_style!=='easy')throw homeStyleRead.error??new Error('LIA home-meal style did not persist.');
 
   const lightMemberTwo=String(await callRpc(A.client,'create_light_member',{p_household_id:hA.id,p_display_name:'Smoke Light Two',p_phone_number:'+15550000002'},'create_light_member second'));
   await callRpc(A.client,'upsert_light_meal_question',{p_household_id:hA.id,p_meal_date:lightMealDate,p_meal_type:'dinner',p_desire_options:['home'],p_expires_at:lightExpiresAt},'upsert_light_meal_question reset');

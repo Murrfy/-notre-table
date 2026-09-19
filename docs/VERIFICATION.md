@@ -1,13 +1,13 @@
-# Vérifications techniques — état courant V0.296
-- Checkpoint V0.296 : LIA apprend progressivement le plat préféré de chaque personne après les anniversaires, sans rallonger l’inscription ni inférer des goûts.
+# Vérifications techniques — état courant V0.297
+- Checkpoint V0.297 : la réponse à « facile ou épater la galerie ? » devient une direction réelle du repas familial et évite les répétitions.
 - `npm ci` : **PASS** sur runner GitHub avec Node 22.16.0 / npm 10.9.2.
 - `expo install --check` : **PASS**, dépendances SDK 57 à jour.
 - TypeScript installé (`tsc --noEmit`) : **PASS**.
 - `npm run verify` : **PASS**.
-- Régressions : **716/716 PASS**.
+- Régressions : **719/719 PASS**.
 - Gates EAS : **17/17 PASS**.
 - Matrice d’acceptation : **53 scénarios / 33 invariants critiques PASS**.
-- Audit TypeScript/TSX : **225 fichiers transpilés, 0 diagnostic**.
+- Audit TypeScript/TSX : **227 fichiers transpilés, 0 diagnostic**.
 - Expo Android : **export PASS**.
 - Expo iOS : **export PASS**.
-- Release evidence : **605 fichiers hashés**, contrat SHA-256 `7df8d5ebc20f3e73dbbff49cd8887cf50bf7b3a14295096757cbea62b599b287`.
+- Release evidence : **609 fichiers hashés**, contrat SHA-256 `a16fa88f130552238e496fb19658f6159c68915cd30d628e13dffa918739fa68`.

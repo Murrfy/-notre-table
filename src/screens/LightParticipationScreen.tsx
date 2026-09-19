@@ -9,7 +9,7 @@ import {emitLiaContextualGuidance,emitLiaFamilyMessageFirstUse} from '../service
 import {
   createLightMember,fetchLightMealQuestion,fetchLightMealSummary,fetchLightMembers,issueLightResponseToken,
   lightResponseLink,LightDesire,LightMealQuestion,LightMealSummary,LightMember,saveLightMealQuestion,
-  subscribeLightMealResponses,updateLightMember,
+  subscribeLightMealQuestion,subscribeLightMealResponses,updateLightMember,
 } from '../services/lightParticipation';
 
 const desires:Array<{key:LightDesire;label:TranslationKey;icon:string}>=[
@@ -81,7 +81,7 @@ export function LightParticipationScreen({householdId,householdName,organizerNam
       const before=previous.get(recipient.member_id);
       if(!recipient.responded)continue;
       if(recipient.desire&&before?.desire!==recipient.desire){
-        emitLiaContextualGuidance({kind:'family_choice_changed',householdId,organizerName,memberName:recipient.member_name,mealDate,mealType,desire:recipient.desire});
+        emitLiaContextualGuidance({kind:'family_choice_changed',householdId,organizerName,memberName:recipient.member_name,mealDate,mealType,questionId:question.id,desire:recipient.desire,homeStyle:question.lia_home_style??null});
       }
       if(Boolean(before?.takesCharge)!==recipient.takes_charge){
         emitLiaContextualGuidance({kind:'family_take_charge_changed',householdId,organizerName,memberName:recipient.member_name,mealDate,mealType,active:recipient.takes_charge});
@@ -117,6 +117,10 @@ export function LightParticipationScreen({householdId,householdName,organizerNam
     if(demo||!question?.id)return;
     return subscribeLightMealResponses(question.id,()=>{void refreshSummary(question.id);});
   },[demo,question?.id,refreshSummary]);
+  useEffect(()=>{
+    if(demo||!question?.id)return;
+    return subscribeLightMealQuestion(question.id,()=>{void load();});
+  },[demo,question?.id,load]);
 
   const resetForm=()=>{setName('');setPhone('');setEditingId(null);};
   const saveMember=async()=>{
