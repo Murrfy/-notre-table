@@ -6497,6 +6497,14 @@ test('V0.306 identity question is tied to the exact pending speaker track',()=>{
 });
 
 
+test('V0.307 explicit speaker confirmation updates the live table runtime',()=>{
+ const source=fs.readFileSync(path.join(root,'src/services/liaTableConversationRuntime.ts'),'utf8');
+ assert.ok(source.includes('confirmSpeaker:(trackId:string,memberId:string)'));
+ assert.ok(source.includes('confirmTableSpeakerIdentity({session,trackId,memberId,confidence:1})'));
+ assert.ok(source.includes('identities.set(trackId,{memberId,confidence:1})'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
