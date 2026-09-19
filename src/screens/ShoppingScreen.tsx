@@ -20,6 +20,7 @@ import { EmptyState } from '../components/EmptyState';
 import { beginRequest, createRequestGate, invalidateRequests, isCurrentRequest } from '../lib/requestGate';
 import { isNetworkReachable, shouldReplayShoppingQueue } from '../lib/offlineQueue';
 import { classifyPremiumGateError } from '../lib/premiumGate';
+import {emitLiaFeatureFirstUse,emitLiaFeatureHelp} from '../services/liaContextualGuidance';
 
 const demoBase: ShoppingItem[] = [
   { id:'s1', label:'Tomatoes', ingredient_key:'tomato', aisle:'produce', checked:false, quantity:4, unit:'piece' },
@@ -29,7 +30,7 @@ const demoBase: ShoppingItem[] = [
   { id:'s5', label:'Salmon', ingredient_key:'salmon', aisle:'fresh', checked:false, quantity:600, unit:'g' },
 ];
 
-export function ShoppingScreen({ householdId, demo=false, weekStart, onWeekStartChange, onFamilyRequired }:{householdId:string;demo?:boolean;weekStart:Date;onWeekStartChange:(date:Date)=>void;onFamilyRequired?:()=>void|Promise<void>}) {
+export function ShoppingScreen({ householdId, liaOrganizerName='', demo=false, weekStart, onWeekStartChange, onFamilyRequired }:{householdId:string;liaOrganizerName?:string;demo?:boolean;weekStart:Date;onWeekStartChange:(date:Date)=>void;onFamilyRequired?:()=>void|Promise<void>}) {
   const locale=useLocale(); const rtl=locale.textDirection==='rtl'; const weekKey=localIsoDate(weekStart);
   const [items,setItems]=useState<ShoppingItem[]>(demo?demoBase:[]); const [loading,setLoading]=useState(!demo); const [status,setStatus]=useState(locale.t(demo?'shopping.localDemo':'shopping.syncing')); const [label,setLabel]=useState(''); const [addingItem,setAddingItem]=useState(false); const [toggleBusyIds,setToggleBusyIds]=useState<string[]>([]); const toggleBusyRef=useRef<Set<string>>(new Set()); const [exportingPdf,setExportingPdf]=useState(false); const [exportError,setExportError]=useState(''); const [pantryOpen,setPantryOpen]=useState(false);
   const [members,setMembers]=useState<HouseholdMember[]>(demo?[{user_id:'u1',role:'admin',display_name:'You',allergies:[],diets:[],disliked_foods:[]},{user_id:'u2',role:'member',display_name:'Paul',allergies:[],diets:[],disliked_foods:[]}]:[]); const [myUserId,setMyUserId]=useState(demo?'u1':''); const [responsibility,setResponsibility]=useState<ShoppingResponsibility|null>(null); const [responsibilityBusy,setResponsibilityBusy]=useState(false); const [responsibilityError,setResponsibilityError]=useState(''); const [toolsOpen,setToolsOpen]=useState(false); const [checkedExpanded,setCheckedExpanded]=useState(false);
@@ -39,6 +40,15 @@ export function ShoppingScreen({ householdId, demo=false, weekStart, onWeekStart
   const networkReachableRef=useRef<boolean|null>(null);
   const addInFlight=useRef(false);
   const toolsInFlight=useRef(false);
+  useEffect(()=>{
+    const timer=setTimeout(()=>{void emitLiaFeatureFirstUse({householdId,organizerName:liaOrganizerName,feature:'shopping'});},4_500);
+    return()=>clearTimeout(timer);
+  },[householdId,liaOrganizerName]);
+  useEffect(()=>{
+    if(!label.trim()||addingItem)return;
+    const timer=setTimeout(()=>{emitLiaFeatureHelp({householdId,organizerName:liaOrganizerName,feature:'shopping',step:'add_item'});},12_000);
+    return()=>clearTimeout(timer);
+  },[label,addingItem,householdId,liaOrganizerName]);
 
   const normalizeItems=(values:ShoppingItem[])=>values.map(item=>({...item,aisle:normalizeAisle((item as any).aisle)}));
   const load=useCallback(async()=>{
