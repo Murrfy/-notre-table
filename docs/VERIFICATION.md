@@ -1,13 +1,4 @@
-# Vérifications techniques — état courant V0.300
-- Checkpoint V0.300 : curiosité relationnelle à réponse immédiate, uniquement pendant les vrais blancs hors table, avec rebond conversationnel après réponse.
-- `npm ci` : **PASS** sur runner GitHub avec Node 22.16.0 / npm 10.9.2.
-- `expo install --check` : **PASS**, dépendances SDK 57 à jour.
-- TypeScript installé (`tsc --noEmit`) : **PASS**.
-- `npm run verify` : **PASS**.
-- Régressions : **729/729 PASS**.
-- Gates EAS : **17/17 PASS**.
-- Matrice d’acceptation : **53 scénarios / 33 invariants critiques PASS**.
-- Audit TypeScript/TSX : **230 fichiers transpilés, 0 diagnostic**.
-- Expo Android : **export PASS**.
-- Expo iOS : **export PASS**.
-- Release evidence : **615 fichiers hashés**, contrat SHA-256 `d2391ce7807992dba210086129c84a1da775a428b047ff50762a0e98be909f9f`.
+# Vérifications techniques — état courant V0.301
+- Checkpoint V0.301 : réutilisation privée et bornée des petits souvenirs relationnels, sans exposition en mode table.
+- Validation installée GitHub : à exécuter sur la branche V0.301 avant intégration dans `main`.
+- Base V0.300 : validation installée GitHub complète réussie, **729/729 régressions**, exports Expo Android/iOS réussis.
