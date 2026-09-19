@@ -1,5 +1,13 @@
-# Notre Table — V0.295
+# Notre Table — V0.296
 
+
+## V0.296 — LIA guide toute l’application sans devenir envahissante
+
+V0.296 généralise le moteur de guidage contextuel validé avec Message famille. **Planning, Courses et Recettes** ont maintenant la même logique : une courte explication lors de la première utilisation, puis silence tant que la personne avance normalement.
+
+LIA intervient seulement sur des signaux réels de difficulté. Dans Planning, elle aide après une hésitation prolongée dans un repas encore vide ; dans Courses, elle intervient si un article est saisi mais reste bloqué avant l’ajout ; dans Recettes, elle propose une piste si une recherche reste sans résultat. Chaque aide est limitée à **l’étape suivante**, jamais à un tutoriel complet, et un même blocage est soumis à un délai anti-répétition de dix minutes.
+
+Le prénom de la cliente est utilisé quand il est réellement connu. Le changement de prénom ne réinitialise pas les explications de première utilisation. Le guidage réutilise toujours le même moteur LIA, la même voix et le même pipeline d’écoute : aucun second assistant ni moteur d’aide parallèle.
 
 ## V0.295 — LIA utilise les anniversaires qu’elle a appris
 
