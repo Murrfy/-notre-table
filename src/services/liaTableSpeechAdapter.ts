@@ -44,6 +44,7 @@ export type LiaResolvedTableTurn={
   memberId:string|null;
   identityConfidence:number;
   speechConfidence:number;
+  overlappingSpeech:boolean;
   mayUseMemberName:boolean;
 };
 
@@ -59,6 +60,7 @@ export function liaResolveTableSpeechTurn(
     memberId,
     identityConfidence,
     speechConfidence:segment.confidence,
+    overlappingSpeech:Boolean(segment.overlappingSpeech),
     mayUseMemberName:liaSpeakerIdentityPolicy({memberId,identityConfidence,overlappingSpeech:segment.overlappingSpeech,context:'table'}).mayUseName,
   };
 }
