@@ -22,6 +22,7 @@ import { MealGlyph } from '../components/MealGlyph';
 import { focusMealForHour, MEAL_ORDER } from '../domain/meals';
 import { beginRequest, createRequestGate, invalidateRequests, isCurrentRequest } from '../lib/requestGate';
 import { classifyPremiumGateError } from '../lib/premiumGate';
+import { useLiaFeatureHelp } from '../hooks/useLiaFeatureHelp';
 
 const mealTypes: Array<{key:MealType;labelKey:TranslationKey}> = MEAL_ORDER.map(key=>({key,labelKey:`meal.${key}` as TranslationKey}));
 const demoRecipes:Recipe[]=[
@@ -35,7 +36,7 @@ const demoMembers:HouseholdMember[]=[
   {user_id:'u3',role:'member',display_name:'Léa',allergies:[],diets:['végétarien'],disliked_foods:[]},
 ];
 
-export function PlanningScreen({householdId,householdName,defaultPartySize=4,demo=false,weekStart,onWeekStartChange,access,onRefreshAccess,onStartTrial,onOpenShopping}:{householdId:string;householdName:string;defaultPartySize?:number;demo?:boolean;weekStart:Date;onWeekStartChange:(date:Date)=>void;access:AccessState;onRefreshAccess?:()=>Promise<AccessState>;onStartTrial?:()=>void;onOpenShopping?:()=>void}){
+export function PlanningScreen({householdId,householdName,organizerName='',defaultPartySize=4,demo=false,weekStart,onWeekStartChange,access,onRefreshAccess,onStartTrial,onOpenShopping}:{householdId:string;householdName:string;organizerName?:string;defaultPartySize?:number;demo?:boolean;weekStart:Date;onWeekStartChange:(date:Date)=>void;access:AccessState;onRefreshAccess?:()=>Promise<AccessState>;onStartTrial?:()=>void;onOpenShopping?:()=>void}){
   const days=useMemo(()=>Array.from({length:7},(_,i)=>addDays(weekStart,i)),[weekStart]);
   const locale=useLocale();
   const todayIso=localIsoDate(new Date());
@@ -60,6 +61,8 @@ export function PlanningScreen({householdId,householdName,defaultPartySize=4,dem
   const [leftoverFromMealId,setLeftoverFromMealId]=useState<string|null>(null);
   const [leftoverSources,setLeftoverSources]=useState<MealSlot[]>([]);
   const [saving,setSaving]=useState(false);
+  const planningHelpStep=editing&&mealMode==='fresh'&&!selectedRecipe&&!custom.trim()?'choose_meal' as const:null;
+  useLiaFeatureHelp({active:Boolean(planningHelpStep)&&!saving,householdId,organizerName,feature:'planning',step:planningHelpStep,progressKey:`${editing?.date??''}:${editing?.type??''}:${selectedRecipe??''}:${custom.trim()}`});
   const [ideas,setIdeas]=useState<MealIdea[]>(demo?[
     {id:'i1',household_id:householdId,title:'Tacos maison',recipe_id:null,proposer_name:'Paul',vote_count:2,voted_by_me:true},
     {id:'i2',household_id:householdId,title:'Curry végétarien',recipe_id:'r3',proposer_name:'Léa',vote_count:2,voted_by_me:false},
