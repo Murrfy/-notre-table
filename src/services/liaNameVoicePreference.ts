@@ -48,3 +48,23 @@ export function openingAddress(spokenName:string,shouldUse:boolean):string|null{
   const safe=clean(spokenName);
   return shouldUse&&safe?safe:null;
 }
+
+
+export function shouldAskNamePronunciation(input:{
+  displayName:string;
+  hasConfirmedPronunciation:boolean;
+  pronunciationConfidence:'high'|'uncertain';
+  alreadyAsked:boolean;
+}):boolean{
+  const firstName=firstNameFromDisplayName(input.displayName);
+  if(!firstName||input.hasConfirmedPronunciation||input.alreadyAsked)return false;
+  return input.pronunciationConfidence==='uncertain';
+}
+
+export function pronunciationQuestion(languageTag:string):string{
+  const tag=languageTag.toLowerCase();
+  if(tag.startsWith('fr'))return 'Je veux être sûre de bien dire ton prénom, tu me le prononces ?';
+  if(tag.startsWith('es'))return 'Quiero asegurarme de pronunciar bien tu nombre, ¿me dices cómo se pronuncia?';
+  if(tag.startsWith('he'))return 'אני רוצה לוודא שאני מבטאת נכון את השם שלך. איך מבטאים אותו?';
+  return 'I want to make sure I pronounce your name correctly. How do you pronounce it?';
+}
