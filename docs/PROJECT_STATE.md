@@ -1,3 +1,12 @@
+## V0.304 — Runtime vocal et identité multi-locuteurs prudente
+
+- La prononciation préférée est appliquée uniquement au texte envoyé à la synthèse vocale ; le nom affiché reste inchangé.
+- Les préférences de prononciation familiales sont indexées par identifiant stable de membre.
+- Répétitions, cris probables et insultes peuvent déclencher des limites graduées et variées ; l'agressivité répétée peut provoquer un retrait temporaire.
+- À table/cuisine, prénom et mémoire personnelle exigent une identité forte (>= 0,90) et aucune parole superposée.
+- Un locuteur inconnu ou incertain doit être identifié ; une question pratique urgente peut recevoir sa réponse avant cette demande.
+- Aucun fait personnel n'est attribué à une voix incertaine.
+
 ## V0.303 — Prénom naturel et prononciation préférée
 
 - Le prénom peut être utilisé à l'ouverture d'un nouvel échange, sans répétition automatique pendant la conversation.

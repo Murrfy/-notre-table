@@ -1,3 +1,4 @@
+import {liaSpeakerIdentityPolicy} from './liaSpeakerIdentityPolicy';
 export type LiaTableSpeechSegment={
   text:string;
   startedAt:number;
@@ -58,6 +59,6 @@ export function liaResolveTableSpeechTurn(
     memberId,
     identityConfidence,
     speechConfidence:segment.confidence,
-    mayUseMemberName:!segment.overlappingSpeech&&!!memberId&&identityConfidence>=.9,
+    mayUseMemberName:liaSpeakerIdentityPolicy({memberId,identityConfidence,overlappingSpeech:segment.overlappingSpeech,context:'table'}).mayUseName,
   };
 }
