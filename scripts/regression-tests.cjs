@@ -6582,6 +6582,20 @@ test('V0.313 identity clarification keeps the same speaker track pending',()=>{
 });
 
 
+test('V0.314 family and guest social greetings stay separate',()=>{
+ const session=fs.readFileSync(path.join(root,'src/services/liaSpeakerIdentitySession.ts'),'utf8');
+ const flow=fs.readFileSync(path.join(root,'src/services/liaSpeakerIdentificationFlow.ts'),'utf8');
+ assert.ok(session.includes('liaFamilyMemberGreeting'));
+ assert.ok(session.includes('liaReturningGuestGreeting'));
+ assert.ok(session.includes('liaUnknownGuestIntroductionQuestion'));
+ assert.ok(session.includes('rememberLiaKnownGuest'));
+ assert.ok(session.includes('knownLiaGuestByName'));
+ assert.ok(flow.includes('liaFamilyMemberGreeting(resolution.person.displayName'));
+ assert.ok(flow.includes("kind:'session_guest'"));
+ assert.ok(!flow.includes("kind:'unknown_name'"));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
