@@ -10,13 +10,13 @@ export function useLiaFeatureHelp(input:{
   progressKey:string;
   delayMs?:number;
 }):void{
-  const emittedRef=useRef('');
+  const emittedRef=useRef(new Set<string>());
   useEffect(()=>{
     if(!input.active||!input.step||!input.householdId)return;
     const key=`${input.feature}:${input.step}:${input.progressKey}`;
-    if(emittedRef.current===key)return;
+    if(emittedRef.current.has(key))return;
     const timer=setTimeout(()=>{
-      emittedRef.current=key;
+      emittedRef.current.add(key);
       emitLiaAppFeatureHelp({
         householdId:input.householdId,
         organizerName:input.organizerName,
