@@ -44,7 +44,7 @@ export type LiaResolvedTableTurn={
   memberId:string|null;
   identityConfidence:number;
   speechConfidence:number;
-  overlappingSpeech:boolean;
+  overlappingSpeech?:boolean;
   mayUseMemberName:boolean;
 };
 
