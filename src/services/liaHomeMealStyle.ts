@@ -1,3 +1,4 @@
+import {parseLiaHomeMealStyleAnswer} from '../lib/liaHomeMealStyle';
 import {saveLightMealHomeStyle,type LightHomeStyle} from './lightParticipation';
 
 type PendingHomeStyle={
@@ -18,9 +19,6 @@ export type LiaHomeMealStyleContinuation=
 
 let pending:PendingHomeStyle|null=null;
 
-function fold(value:string):string{
-  return value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’']/g,' ').replace(/[!?.,;:]+/g,' ').replace(/\s+/g,' ').trim();
-}
 function fr(languageTag:string):boolean{return languageTag.toLowerCase().startsWith('fr');}
 
 export function beginLiaHomeMealStyleClarification(input:PendingHomeStyle):void{
