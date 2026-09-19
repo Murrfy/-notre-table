@@ -1,3 +1,14 @@
+## V0.300 — Curiosité relationnelle « tic-tac »
+
+- Les petites questions personnelles ne sont jamais posées en mode table partagé.
+- Elles ne peuvent apparaître que pendant un vrai blanc audio : app active, écoute active, personne ne parle, LIA ne parle pas, aucune musique active.
+- La cuisine peut rester un contexte valable si le moment est silencieux ; la table partagée ne l’est jamais.
+- Premiers faits rapides : couleur préférée, couleur de cheveux, parfum, shampoing.
+- Une question seulement, réponse courte suffisante, jamais introspective ni formulée pour faire réfléchir.
+- « Plus tard » et le refus restent respectés par le moteur de profil progressif existant.
+- Les faits sont enregistrés dans la mémoire relationnelle existante, privés du foyer par défaut et liés à l’identifiant réel du membre.
+- Après une réponse, LIA peut avoir du répondant et poursuivre brièvement la conversation ; aucune information de marque ou de produit ne doit être inventée.
+
 ## V0.299 — Guidage contextuel généralisé
 
 - Première ouverture d’une grande fonction : explication courte de Planning, Courses, Recettes, Famille, Commander ou Mémos.
