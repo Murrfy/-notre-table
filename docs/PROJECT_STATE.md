@@ -1,3 +1,13 @@
+## V0.298 — Reprise intelligente après les réponses famille
+
+- LIA sait quand tous les destinataires réels d’un Message famille ont répondu.
+- Elle résume alors les choix nominatifs à la cliente organisatrice et reprend le fil « on s’y met maintenant ou plus tard ? ».
+- La direction « facile / épater » de V0.297 est rappelée si elle existe.
+- Des choix divergents ne sont jamais transformés en gagnant automatique ; la décision reste à la cliente.
+- Un consensus peut être constaté mais ne déclenche aucune commande, planification ou dépense sans ordre explicite.
+- Si « Je m’occupe de tout » est actif, cette relance de synthèse est supprimée.
+- Le résumé n’est dit qu’une fois par ronde ; une nouvelle ronde incomplète réarme le mécanisme.
+
 ## V0.297 — Le choix « facile / épater » pilote réellement le repas
 
 - Après un vrai choix « Plat fait maison », LIA peut demander « facile ou épater la galerie ? » et attendre une réponse réelle.

@@ -1,5 +1,13 @@
-# Notre Table — V0.297
+# Notre Table — V0.298
 
+
+## V0.298 — LIA reprend le fil quand les réponses famille sont arrivées
+
+V0.298 prolonge V0.297 : quand toutes les personnes **à qui la demande a réellement été envoyée** ont répondu dans Message famille, LIA reprend le fil avec la cliente. Elle résume les choix nominatifs une seule fois, tient compte d’une éventuelle direction « facile » ou « épater la galerie », puis demande si l’on continue maintenant ou plus tard.
+
+LIA ne transforme jamais ce résumé en vote automatique : si les choix divergent, elle ne désigne pas de gagnant. Un consensus peut être constaté, mais ne déclenche ni commande, ni planning, ni achat sans demande explicite. Si quelqu’un a coché « Je m’occupe de tout », le suivi de fin de réponses est supprimé parce que le repas est déjà considéré comme pris en charge.
+
+Le suivi est dédupliqué localement par question. Une nouvelle ronde Message famille réarme le mécanisme dès que les réponses redeviennent incomplètes, tandis qu’une simple modification d’un choix après que tout le monde a répondu ne provoque pas une nouvelle annonce mécanique.
 
 ## V0.297 — « Facile ou épater la galerie ? » a maintenant de vraies conséquences
 

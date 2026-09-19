@@ -1,13 +1,13 @@
-# Vérifications techniques — état courant V0.297
-- Checkpoint V0.297 : la réponse à « facile ou épater la galerie ? » devient une direction réelle du repas familial et évite les répétitions.
+# Vérifications techniques — état courant V0.298
+- Checkpoint V0.298 : LIA reprend une seule fois le fil quand tous les destinataires du Message famille ont répondu, sans décider à la place de la cliente.
 - `npm ci` : **PASS** sur runner GitHub avec Node 22.16.0 / npm 10.9.2.
 - `expo install --check` : **PASS**, dépendances SDK 57 à jour.
 - TypeScript installé (`tsc --noEmit`) : **PASS**.
 - `npm run verify` : **PASS**.
-- Régressions : **719/719 PASS**.
+- Régressions : **722/722 PASS**.
 - Gates EAS : **17/17 PASS**.
 - Matrice d’acceptation : **53 scénarios / 33 invariants critiques PASS**.
-- Audit TypeScript/TSX : **227 fichiers transpilés, 0 diagnostic**.
+- Audit TypeScript/TSX : **228 fichiers transpilés, 0 diagnostic**.
 - Expo Android : **export PASS**.
 - Expo iOS : **export PASS**.
-- Release evidence : **609 fichiers hashés**, contrat SHA-256 `a16fa88f130552238e496fb19658f6159c68915cd30d628e13dffa918739fa68`.
+- Release evidence : **611 fichiers hashés**, contrat SHA-256 `c3f37a29aff62302709fe667a1ff5094391b6847e610cac4c8a6dba973d26c90`.

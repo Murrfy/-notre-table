@@ -7,6 +7,7 @@ export type LiaContextualGuidanceEvent=
   |{kind:'family_message_help';householdId:string;organizerName:string;step:'prepare'|'share'}
   |{kind:'family_choice_changed';householdId:string;organizerName:string;memberName:string;mealDate:string;mealType:MealType;questionId:string;desire:LightDesire;homeStyle:LightHomeStyle|null}
   |{kind:'family_take_charge_changed';householdId:string;organizerName:string;memberName:string;mealDate:string;mealType:MealType;active:boolean}
+  |{kind:'family_replies_ready';householdId:string;organizerName:string;questionId:string;mealDate:string;mealType:MealType;homeStyle:LightHomeStyle|null;choices:Array<{memberName:string;presence:'yes'|'no'|'maybe'|null;desire:LightDesire|null}>}
   |{kind:'profile_enrichment_question';householdId:string;organizerName:string;subjectName:string;fact:'birthday'|'favorite_meal'}
   |{kind:'birthday_awareness';householdId:string;organizerName:string;subjectName:string;daysUntil:number;favoriteMeal:string|null};
 
@@ -26,6 +27,7 @@ function eventKey(event:LiaContextualGuidanceEvent):string{
   if(event.kind==='family_message_help')return event.kind+':'+event.householdId+':'+event.step;
   if(event.kind==='family_choice_changed')return event.kind+':'+event.householdId+':'+event.mealDate+':'+event.mealType+':'+event.memberName+':'+event.desire;
   if(event.kind==='family_take_charge_changed')return event.kind+':'+event.householdId+':'+event.mealDate+':'+event.mealType+':'+event.memberName+':'+String(event.active);
+  if(event.kind==='family_replies_ready')return event.kind+':'+event.householdId+':'+event.questionId;
   if(event.kind==='profile_enrichment_question')return event.kind+':'+event.householdId+':'+event.subjectName+':'+event.fact;
   return event.kind+':'+event.householdId+':'+event.subjectName+':'+String(event.daysUntil);
 }
@@ -92,6 +94,14 @@ export function liaContextualGuidancePrompt(event:LiaContextualGuidanceEvent,lan
     return fr
       ?`${prefix}tu sais maintenant que l’anniversaire de ${event.subjectName} est ${timing}. Fais une intervention courte et naturelle. Ne mentionne jamais son âge.${favorite?` Tu sais aussi que ${event.subjectName} adore ${favorite} : tu peux t’en servir comme piste, sans présenter ça comme une décision.`:''} Si c’est pertinent, demande simplement si la cliente veut prévoir quelque chose pour le repas ou l’occasion, sans créer de rappel, achat, réservation ou planning sans demande explicite.`
       :`${prefix}you know that ${event.subjectName}'s birthday is ${timing}. Make one short natural intervention. Never mention their age.${favorite?` You also know ${event.subjectName} loves ${favorite}; you may use that as an idea, never as a decision.`:''} If useful, simply ask whether the organizer wants to plan something for the meal or occasion, without creating reminders, purchases, reservations, or plans unless explicitly asked.`;
+  }
+  if(event.kind==='family_replies_ready'){
+    const label:Record<LightDesire,string>={home:'Plat fait maison',pizza:'Pizza',pasta:'Pâtes',sushi:'Sushi',chinese:'Chinois'};
+    const choices=event.choices.map(item=>item.desire?`${item.memberName}=${label[item.desire]}`:item.presence==='no'?`${item.memberName}=absent`:item.presence==='maybe'?`${item.memberName}=peut-être`:`${item.memberName}=sans choix`).join(', ');
+    const direction=event.homeStyle==='easy'?(fr?' La direction fait maison déjà choisie est « facile et efficace ».':' The home-cooked direction already chosen is “easy and effective”.'):event.homeStyle==='impress'?(fr?' La direction fait maison déjà choisie est « épater la galerie ».':' The home-cooked direction already chosen is “impress everyone”.'):'';
+    return fr
+      ?`${prefix}tous les destinataires du Message famille ont maintenant répondu pour ce repas. Voici les choix réels : ${choices}.${direction} Reprends naturellement le fil avec la cliente : résume sans décider à sa place, puis demande si elle veut qu’on s’y mette maintenant ou plus tard. S’il y a plusieurs choix différents, ne désigne pas arbitrairement un gagnant. S’il y a un consensus, tu peux le constater sans commander, planifier ou acheter automatiquement.`
+      :`${prefix}all Family Message recipients have now replied for this meal. Real choices: ${choices}.${direction} Naturally resume the thread with the organizer: summarize without deciding for them, then ask whether to continue now or later. If choices differ, do not pick a winner yourself. If there is consensus, you may note it without automatically ordering, planning, or buying anything.`;
   }
   if(event.kind==='family_choice_changed'){
     const label:Record<LightDesire,string>={home:'Plat fait maison',pizza:'Pizza',pasta:'Pâtes',sushi:'Sushi',chinese:'Chinois'};
@@ -161,6 +171,14 @@ export function liaContextualGuidanceFallback(event:LiaContextualGuidanceEvent,l
     return fr
       ?`${prefix}petit rappel : l’anniversaire de ${event.subjectName}, c’est ${timing}.${favorite?` Je sais que ${event.subjectName} adore ${favorite}… ça peut nous donner une idée.`:''} Si tu veux prévoir quelque chose, je suis là.`
       :`${prefix}quick heads-up: ${event.subjectName}'s birthday is ${timing}. If you want to plan something, I’m here.`;
+  }
+  if(event.kind==='family_replies_ready'){
+    const label:Record<LightDesire,string>={home:'fait maison',pizza:'pizza',pasta:'pâtes',sushi:'sushi',chinese:'chinois'};
+    const choices=event.choices.map(item=>item.desire?`${item.memberName} : ${label[item.desire]}`:item.presence==='no'?`${item.memberName} : absent`:item.presence==='maybe'?`${item.memberName} : peut-être`:`${item.memberName} : sans choix`).join(', ');
+    const direction=event.homeStyle==='easy'?' On garde notre idée facile.':event.homeStyle==='impress'?' Et pour le fait maison, on avait dit qu’on épatait la galerie 😏.':'';
+    return fr
+      ?`${prefix}j’ai tout le monde : ${choices}.${direction} Tu veux qu’on s’y mette maintenant, ou on reprend ça plus tard ?`
+      :`${prefix}everyone has replied: ${choices}. Want to work it out now, or pick it up later?`;
   }
   if(event.kind==='family_choice_changed'){
     if(event.desire!=='home')return'';
