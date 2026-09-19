@@ -2204,3 +2204,4 @@ This checkpoint adds no product feature. It prevents blank screens and indefinit
 - `.validation/` est exclu de Git pour empêcher de commiter les exports de preuve CI.
 
 - CI provenance strengthened: `.validation/release-evidence.json` hashes the release contract, migrations, Edge Functions and lockfile for traceability.
+- Anniversaires connus : 6 variantes par langue pour le souhait parlé, 6 pour la notification et 6 pour le rappel à l’organisateur ; aucune date n’est inventée.

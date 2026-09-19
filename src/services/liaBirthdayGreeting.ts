@@ -101,3 +101,49 @@ export function liaBirthdayOrganizerReminder(input:{name:string;languageTag:stri
  const list=language(input.languageTag)==='fr'?fr:language(input.languageTag)==='he'?he:en;
  return list[Math.abs(input.variantSeed??0)%list.length];
 }
+
+
+export function liaBirthdayReminder(input:{name:string;languageTag:string;daysUntil:number;variantSeed?:number}):string|null{
+ const n=clean(input.name);
+ const days=Math.floor(input.daysUntil);
+ if(days<0||days>7)return null;
+ const fr=days===0?[
+  `Petit rappel : aujourd'hui, c'est l'anniversaire de ${n}.`,
+  `N'oublie pas : ${n} fête son anniversaire aujourd'hui.`,
+  `Aujourd'hui c'est l'anniversaire de ${n}. Je te le rappelle avant que la journée file.`,
+  `Au fait, anniversaire de ${n} aujourd'hui !`,
+  `${n} est à l'honneur aujourd'hui : c'est son anniversaire.`,
+  `Je te glisse ça maintenant : aujourd'hui, c'est l'anniversaire de ${n}.`,
+ ]:days===1?[
+  `Petit rappel : demain, c'est l'anniversaire de ${n}.`,
+  `N'oublie pas, ${n} fête son anniversaire demain.`,
+  `Demain c'est l'anniversaire de ${n}. Je préfère te prévenir maintenant.`,
+  `Au fait, anniversaire de ${n} demain !`,
+  `${n} sera à l'honneur demain : c'est son anniversaire.`,
+  `Je te glisse ça à temps : demain, c'est l'anniversaire de ${n}.`,
+ ]:[
+  `Petit rappel : l'anniversaire de ${n} est dans ${days} jours.`,
+  `Dans ${days} jours, c'est l'anniversaire de ${n}. Je te le garde à l'œil.`,
+  `Pense à ${n} : son anniversaire arrive dans ${days} jours.`,
+  `Anniversaire de ${n} dans ${days} jours. Tu as encore le temps de préparer quelque chose.`,
+  `${n} fête bientôt son anniversaire : plus que ${days} jours.`,
+  `Je te préviens à l'avance : anniversaire de ${n} dans ${days} jours.`,
+ ];
+ const en=days===0?[
+  `Quick reminder: today is ${n}'s birthday.`,`Don't forget: it's ${n}'s birthday today.`,`Today is ${n}'s birthday — a reminder before the day gets away.`,`By the way, it's ${n}'s birthday today!`,`${n} is today's birthday star.`,`Just in time: today is ${n}'s birthday.`
+ ]:days===1?[
+  `Quick reminder: tomorrow is ${n}'s birthday.`,`Don't forget: ${n}'s birthday is tomorrow.`,`Tomorrow is ${n}'s birthday — giving you a little head start.`,`By the way, ${n}'s birthday is tomorrow!`,`${n} is the birthday star tomorrow.`,`A timely reminder: tomorrow is ${n}'s birthday.`
+ ]:[
+  `Quick reminder: ${n}'s birthday is in ${days} days.`,`${n}'s birthday is in ${days} days — I've got it on my radar.`,`Keep ${n} in mind: their birthday is in ${days} days.`,`${n}'s birthday is in ${days} days. Still time to plan something.`,`${n}'s birthday is coming up in ${days} days.`,`An early heads-up: ${n}'s birthday is in ${days} days.`
+ ];
+ const he=days===0?[
+  `תזכורת קטנה: היום יום ההולדת של ${n}.`,`לא לשכוח: היום ${n} חוגג יום הולדת.`,`היום יום ההולדת של ${n}, מזכירה לפני שהיום רץ.`,`דרך אגב, היום יום ההולדת של ${n}!`,`${n} במרכז היום: יש יום הולדת.`,`תזכורת בזמן: היום יום ההולדת של ${n}.`
+ ]:days===1?[
+  `תזכורת קטנה: מחר יום ההולדת של ${n}.`,`לא לשכוח: מחר ${n} חוגג יום הולדת.`,`מחר יום ההולדת של ${n}, אז אני מזכירה מראש.`,`דרך אגב, מחר יום ההולדת של ${n}!`,`${n} במרכז מחר: יש יום הולדת.`,`תזכורת בזמן: מחר יום ההולדת של ${n}.`
+ ]:[
+  `תזכורת קטנה: יום ההולדת של ${n} בעוד ${days} ימים.`,`בעוד ${days} ימים יום ההולדת של ${n}.`,`כדאי לזכור את ${n}: יום ההולדת בעוד ${days} ימים.`,`יום ההולדת של ${n} בעוד ${days} ימים. יש עוד זמן להתכונן.`,`${n} חוגג בקרוב: עוד ${days} ימים.`,`מזכירה מראש: יום ההולדת של ${n} בעוד ${days} ימים.`
+ ];
+ const list=language(input.languageTag)==='fr'?fr:language(input.languageTag)==='he'?he:en;
+ return list[Math.abs(input.variantSeed??0)%list.length];
+}
+
