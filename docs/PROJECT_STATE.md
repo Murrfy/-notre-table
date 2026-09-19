@@ -1,3 +1,15 @@
+## V0.296 — Guidage contextuel généralisé
+
+- Le moteur de guidage V0.294 est étendu à Planning, Courses et Recettes ; aucun système parallèle.
+- Première utilisation : une seule explication courte par fonction et par foyer local.
+- Planning : aide après 18 s dans l’éditeur si aucun repas, recette ou reste n’a encore été choisi.
+- Courses : aide après 12 s lorsqu’un article est saisi mais non ajouté.
+- Recettes : aide après 15 s lorsqu’une recherche non vide reste sans résultat.
+- Les timers s’annulent dès que la personne progresse ; LIA se tait donc pendant une utilisation normale.
+- Un même type d’aide est limité par un cooldown de 10 minutes pour éviter les relances mécaniques.
+- Le prénom de l’utilisatrice est injecté depuis son profil lorsqu’il est réellement disponible.
+- Même LIA, même voix, même pipeline d’écoute et même lane de génération contextuelle.
+
 ## V0.295 — Anniversaires utiles, sans automatisme imposé
 
 - LIA exploite les anniversaires déjà enregistrés au lieu de les stocker passivement.
