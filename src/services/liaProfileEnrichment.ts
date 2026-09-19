@@ -21,10 +21,13 @@ export type LiaProfileEnrichmentTarget={
 type TargetLedger={lastAskedAtIso?:string|null;snoozedUntilIso?:string|null;dismissed?:boolean};
 type Ledger={lastPromptAtIso?:string|null;targets:Record<string,TargetLedger>};
 
+export type LiaProfileQuickFact='favorite_color'|'hair_color'|'perfume'|'shampoo';
+export type LiaProfileSavedFact={subjectName:string;fact:LiaProfileQuickFact;value:string};
+
 export type LiaProfileEnrichmentContinuation=
   |{status:'not_pending';spokenReply:null}
   |{status:'needs_clarification';spokenReply:string}
-  |{status:'saved';spokenReply:string}
+  |{status:'saved';spokenReply:string;savedFact?:LiaProfileSavedFact}
   |{status:'skipped';spokenReply:string}
   |{status:'unavailable';spokenReply:string};
 
@@ -275,8 +278,8 @@ export async function continueLiaProfileEnrichmentClarification(input:{
     }
     pending=null;
     return{status:'saved',spokenReply:fr(input.languageTag)
-      ?`Parfait, je retiens ça pour ${target.subjectName}. Ça pourra me servir un de ces jours 😏.`
-      :`Perfect. I’ll remember that for ${target.subjectName}. It may come in handy one day 😏.`};
+      ?`Parfait, je retiens ça pour ${target.subjectName}.`
+      :`Perfect. I’ll remember that for ${target.subjectName}.`,savedFact:{subjectName:target.subjectName,fact:target.fact,value}};
   }
 
   if(target.fact==='favorite_meal'){
