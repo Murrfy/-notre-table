@@ -3,6 +3,7 @@ import { runtimeConfig } from '../lib/runtimeConfig';
 import type { MealType } from '../types';
 
 export type LightDesire='home'|'pizza'|'pasta'|'sushi'|'chinese';
+export type LightHomeStyle='easy'|'impress';
 export type LightMember={
   id:string;
   household_id:string;
@@ -23,6 +24,8 @@ export type LightMealQuestion={
   desire_options:LightDesire[];
   expires_at:string;
   closed_at?:string|null;
+  lia_home_style?:LightHomeStyle|null;
+  lia_home_style_updated_at?:string|null;
   updated_at?:string;
 };
 export type LightMealResponse={
@@ -79,7 +82,7 @@ export async function updateLightMember(memberId:string,displayName:string,phone
 }
 
 export async function fetchLightMealQuestion(householdId:string,mealDate:string,mealType:MealType):Promise<LightMealQuestion|null>{
-  const {data,error}=await client().from('light_meal_questions').select('id,household_id,meal_date,meal_type,desire_options,expires_at,closed_at,updated_at').eq('household_id',householdId).eq('meal_date',mealDate).eq('meal_type',mealType).maybeSingle();
+  const {data,error}=await client().from('light_meal_questions').select('id,household_id,meal_date,meal_type,desire_options,expires_at,closed_at,lia_home_style,lia_home_style_updated_at,updated_at').eq('household_id',householdId).eq('meal_date',mealDate).eq('meal_type',mealType).maybeSingle();
   if(error)throw error;
   return data as LightMealQuestion|null;
 }
@@ -89,6 +92,11 @@ export async function saveLightMealQuestion(householdId:string,mealDate:string,m
   if(error)throw error;
   if(typeof data!=='string'||!data)throw new Error('LIGHT_QUESTION_SAVE_FAILED');
   return data;
+}
+
+export async function saveLightMealHomeStyle(questionId:string,style:LightHomeStyle):Promise<void>{
+  const {error}=await client().rpc('set_lia_family_home_style',{p_question_id:questionId,p_style:style});
+  if(error)throw error;
 }
 
 export async function issueLightResponseToken(questionId:string,memberId:string):Promise<string>{
