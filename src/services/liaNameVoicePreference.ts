@@ -80,7 +80,7 @@ export function applyPreferredSpokenNameToSpeech(input:{
   const spoken=clean(input.spokenName);
   if(!text||!displayFirst||!spoken||displayFirst===spoken)return text;
   const escaped=displayFirst.replace(/[.*+?^$()|[\]\\]/g,'\\$&');
-  return text.replace(new RegExp(\`\\b\${escaped}\\b\`,'gu'),spoken);
+  return text.replace(new RegExp(`\\b${escaped}\\b`,'gu'),spoken);
 }
 
 
@@ -120,8 +120,8 @@ export function familyPronunciationQuestion(input:{
   const relation=clean(input.relationLabel??'');
   if(input.languageTag.toLowerCase().startsWith('fr')){
     return relation
-      ?\`Je veux être sûre de bien prononcer le prénom de \${relation}, \${name}. Tu me le prononces ?\`
-      :\`Je veux être sûre de bien prononcer \${name}. Tu me le prononces ?\`;
+      ?`Je veux être sûre de bien prononcer le prénom de ${relation}, ${name}. Tu me le prononces ?`
+      :`Je veux être sûre de bien prononcer ${name}. Tu me le prononces ?`;
   }
-  return \`I want to make sure I pronounce \${name} correctly. How do you pronounce it?\`;
+  return `I want to make sure I pronounce ${name} correctly. How do you pronounce it?`;
 }
