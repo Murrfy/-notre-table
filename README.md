@@ -1,5 +1,9 @@
-# Notre Table — V0.304
+# Notre Table — V0.305
 
+
+## V0.305 — Identification explicite du locuteur
+
+Quand LIA ne sait pas encore qui lui parle à table ou en cuisine, elle peut demander naturellement l'identité. Une réponse explicite peut lier la piste vocale de la session à l'identité stable de la personne ; ce lien autorise ensuite le prénom et l'attribution de faits personnels sans confondre deux membres. Une voix non identifiée reste sans attribution personnelle.
 
 ## V0.304 — Voix personnelle, limites et identité prudente
 

@@ -6453,6 +6453,25 @@ test('V0.304 family pronunciation is scoped to stable member identity',()=>{
 });
 
 
+test('V0.305 explicit speaker answer can become a stable confirmed session identity',()=>{
+ const source=fs.readFileSync(path.join(root,'src/services/liaSpeakerIdentitySession.ts'),'utf8');
+ assert.ok(source.includes('rememberLiaSpeakerIdentity'));
+ assert.ok(source.includes("subjectKind:'profile'|'light_member'"));
+ assert.ok(source.includes('subjectId:string'));
+ assert.ok(source.includes('liaIdentityAnswerName'));
+ assert.ok(source.includes('liaSpeakerGreeting'));
+});
+
+test('V0.305 table session can bind a speaker track after explicit identification',()=>{
+ const source=fs.readFileSync(path.join(root,'src/services/liaTableConversationSession.ts'),'utf8');
+ assert.ok(source.includes('confirmTableSpeakerIdentity'));
+ assert.ok(source.includes('trackId:string'));
+ assert.ok(source.includes('memberId:string'));
+ assert.ok(source.includes('identityConfidence:confidence'));
+ assert.ok(source.includes('mayUseMemberName:true'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}

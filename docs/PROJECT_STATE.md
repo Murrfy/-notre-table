@@ -1,3 +1,11 @@
+## V0.305 — Identification explicite du locuteur
+
+- Une réponse à « qui me parle ? » peut confirmer l'identité d'une piste vocale de la session.
+- L'identité confirmée conserve le type et l'identifiant stables de la personne, pas seulement un prénom.
+- Le tour de table peut être requalifié après confirmation et devenir nominatif avec confiance forte.
+- Une identité ambiguë ne reçoit toujours aucun fait personnel.
+- La reconnaissance biométrique automatique n'est pas inventée : ce checkpoint consolide d'abord l'identification conversationnelle explicite.
+
 ## V0.304 — Runtime vocal et identité multi-locuteurs prudente
 
 - La prononciation préférée est appliquée uniquement au texte envoyé à la synthèse vocale ; le nom affiché reste inchangé.
