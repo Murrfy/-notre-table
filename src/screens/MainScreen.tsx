@@ -97,19 +97,25 @@ export function MainScreen({ household, demo=false, onSignOut }:{household:House
   useEffect(()=>{
     if(demo||liaSurface!==null||liaNavigationDestination!==null||liaReturnGreeting)return;
     let cancelled=false;
-    const timer=setTimeout(()=>{
-      void (async()=>{
-        if(cancelled||liaCookingSessionActive())return;
-        const quiet=await getLiaQuietState().catch(()=>null);
-        if(cancelled||!quiet||liaQuietNow(quiet))return;
-        const organizerName=await getMyDisplayName().catch(()=>'');
-        if(cancelled)return;
+    let sessionProactivityUsed=false;
+    let retryTimer:ReturnType<typeof setTimeout>|null=null;
+    const attempt=async()=>{
+      if(cancelled||sessionProactivityUsed)return;
+      const quiet=await getLiaQuietState().catch(()=>null);
+      if(cancelled||!quiet||liaQuietNow(quiet))return;
+      const organizerName=await getMyDisplayName().catch(()=>'');
+      if(cancelled)return;
+      if(!liaCookingSessionActive()){
         const birthdaySurfaced=await maybeEmitLiaBirthdayAwareness({householdId:household.id,organizerName,demo:false}).catch(()=>false);
+        if(birthdaySurfaced)sessionProactivityUsed=true;
         if(cancelled||birthdaySurfaced)return;
-        await maybeEmitLiaProfileEnrichmentQuestion({householdId:household.id,organizerName,demo:false}).catch(()=>false);
-      })();
-    },90_000);
-    return()=>{cancelled=true;clearTimeout(timer);};
+      }
+      const profileSurfaced=await maybeEmitLiaProfileEnrichmentQuestion({householdId:household.id,organizerName,demo:false}).catch(()=>false);
+      if(profileSurfaced)sessionProactivityUsed=true;
+    };
+    const poll=()=>{void attempt().finally(()=>{if(!cancelled&&!sessionProactivityUsed)retryTimer=setTimeout(poll,30_000);});};
+    const initialTimer=setTimeout(poll,90_000);
+    return()=>{cancelled=true;clearTimeout(initialTimer);if(retryTimer)clearTimeout(retryTimer);};
   },[demo,household.id,liaSurface,liaNavigationDestination,liaReturnGreeting]);
 
   const [access,setAccess]=useState<AccessState>(()=>runtimeConfig.environment==='preview'?{plan:'family',source:'beta-preview'}:{plan:demo?'trial':'free',source:'local-preview'});

@@ -6274,6 +6274,52 @@ test('V0.299 first-use guidance waits for the real organizer name and covers the
 });
 
 
+test('V0.300 progressive curiosity uses only quick concrete profile facts and existing relationship memory',()=>{
+  const enrichment=fs.readFileSync(path.join(root,'src/services/liaProfileEnrichment.ts'),'utf8');
+  assert.ok(enrichment.includes("'favorite_color'|'hair_color'|'perfume'|'shampoo'"));
+  assert.ok(enrichment.includes("quickFacts:LiaProfileQuickFact[]=['favorite_color','hair_color','perfume','shampoo']"));
+  assert.ok(enrichment.includes("saveLiaRelationshipFact({topic:'style'"));
+  assert.ok(enrichment.includes("sensitivity:'ordinary',householdSafe:false,confirmed:true"));
+  assert.ok(enrichment.includes("quickFactStorageKey(target.subjectKind,target.subjectId,target.fact)"));
+  assert.ok(!enrichment.includes("qu'est-ce qui te fait plaisir après une grosse journée"));
+});
+
+test('V0.300 personal curiosity is blocked at table and requires a real silent listening gap',()=>{
+  const gate=fs.readFileSync(path.join(root,'src/services/liaPrivateCuriosityContext.ts'),'utf8');
+  const enrichment=fs.readFileSync(path.join(root,'src/services/liaProfileEnrichment.ts'),'utf8');
+  const orb=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
+  assert.ok(gate.includes("if(state.mode==='table')return false"));
+  assert.ok(gate.includes('!state.appActive||!state.listening||state.liaSpeaking||state.musicActive'));
+  assert.ok(gate.includes('minimumSilenceMs=15_000'));
+  assert.ok(gate.includes('nowMs-quietSince>=minimumSilenceMs'));
+  assert.ok(enrichment.includes('!liaPrivateCuriosityMayPrompt()'));
+  assert.ok(orb.includes("if(mode==='table')clearLiaProfileEnrichmentClarification()"));
+  assert.ok(orb.includes("event.kind==='profile_enrichment_question'&&mode==='table'"));
+});
+
+test('V0.300 LIA waits for a blank instead of missing the question window or interrupting active speech',()=>{
+  const main=fs.readFileSync(path.join(root,'src/screens/MainScreen.tsx'),'utf8');
+  const orb=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
+  assert.ok(main.includes('setTimeout(poll,90_000)'));
+  assert.ok(main.includes('retryTimer=setTimeout(poll,30_000)'));
+  assert.ok(main.includes('if(profileSurfaced)sessionProactivityUsed=true'));
+  assert.ok(orb.includes('noteLiaPrivateCuriosityHumanSpeech(now)'));
+  assert.ok(orb.includes('updateLiaPrivateCuriosityContext({musicActive:musicPresenceRef.current.musicActive})'));
+});
+
+test('V0.300 a saved quick fact gets conversational follow-up with factuality guard and no immediate new profile question',()=>{
+  const voice=fs.readFileSync(path.join(root,'src/services/liaAssistantVoiceExecution.ts'),'utf8');
+  const orb=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
+  const enrichment=fs.readFileSync(path.join(root,'src/services/liaProfileEnrichment.ts'),'utf8');
+  assert.ok(enrichment.includes('savedFact:{subjectName:target.subjectName,fact:target.fact,value}'));
+  assert.ok(voice.includes("status:'profile_enrichment_saved';spokenReply:string;savedFact?:LiaProfileSavedFact"));
+  assert.ok(orb.includes("assistant.status==='profile_enrichment_saved'&&assistant.savedFact"));
+  assert.ok(orb.includes('Une ou deux phrases maximum. Ne pose pas une nouvelle question de profil maintenant.'));
+  assert.ok(orb.includes("n’invente jamais une gamme, un produit, une histoire ou une qualité pour meubler"));
+  assert.ok(orb.includes("tu as bon goût 😏"));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}

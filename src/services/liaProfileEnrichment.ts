@@ -2,6 +2,8 @@ import {supabase} from '../lib/supabase';
 import {isRecord,readStoredJson,writeStoredJson} from '../lib/storage';
 import {emitLiaContextualGuidance} from './liaContextualGuidance';
 import {parseLiaFavoriteMealAnswer} from '../lib/liaProfileFacts';
+import {listLiaRelationshipFacts,saveLiaRelationshipFact} from './liaRelationshipMemory';
+import {liaPrivateCuriosityMayPrompt} from './liaPrivateCuriosityContext';
 
 const LEDGER_KEY='@notre-table/lia-profile-enrichment-v1';
 const GLOBAL_GAP_MS=48*60*60*1000;
@@ -13,16 +15,19 @@ export type LiaProfileEnrichmentTarget={
   subjectKind:'profile'|'light_member';
   subjectId:string;
   subjectName:string;
-  fact:'birthday'|'favorite_meal';
+  fact:'birthday'|'favorite_meal'|'favorite_color'|'hair_color'|'perfume'|'shampoo';
 };
 
 type TargetLedger={lastAskedAtIso?:string|null;snoozedUntilIso?:string|null;dismissed?:boolean};
 type Ledger={lastPromptAtIso?:string|null;targets:Record<string,TargetLedger>};
 
+export type LiaProfileQuickFact='favorite_color'|'hair_color'|'perfume'|'shampoo';
+export type LiaProfileSavedFact={subjectName:string;fact:LiaProfileQuickFact;value:string};
+
 export type LiaProfileEnrichmentContinuation=
   |{status:'not_pending';spokenReply:null}
   |{status:'needs_clarification';spokenReply:string}
-  |{status:'saved';spokenReply:string}
+  |{status:'saved';spokenReply:string;savedFact?:LiaProfileSavedFact}
   |{status:'skipped';spokenReply:string}
   |{status:'unavailable';spokenReply:string};
 
@@ -39,6 +44,7 @@ function validLedger(value:unknown):value is Ledger{
   });
 }
 function targetKey(target:LiaProfileEnrichmentTarget):string{return `${target.householdId}:${target.subjectKind}:${target.subjectId}:${target.fact}`;}
+function quickFactStorageKey(subjectKind:LiaProfileEnrichmentTarget['subjectKind'],subjectId:string,fact:LiaProfileQuickFact):string{return `quick:${subjectKind==='profile'?'p':'m'}:${subjectId}:${fact}`;}
 function cleanName(value:string):string{return value.trim().replace(/\s+/g,' ').slice(0,80);}
 function ms(value:string|null|undefined):number{return value?Date.parse(value):0;}
 function fr(languageTag:string):boolean{return languageTag.toLowerCase().startsWith('fr');}
@@ -67,6 +73,8 @@ async function profileCandidates(householdId:string):Promise<LiaProfileEnrichmen
     const score=(x:any)=>x.relation==='spouse'?0:x.relation==='child'?1:2;
     return score(a)-score(b)||String(a.created_at??'').localeCompare(String(b.created_at??''));
   });
+  const relationshipFacts=await listLiaRelationshipFacts(false).catch(()=>[]);
+  const knownQuickFact=(subjectKind:LiaProfileEnrichmentTarget['subjectKind'],subjectId:string,fact:LiaProfileQuickFact)=>relationshipFacts.some(item=>item.confirmed&&item.topic==='style'&&item.factKey===quickFactStorageKey(subjectKind,subjectId,fact));
   for(const member of ranked as any[]){
     if(member.birthday_month&&member.birthday_day)continue;
     const subjectName=cleanName(member.display_name??'');
@@ -82,6 +90,14 @@ async function profileCandidates(householdId:string):Promise<LiaProfileEnrichmen
     if(!subjectName)continue;
     candidates.push({householdId,subjectKind:'light_member',subjectId:String(member.id),subjectName,fact:'favorite_meal'});
   }
+  const quickFacts:LiaProfileQuickFact[]=['favorite_color','hair_color','perfume','shampoo'];
+  const subjects=[{subjectKind:'profile' as const,subjectId:user.id,subjectName:profileName},...ranked.map((member:any)=>({subjectKind:'light_member' as const,subjectId:String(member.id),subjectName:cleanName(member.display_name??'')})).filter(item=>item.subjectName)];
+  for(const subject of subjects){
+    for(const fact of quickFacts){
+      if(knownQuickFact(subject.subjectKind,subject.subjectId,fact))continue;
+      candidates.push({householdId,...subject,fact});
+    }
+  }
   return candidates;
 }
 
@@ -91,7 +107,7 @@ export async function maybeEmitLiaProfileEnrichmentQuestion(input:{
   now?:Date;
   demo?:boolean;
 }):Promise<boolean>{
-  if(input.demo||pending||!input.householdId)return false;
+  if(input.demo||pending||!input.householdId||!liaPrivateCuriosityMayPrompt())return false;
   const now=input.now??new Date();
   const ledger=await readStoredJson<Ledger>(LEDGER_KEY,{lastPromptAtIso:null,targets:{}},validLedger);
   if(ledger.lastPromptAtIso&&now.getTime()-ms(ledger.lastPromptAtIso)<GLOBAL_GAP_MS)return false;
@@ -115,6 +131,22 @@ export async function maybeEmitLiaProfileEnrichmentQuestion(input:{
   pending=target;
   emitLiaContextualGuidance({kind:'profile_enrichment_question',householdId:target.householdId,organizerName:cleanName(input.organizerName),subjectName:target.subjectName,fact:target.fact});
   return true;
+}
+
+const quickFactLabels:Record<'favorite_color'|'hair_color'|'perfume'|'shampoo',{fr:string;en:string}>={
+  favorite_color:{fr:'couleur préférée',en:'favorite color'},
+  hair_color:{fr:'couleur de cheveux',en:'hair color'},
+  perfume:{fr:'parfum',en:'perfume'},
+  shampoo:{fr:'shampoing',en:'shampoo'},
+};
+
+export function parseLiaQuickFactAnswer(text:string):string|null{
+  const raw=text.trim().replace(/^[«“"]+|[»”"]+$/g,'').replace(/\s+/g,' ');
+  if(!raw||raw.length>80)return null;
+  const folded=raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’']/g,' ').replace(/\s+/g,' ').trim();
+  if(/^(?:je ne sais pas|j sais pas|aucune idee|aucune idée|peu importe|comme tu veux|rien|none|i don t know|no idea|whatever|not sure|no se|ni idea|לא יודע|לא יודעת)$/.test(folded))return null;
+  const cleaned=raw.replace(/^(?:c['’]?est|c est|j['’]?utilise|j utilise|je mets|mon|ma|mes|it['’]?s|it is|i use|i wear|my)\s+/i,'').trim();
+  return cleaned.length>=1&&cleaned.length<=80?cleaned:null;
 }
 
 function normalized(value:string):string{
@@ -230,6 +262,25 @@ export async function continueLiaProfileEnrichmentClarification(input:{
   if(!supabase){
     pending=null;
     return{status:'unavailable',spokenReply:fr(input.languageTag)?'Je n’arrive pas à enregistrer ça pour le moment.':'I can’t save that right now.'};
+  }
+
+  if(target.fact==='favorite_color'||target.fact==='hair_color'||target.fact==='perfume'||target.fact==='shampoo'){
+    const value=parseLiaQuickFactAnswer(input.text);
+    if(!value){
+      const label=quickFactLabels[target.fact];
+      return{status:'needs_clarification',spokenReply:fr(input.languageTag)
+        ?`Une réponse toute simple me suffit pour ta ${label.fr} — un mot ou un nom, et c’est bon.`
+        :`A simple answer is enough for the ${label.en} — one word or a name is fine.`};
+    }
+    try{
+      await saveLiaRelationshipFact({topic:'style',subjectLabel:target.subjectName,factKey:quickFactStorageKey(target.subjectKind,target.subjectId,target.fact),factValue:value,sensitivity:'ordinary',householdSafe:false,confirmed:true},false);
+    }catch{
+      return{status:'unavailable',spokenReply:fr(input.languageTag)?'Je n’arrive pas à l’enregistrer pour le moment. On réessaiera plus tard.':'I can’t save it right now. We’ll try again later.'};
+    }
+    pending=null;
+    return{status:'saved',spokenReply:fr(input.languageTag)
+      ?`Parfait, je retiens ça pour ${target.subjectName}.`
+      :`Perfect. I’ll remember that for ${target.subjectName}.`,savedFact:{subjectName:target.subjectName,fact:target.fact,value}};
   }
 
   if(target.fact==='favorite_meal'){

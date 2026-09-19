@@ -1,5 +1,11 @@
-# Notre Table — V0.299
+# Notre Table — V0.300
 
+
+## V0.300 — Curiosité légère pendant les vrais blancs
+
+V0.300 prolonge le profil progressif de LIA sans transformer l’application en questionnaire. En dehors du mode table, pendant un vrai moment de silence détecté par l’écoute déjà active, LIA peut poser une seule petite question à réponse immédiate : couleur préférée, couleur de cheveux, parfum ou shampoing. La cuisine reste autorisée si personne ne parle et qu’aucune interaction prioritaire n’est en cours.
+
+Ces questions sont espacées par le même moteur de profil progressif, acceptent « plus tard » ou le refus, et ne sont jamais posées à table. Les réponses confirmées utilisent la mémoire relationnelle existante, liées à l’identité réelle du membre et non uniquement à son prénom. Après une réponse, LIA peut rebondir naturellement en une ou deux phrases ; pour une marque ou un produit elle ne doit jamais inventer des références pour meubler.
 
 ## V0.299 — LIA accompagne toute l’appli sans devenir envahissante
 

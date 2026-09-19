@@ -37,9 +37,10 @@ import {liaPersonalPresenceReply} from '../lib/liaPersonalPresence';
 import {liaNavigationLiveSessionActive} from '../services/liaNavigationLiveSession';
 import {clearLiaCalendarClarification,liaCalendarClarificationPending} from '../services/liaAssistantCalendarExecution';
 import {liaCookingSessionClarificationPending,liaCookingSessionFollowupActive} from '../services/liaCookingSession';
-import {liaProfileEnrichmentClarificationPending} from '../services/liaProfileEnrichment';
+import {clearLiaProfileEnrichmentClarification,liaProfileEnrichmentClarificationPending} from '../services/liaProfileEnrichment';
 import {addLiaContextualGuidanceListener,liaContextualGuidanceFallback,liaContextualGuidancePrompt} from '../services/liaContextualGuidance';
 import {beginLiaHomeMealStyleClarification,clearLiaHomeMealStyleClarification,liaHomeMealStyleClarificationPending} from '../services/liaHomeMealStyle';
+import {noteLiaPrivateCuriosityHumanSpeech,updateLiaPrivateCuriosityContext} from '../services/liaPrivateCuriosityContext';
 
 export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommander,onOpenMemos,onOpenCalendar,onPantryVisionRequested,onPantryRecipeRequested,onNavigationRequested,commanderContextLabel='',onCommanderCommand,householdId,weekStart,demo=false,primaryAssistant=true}:{earlyReturnMessage?:string;onEarlyReturnDismiss?:()=>void;onOpenCommander?:()=>void;onOpenMemos?:()=>void;onOpenCalendar?:()=>void;onPantryVisionRequested?:()=>void;onPantryRecipeRequested?:(recipeId:string,startCooking:boolean)=>void;onNavigationRequested?:(destination:string)=>void;commanderContextLabel?:string;onCommanderCommand?:(command:string)=>boolean;householdId?:string;weekStart?:string;demo?:boolean;primaryAssistant?:boolean}={}){
   const locale=useLocale();
@@ -180,6 +181,36 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
         return;
       }
       if(assistant.status==='cooking_command'){if(assistant.spokenReply)await speakReply(assistant.spokenReply);return;}
+      if(assistant.status==='profile_enrichment_saved'&&assistant.savedFact){
+        const fact=assistant.savedFact;
+        const factLabel=fact.fact==='favorite_color'?'couleur préférée':fact.fact==='hair_color'?'couleur de cheveux':fact.fact==='perfume'?'parfum':'shampoing';
+        const requestText=locale.languageTag.startsWith('fr')
+          ?`Tu viens d’apprendre une petite information personnelle confirmée pendant un moment calme : ${fact.subjectName}, ${factLabel} = « ${fact.value} ». Réagis naturellement comme LIA, assistante/confidente chaleureuse avec du répondant. Une ou deux phrases maximum. Ne pose pas une nouvelle question de profil maintenant. Tu peux rebondir avec une association légère ou un compliment du type « tu as bon goût 😏 » si cela sonne naturel, mais pas systématiquement. Si c’est un parfum ou un shampoing, tu peux mentionner un fait stable et très connu sur la marque seulement si tu en es réellement sûre ; n’invente jamais une gamme, un produit, une histoire ou une qualité pour meubler. Si tu n’as rien de fiable à ajouter, reste simplement complice et légère.`
+          :`You just learned one confirmed personal detail during a quiet moment: ${fact.subjectName}, ${factLabel} = “${fact.value}”. React naturally as LIA: warm, companionable and quick-witted. One or two sentences maximum. Do not ask another profile question now. You may make a light association or tasteful compliment if it feels natural, but not every time. For perfume or shampoo, mention a stable well-known brand fact only if genuinely confident; never invent products, ranges, history or qualities to fill space. If you have nothing reliable to add, keep it simply warm and playful.`;
+        const result=await generateLiaTableResponse({
+          turn:{text:requestText,speakerTrackId:'foreground',memberId:null,identityConfidence:0,speechConfidence:1,mayUseMemberName:false},
+          context:{
+            mode:mode==='cooking'?'cooking':'table',
+            languageTag:locale.languageTag,
+            topicKey:'private_profile_followup',
+            memberId:null,
+            mayUseMemberName:false,
+            naming,
+            householdId,
+            weekStart,
+            demo,
+            confirmedFacts:[
+              {key:'profile_fact_subject',value:fact.subjectName,scope:'session',confirmed:true,relevant:true,sensitive:false},
+              {key:'profile_fact_key',value:fact.fact,scope:'session',confirmed:true,relevant:true,sensitive:false},
+              {key:'profile_fact_value',value:fact.value,scope:'session',confirmed:true,relevant:true,sensitive:false},
+            ],
+          },
+        });
+        if(generation!==tableResponseGenerationRef.current)return;
+        if(result.status==='ready'){await speakReply(result.text,result.sensitive);return;}
+        await speakReply(assistant.spokenReply);
+        return;
+      }
       if(assistant.status==='navigation_needs_clarification'){await speakReply(assistant.spokenReply);return;}
       if(assistant.status!=='defer_to_response'&&assistant.status!=='not_assistant_request'){
         if('spokenReply'in assistant&&assistant.spokenReply)await speakReply(assistant.spokenReply);
@@ -221,6 +252,11 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
     return()=>{void deactivateKeepAwake('notre-table-lia-active');};
   },[enabled,open,listening]);
 
+  useEffect(()=>{
+    updateLiaPrivateCuriosityContext({mode,appActive,listening,liaSpeaking:voiceSpeaking,musicActive:musicPresenceRef.current.musicActive});
+    if(mode==='table')clearLiaProfileEnrichmentClarification();
+  },[mode,appActive,listening,voiceSpeaking]);
+
   const modeLabel=locale.t(mode==='cooking'?'lia.modeCooking':mode==='table'?'lia.modeTable':'lia.modeIdle');
   const socialLabel=locale.t(social==='discreet'?'lia.socialDiscreet':social==='host'?'lia.socialHost':'lia.socialPresent');
   useEffect(()=>{if(!earlyReturnMessage){setReturnVisible(false);return;}setReturnVisible(true);const timer=setTimeout(()=>setReturnVisible(false),9_000);return()=>clearTimeout(timer);},[earlyReturnMessage]);
@@ -235,6 +271,7 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
     if(!primaryAssistant)return;
     return addLiaContextualGuidanceListener(event=>{
       if(!enabled||!appActive)return;
+      if(event.kind==='profile_enrichment_question'&&mode==='table'){clearLiaProfileEnrichmentClarification();return;}
       if(event.kind==='family_choice_changed'&&event.desire!=='home')return;
       if(event.kind==='family_take_charge_changed'&&event.active)clearLiaHomeMealStyleClarification();
       if(event.kind==='family_choice_changed'&&event.desire==='home'&&!event.homeStyle){
@@ -267,7 +304,7 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
         });
       })();
     });
-  },[primaryAssistant,enabled,appActive,locale.languageTag,currentVoice?.identifier,naming,weekStart,demo]);
+  },[primaryAssistant,enabled,appActive,mode,locale.languageTag,currentVoice?.identifier,naming,weekStart,demo]);
 
   useEffect(()=>{
     if(Platform.OS!=='ios')return;
@@ -318,6 +355,7 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
     if(!listening)return;
     const subscription=addLiaAmbientMusicRecognitionListener(event=>{
       musicPresenceRef.current=noteLiaMusicMatch(musicPresenceRef.current,{title:event.title,artist:event.artist,identifier:event.identifier,matchedAtMs:event.matchedAtMs});
+      updateLiaPrivateCuriosityContext({musicActive:musicPresenceRef.current.musicActive});
     });
     void startLiaAmbientMusicRecognition();
     return()=>{subscription?.remove();void stopLiaAmbientMusicRecognition();};
@@ -347,9 +385,11 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
       const speech=isHumanSpeechClassification(event.label);
       const music=isMusicClassification(event.label);
       musicPresenceRef.current=noteLiaMusicAudioEvidence(musicPresenceRef.current,music&&event.confidence>=.55,now);
+      updateLiaPrivateCuriosityContext({musicActive:musicPresenceRef.current.musicActive});
       audioStateRef.current=nextLiaAudioRuntimeState(audioStateRef.current,{label:event.label,confidence:event.confidence,atMs:now},laughter?'laughter':speech?'speech':'other');
 
       if(speech&&event.confidence>=.55){
+        noteLiaPrivateCuriosityHumanSpeech(now);
         if(pendingReactionRef.current){clearTimeout(pendingReactionRef.current);pendingReactionRef.current=null;}
         if(voiceSpeaking)void stopLiaVoice();
         return;
