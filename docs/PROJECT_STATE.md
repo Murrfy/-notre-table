@@ -1,3 +1,13 @@
+## V0.297 — Le choix « facile / épater » pilote réellement le repas
+
+- Après un vrai choix « Plat fait maison », LIA peut demander « facile ou épater la galerie ? » et attendre une réponse réelle.
+- Réponses comprises : direction simple/rapide → `easy`, envie de faire quelque chose de spécial → `impress`, ou report « attends les autres / plus tard ».
+- Un choix `easy` ou `impress` est enregistré sur la question famille du repas ; aucun choix n’est inféré depuis un vague « oui ».
+- La direction enregistrée rejoint le contexte de planification de LIA afin d’influencer ses suggestions suivantes pour ce repas.
+- Une fois la direction connue, les nouvelles réponses « fait maison » ne déclenchent plus la même question.
+- Reconfigurer Message famille remet la direction à zéro ; « je m’occupe de tout » interrompt la clarification en cours.
+- Même micro global LIA, aucune mémoire ou assistant parallèle.
+
 ## V0.296 — Apprentissage progressif des goûts
 
 - Le moteur d’enrichissement familial ne se limite plus aux anniversaires : il peut ensuite demander le plat préféré d’une personne.
