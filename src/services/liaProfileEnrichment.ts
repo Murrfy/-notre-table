@@ -44,6 +44,7 @@ function validLedger(value:unknown):value is Ledger{
   });
 }
 function targetKey(target:LiaProfileEnrichmentTarget):string{return `${target.householdId}:${target.subjectKind}:${target.subjectId}:${target.fact}`;}
+function quickFactStorageKey(subjectKind:LiaProfileEnrichmentTarget['subjectKind'],subjectId:string,fact:LiaProfileQuickFact):string{return `quick:${subjectKind==='profile'?'p':'m'}:${subjectId}:${fact}`;}
 function cleanName(value:string):string{return value.trim().replace(/\s+/g,' ').slice(0,80);}
 function ms(value:string|null|undefined):number{return value?Date.parse(value):0;}
 function fr(languageTag:string):boolean{return languageTag.toLowerCase().startsWith('fr');}
@@ -73,7 +74,7 @@ async function profileCandidates(householdId:string):Promise<LiaProfileEnrichmen
     return score(a)-score(b)||String(a.created_at??'').localeCompare(String(b.created_at??''));
   });
   const relationshipFacts=await listLiaRelationshipFacts(false).catch(()=>[]);
-  const knownQuickFact=(subjectName:string,factKey:string)=>relationshipFacts.some(fact=>fact.confirmed&&fact.topic==='style'&&cleanName(fact.subjectLabel??'').toLocaleLowerCase()===cleanName(subjectName).toLocaleLowerCase()&&fact.factKey===factKey);
+  const knownQuickFact=(subjectKind:LiaProfileEnrichmentTarget['subjectKind'],subjectId:string,fact:LiaProfileQuickFact)=>relationshipFacts.some(item=>item.confirmed&&item.topic==='style'&&item.factKey===quickFactStorageKey(subjectKind,subjectId,fact));
   for(const member of ranked as any[]){
     if(member.birthday_month&&member.birthday_day)continue;
     const subjectName=cleanName(member.display_name??'');
@@ -89,11 +90,11 @@ async function profileCandidates(householdId:string):Promise<LiaProfileEnrichmen
     if(!subjectName)continue;
     candidates.push({householdId,subjectKind:'light_member',subjectId:String(member.id),subjectName,fact:'favorite_meal'});
   }
-  const quickFacts:Array<LiaProfileEnrichmentTarget['fact']>=['favorite_color','hair_color','perfume','shampoo'];
+  const quickFacts:LiaProfileQuickFact[]=['favorite_color','hair_color','perfume','shampoo'];
   const subjects=[{subjectKind:'profile' as const,subjectId:user.id,subjectName:profileName},...ranked.map((member:any)=>({subjectKind:'light_member' as const,subjectId:String(member.id),subjectName:cleanName(member.display_name??'')})).filter(item=>item.subjectName)];
   for(const subject of subjects){
     for(const fact of quickFacts){
-      if(knownQuickFact(subject.subjectName,fact))continue;
+      if(knownQuickFact(subject.subjectKind,subject.subjectId,fact))continue;
       candidates.push({householdId,...subject,fact});
     }
   }
@@ -272,7 +273,7 @@ export async function continueLiaProfileEnrichmentClarification(input:{
         :`A simple answer is enough for the ${label.en} — one word or a name is fine.`};
     }
     try{
-      await saveLiaRelationshipFact({topic:'style',subjectLabel:target.subjectName,factKey:target.fact,factValue:value,sensitivity:'ordinary',householdSafe:false,confirmed:true},false);
+      await saveLiaRelationshipFact({topic:'style',subjectLabel:target.subjectName,factKey:quickFactStorageKey(target.subjectKind,target.subjectId,target.fact),factValue:value,sensitivity:'ordinary',householdSafe:false,confirmed:true},false);
     }catch{
       return{status:'unavailable',spokenReply:fr(input.languageTag)?'Je n’arrive pas à l’enregistrer pour le moment. On réessaiera plus tard.':'I can’t save it right now. We’ll try again later.'};
     }
