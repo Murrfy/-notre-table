@@ -181,6 +181,36 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
         return;
       }
       if(assistant.status==='cooking_command'){if(assistant.spokenReply)await speakReply(assistant.spokenReply);return;}
+      if(assistant.status==='profile_enrichment_saved'&&assistant.savedFact){
+        const fact=assistant.savedFact;
+        const factLabel=fact.fact==='favorite_color'?'couleur préférée':fact.fact==='hair_color'?'couleur de cheveux':fact.fact==='perfume'?'parfum':'shampoing';
+        const requestText=locale.languageTag.startsWith('fr')
+          ?`Tu viens d’apprendre une petite information personnelle confirmée pendant un moment calme : ${fact.subjectName}, ${factLabel} = « ${fact.value} ». Réagis naturellement comme LIA, assistante/confidente chaleureuse avec du répondant. Une ou deux phrases maximum. Ne pose pas une nouvelle question de profil maintenant. Tu peux rebondir avec une association légère ou un compliment du type « tu as bon goût 😏 » si cela sonne naturel, mais pas systématiquement. Si c’est un parfum ou un shampoing, tu peux mentionner un fait stable et très connu sur la marque seulement si tu en es réellement sûre ; n’invente jamais une gamme, un produit, une histoire ou une qualité pour meubler. Si tu n’as rien de fiable à ajouter, reste simplement complice et légère.`
+          :`You just learned one confirmed personal detail during a quiet moment: ${fact.subjectName}, ${factLabel} = “${fact.value}”. React naturally as LIA: warm, companionable and quick-witted. One or two sentences maximum. Do not ask another profile question now. You may make a light association or tasteful compliment if it feels natural, but not every time. For perfume or shampoo, mention a stable well-known brand fact only if genuinely confident; never invent products, ranges, history or qualities to fill space. If you have nothing reliable to add, keep it simply warm and playful.`;
+        const result=await generateLiaTableResponse({
+          turn:{text:requestText,speakerTrackId:'foreground',memberId:null,identityConfidence:0,speechConfidence:1,mayUseMemberName:false},
+          context:{
+            mode:mode==='cooking'?'cooking':'table',
+            languageTag:locale.languageTag,
+            topicKey:'private_profile_followup',
+            memberId:null,
+            mayUseMemberName:false,
+            naming,
+            householdId,
+            weekStart,
+            demo,
+            confirmedFacts:[
+              {key:'profile_fact_subject',value:fact.subjectName,scope:'session',confirmed:true,relevant:true,sensitive:false},
+              {key:'profile_fact_key',value:fact.fact,scope:'session',confirmed:true,relevant:true,sensitive:false},
+              {key:'profile_fact_value',value:fact.value,scope:'session',confirmed:true,relevant:true,sensitive:false},
+            ],
+          },
+        });
+        if(generation!==tableResponseGenerationRef.current)return;
+        if(result.status==='ready'){await speakReply(result.text,result.sensitive);return;}
+        await speakReply(assistant.spokenReply);
+        return;
+      }
       if(assistant.status==='navigation_needs_clarification'){await speakReply(assistant.spokenReply);return;}
       if(assistant.status!=='defer_to_response'&&assistant.status!=='not_assistant_request'){
         if('spokenReply'in assistant&&assistant.spokenReply)await speakReply(assistant.spokenReply);
