@@ -1,13 +1,4 @@
-# Vérifications techniques — état courant V0.295
-- Checkpoint V0.295 : LIA utilise les anniversaires appris avec une intervention légère dans les 7 jours puis le jour J, sans action automatique.
-- `npm ci` : **PASS** sur runner GitHub avec Node 22.16.0 / npm 10.9.2.
-- `expo install --check` : **PASS**, dépendances SDK 57 à jour.
-- TypeScript installé (`tsc --noEmit`) : **PASS**.
-- `npm run verify` : **PASS**.
-- Régressions : **712/712 PASS**.
-- Gates EAS : **17/17 PASS**.
-- Matrice d’acceptation : **53 scénarios / 33 invariants critiques PASS**.
-- Audit TypeScript/TSX : **224 fichiers transpilés, 0 diagnostic**.
-- Expo Android : **export PASS**.
-- Expo iOS : **export PASS**.
-- Release evidence : **602 fichiers hashés**, contrat SHA-256 `554893d80253223a38af193469411805902e22c60abd55b2559b3db293c24248`.
+# Vérifications techniques — état courant V0.296
+- Checkpoint V0.296 : guidage contextuel de première utilisation et aide anti-répétition sur Planning, Courses et Recettes.
+- Validation installée GitHub : à exécuter sur la branche V0.296 avant intégration dans `main`.
+- Base V0.295 : validation installée GitHub complète réussie, **712/712 régressions**, exports Expo Android/iOS réussis.
