@@ -6631,6 +6631,16 @@ test('V0.314 birthday greetings provide six spoken and notification variants per
 });
 
 
+test('V0.314 birthday greetings and organizer reminders have six variants per language',()=>{
+ const source=fs.readFileSync(path.join(root,'src/services/liaBirthdayGreeting.ts'),'utf8');
+ assert.ok(source.includes('liaBirthdayGreeting'));
+ assert.ok(source.includes('liaBirthdayOrganizerReminder'));
+ assert.ok(source.includes("surface:BirthdaySurface"));
+ assert.ok(source.includes('if(!input.birthdayKnown)return null'));
+ assert.ok(source.includes('input.daysUntil>7'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
