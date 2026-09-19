@@ -58,6 +58,7 @@ const sources=[
   'src/lib/liaBirthdayAwareness.ts',
   'src/lib/liaProfileFacts.ts',
   'src/lib/liaHomeMealStyle.ts',
+  'src/lib/liaFamilyFollowthrough.ts',
   'src/services/liaNavigationLiveSession.ts',
   'src/lib/liaPhoneContactResolver.ts',
   'src/i18n/index.ts',
@@ -135,6 +136,7 @@ const liaPersonalPresence=require(path.join(temp,'src/lib/liaPersonalPresence.js
 const liaBirthdayAwareness=require(path.join(temp,'src/lib/liaBirthdayAwareness.js'));
 const liaProfileFacts=require(path.join(temp,'src/lib/liaProfileFacts.js'));
 const liaHomeMealStyle=require(path.join(temp,'src/lib/liaHomeMealStyle.js'));
+const liaFamilyFollowthrough=require(path.join(temp,'src/lib/liaFamilyFollowthrough.js'));
 const liaPhoneContactResolver=require(path.join(temp,'src/lib/liaPhoneContactResolver.js'));
 const i18n=require(path.join(temp,'src/i18n/index.js'));
 
@@ -6205,6 +6207,34 @@ test('V0.297 meal direction is a real family-question fact, resets on reconfigur
   assert.ok(participation.includes('lia_home_style,lia_home_style_updated_at'));
   assert.ok(appContext.includes('direction fait maison='));
   assert.ok(appContext.includes("question.lia_home_style==='easy'?'facile':'épater la galerie'"));
+});
+
+
+test('V0.298 family follow-through waits for every actual recipient and never competes with take-charge',()=>{
+  assert.equal(liaFamilyFollowthrough.liaFamilyRepliesReady({recipients:[],takeChargeName:null}),false);
+  assert.equal(liaFamilyFollowthrough.liaFamilyRepliesReady({recipients:[{responded:true,takesCharge:false},{responded:false,takesCharge:false}],takeChargeName:null}),false);
+  assert.equal(liaFamilyFollowthrough.liaFamilyRepliesReady({recipients:[{responded:true,takesCharge:false},{responded:true,takesCharge:false}],takeChargeName:null}),true);
+  assert.equal(liaFamilyFollowthrough.liaFamilyRepliesReady({recipients:[{responded:true,takesCharge:true}],takeChargeName:'Paul'}),false);
+});
+
+test('V0.298 global family monitor resumes a completed thread once and rearms only after a new incomplete round',()=>{
+  const monitor=fs.readFileSync(path.join(root,'src/services/liaFamilyMealMonitor.ts'),'utf8');
+  assert.ok(monitor.includes("FOLLOWTHROUGH_SEEN_KEY='@notre-table/lia-family-followthrough-seen-v1'"));
+  assert.ok(monitor.includes("kind:'family_replies_ready'"));
+  assert.ok(monitor.includes('if(!complete){'));
+  assert.ok(monitor.includes('delete next[key]'));
+  assert.ok(monitor.includes('if(next[key])continue;'));
+  assert.ok(monitor.includes('await emitReadyRepliesOnce'));
+});
+
+test('V0.298 completed family replies are summarized without LIA choosing a winner or taking an autonomous action',()=>{
+  const guidance=fs.readFileSync(path.join(root,'src/services/liaContextualGuidance.ts'),'utf8');
+  assert.ok(guidance.includes("kind:'family_replies_ready'"));
+  assert.ok(guidance.includes('ne désigne pas arbitrairement un gagnant'));
+  assert.ok(guidance.includes('sans commander, planifier ou acheter automatiquement'));
+  assert.ok(guidance.includes('Tu veux qu’on s’y mette maintenant, ou on reprend ça plus tard ?'));
+  assert.ok(guidance.includes("event.homeStyle==='easy'"));
+  assert.ok(guidance.includes("event.homeStyle==='impress'"));
 });
 
 
