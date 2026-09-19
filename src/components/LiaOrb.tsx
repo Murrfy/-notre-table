@@ -232,6 +232,7 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
           householdId,
           weekStart,
           demo,
+          relationshipMemoryAccess:mode==='table'?'none':'private',
           confirmedFacts:musicPresenceRef.current.track?[
             {key:'ambient_music_track',value:`${musicPresenceRef.current.track.title} — ${musicPresenceRef.current.track.artist}`,scope:'session',confirmed:true,relevant:true,sensitive:false},
             {key:'ambient_music_state',value:musicPresenceRef.current.musicActive?'playing':'ended',scope:'session',confirmed:true,relevant:true,sensitive:false},

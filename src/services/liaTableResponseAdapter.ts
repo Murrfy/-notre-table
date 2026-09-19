@@ -17,6 +17,7 @@ export type LiaTableResponseContext={
   householdId?:string;
   weekStart?:string;
   demo?:boolean;
+  relationshipMemoryAccess?:'none'|'private';
 };
 
 export type LiaTableResponse={

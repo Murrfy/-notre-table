@@ -1,5 +1,11 @@
-# Notre Table — V0.300
+# Notre Table — V0.301
 
+
+## V0.301 — Réutiliser les petits souvenirs sans les exposer
+
+V0.301 donne une vraie utilité aux détails personnels appris progressivement par LIA. Dans une conversation directe hors mode table, LIA peut réutiliser un souvenir confirmé lorsqu’il est pertinent — ou exceptionnellement faire un petit rappel complice spontané — sans transformer chaque échange en démonstration de mémoire.
+
+L’accès est explicite au niveau du contexte de réponse. Le mode table ne reçoit aucun souvenir personnel privé. Sans prénom cité, une question sur un parfum, une couleur ou un shampoing ne charge que les faits concernant l’organisatrice elle-même ; les souvenirs d’un autre membre ne deviennent pertinents que si ce membre est clairement nommé. Le rappel spontané est borné à un maximum par 24 heures et reste facultatif pour le modèle : il ne doit jamais être forcé dans la réponse ni provoquer une nouvelle série de questions.
 
 ## V0.300 — Curiosité légère pendant les vrais blancs
 
