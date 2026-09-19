@@ -148,18 +148,24 @@ export function liaUnknownGuestIntroductionQuestion(name:string,languageTag:stri
     `${n}… je crois qu’on ne s’est pas encore présentés, non ?`,
     `Ah, ${n} ! Première fois qu’on discute tous les deux ?`,
     `${n} ? Ton prénom me plaît bien, mais je ne crois pas t’avoir encore rencontré.`,
+    `${n}… attends, tu me dis quelque chose ou on fait connaissance maintenant ?`,
+    `Salut ${n}. Aide-moi un peu : on s’est déjà parlé ou je t’adopte à partir d’aujourd’hui ?`,
   ];
   const en=[
     `${n}? Do we know each other?`,
     `${n}… I don't think we've been introduced yet, have we?`,
     `Ah, ${n}! Is this our first chat together?`,
     `${n}? Nice name, but I don't think we've met yet.`,
+    `${n}… wait, do you ring a bell or are we meeting right now?`,
+    `Hi ${n}. Help me out: have we spoken before, or do I get to know you starting today?`,
   ];
   const he=[
     `${n}? אנחנו מכירים?`,
     `${n}… נראה לי שעוד לא הכרנו, נכון?`,
     `אה, ${n}! זאת הפעם הראשונה שאנחנו מדברים?`,
     `${n}? שם יפה, אבל נראה לי שעוד לא נפגשנו.`,
+    `${n}… רגע, אתה מוכר לי או שאנחנו מכירים עכשיו?`,
+    `שלום ${n}. תעזור לי רגע: כבר דיברנו פעם או שמכאן מתחילים להכיר?`,
   ];
   const list=languageTag.toLowerCase().startsWith('fr')?fr:languageTag.toLowerCase().startsWith('he')?he:en;
   return list[Math.abs(variantSeed)%list.length];
