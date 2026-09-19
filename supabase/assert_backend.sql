@@ -24,7 +24,7 @@ declare
   ];
   expected_realtime text[] := array['meal_plans','shopping_items','household_activity','member_absences','shopping_responsibilities','recipe_feedback','light_meal_questions','light_meal_responses'];
   expected_storage_policies text[] := array['profile_avatars_select','profile_avatars_insert','profile_avatars_delete'];
-  expected_migrations text[] := array['202609140001','202609140002','202609140003','202609140004','202609140005','202609140006','202609140007','202609140008','202609140009','202609140010','202609140011','202609150012','202609150013','202609160014','202609160015','202609160016','202609160017','202609160018','202609160019','202609160020','202609160021','202609170022','202609170023','202609170024','202609180025','202609180026','202609180027','202609180028','202609190029','202609190030','202609190031'];
+  expected_migrations text[] := array['202609140001','202609140002','202609140003','202609140004','202609140005','202609140006','202609140007','202609140008','202609140009','202609140010','202609140011','202609150012','202609150013','202609160014','202609160015','202609160016','202609160017','202609160018','202609160019','202609160020','202609160021','202609170022','202609170023','202609170024','202609180025','202609180026','202609180027','202609180028','202609190029','202609190030','202609190031','202609190032'];
 begin
   foreach item in array expected_tables loop
     select c.relrowsecurity into rls_enabled
@@ -84,6 +84,7 @@ begin
     ('get_light_meal_summary','uuid'),
     ('set_lia_family_birthday','uuid, text, uuid, integer, integer, integer'),
     ('set_lia_family_favorite_meal','uuid, text, uuid, text'),
+    ('set_lia_family_home_style','uuid, text'),
     ('can_write_household','uuid'),
     ('reserve_lia_navigation_trip','uuid')
   ) as v(routine_name,arg_types) loop
