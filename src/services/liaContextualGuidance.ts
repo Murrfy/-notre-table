@@ -73,7 +73,7 @@ export async function emitLiaFamilyMessageFirstUse(input:{householdId:string;org
 
 export async function emitLiaFeatureFirstUse(input:{householdId:string;organizerName:string;feature:LiaGuidedFeature}):Promise<boolean>{
   const organizerName=cleanName(input.organizerName);
-  const key=`feature:${input.feature}:${input.householdId}:${organizerName.toLocaleLowerCase()||'organizer'}`;
+  const key=`feature:${input.feature}:${input.householdId}`;
   const seen=await readStoredJson<Record<string,boolean>>(SEEN_KEY,{},validSeen);
   if(seen[key])return false;
   await writeStoredJson(SEEN_KEY,{...seen,[key]:true});
@@ -106,7 +106,9 @@ export function liaContextualGuidancePrompt(event:LiaContextualGuidanceEvent,lan
       shopping:'In one short intervention explain that Shopping gathers the week’s items: add an item at the top, check items off while shopping, and let recipes feed the list.',
       recipes:'In one short intervention explain that Recipes lets you search recipes, cook with what is on hand, or add/import a recipe. Do not explain every control before it is needed.',
     };
-    return `${prefix}${instruction[event.feature]} Ton chaleureux et naturel. C’est une aide de première utilisation : ne la répète pas plus tard sauf signe réel de blocage.`;
+    return fr
+      ?`${prefix}${instruction[event.feature]} Ton chaleureux et naturel. C’est une aide de première utilisation : ne la répète pas plus tard sauf signe réel de blocage.`
+      :`${prefix}${instruction[event.feature]} Keep it warm and natural. This is first-use guidance: do not repeat it later unless there is a real sign the person is stuck.`;
   }
   if(event.kind==='feature_help'){
     const help=fr
@@ -120,7 +122,9 @@ export function liaContextualGuidancePrompt(event:LiaContextualGuidanceEvent,lan
         :event.step==='add_item'
           ?'an item is typed in Shopping but has not been added. Simply say to tap + or submit from the keyboard, then stop once they move on.'
           :'the Recipes search has had no result for a while. Briefly suggest clearing filters, searching by ingredient, or using “Cook with what I have”.';
-    return `${prefix}${help} Une seule étape à la fois, sans réciter le reste de l’application.`;
+    return fr
+      ?`${prefix}${help} Une seule étape à la fois, sans réciter le reste de l’application.`
+      :`${prefix}${help} One step at a time, without reciting the rest of the app.`;
   }
   if(event.kind==='family_message_first_use'){
     return fr
