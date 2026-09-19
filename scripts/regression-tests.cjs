@@ -6513,13 +6513,13 @@ test('V0.308 unknown table or cooking speaker triggers one identification flow',
  assert.ok(source.includes('answerFirst:policy.answerBeforeIdentityQuestion'));
 });
 
-test('V0.308 pending identity answer resolves, clarifies, or stays unattributed',()=>{
+test('V0.308+ pending identity answer resolves, clarifies, or becomes a session guest',()=>{
  const source=fs.readFileSync(path.join(root,'src/services/liaSpeakerIdentificationFlow.ts'),'utf8');
  assert.ok(source.includes('resolvePendingLiaSpeakerIdentity'));
  assert.ok(source.includes("resolution.status==='matched'"));
  assert.ok(source.includes("resolution.status==='ambiguous'"));
- assert.ok(source.includes("kind:'unknown_name'"));
- assert.ok(source.includes('ne vais rien t’attribuer au hasard'));
+ assert.ok(source.includes("kind:'session_guest'"));
+ assert.ok(source.includes('rememberLiaSessionGuest(pending.trackId,name)'));
 });
 
 
