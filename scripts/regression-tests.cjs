@@ -6562,6 +6562,17 @@ test('V0.311 restored speaker identity is discarded on overlap or weak speech ev
 });
 
 
+test('V0.312 speaker identity prompt is throttled per track',()=>{
+ const session=fs.readFileSync(path.join(root,'src/services/liaSpeakerIdentitySession.ts'),'utf8');
+ const flow=fs.readFileSync(path.join(root,'src/services/liaSpeakerIdentificationFlow.ts'),'utf8');
+ assert.ok(session.includes('IDENTITY_ASK_COOLDOWN_MS=90_000'));
+ assert.ok(session.includes('mayAskLiaSpeakerIdentityAgain'));
+ assert.ok(session.includes('noteLiaSpeakerIdentityAsked'));
+ assert.ok(flow.includes('!mayAskLiaSpeakerIdentityAgain(input.trackId)'));
+ assert.ok(flow.includes('noteLiaSpeakerIdentityAsked(input.trackId)'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
