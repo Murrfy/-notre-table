@@ -6601,7 +6601,9 @@ test('V0.314 birthday messages are varied, multilingual, and require a known dat
  assert.ok(source.includes("surface:BirthdaySurface"));
  assert.ok(source.includes('if(!input.birthdayKnown)return null'));
  assert.ok(source.includes('liaBirthdayOrganizerReminder'));
- assert.ok((source.match(/\(n:string\)=>/g)??[]).length>=54);
+ assert.ok((source.match(/\(n:string\)=>/g)??[]).length>=36);
+ assert.ok(source.includes('daysUntil:number'));
+ assert.ok(source.includes('input.daysUntil>7'));
 });
 
 
