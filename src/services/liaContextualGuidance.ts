@@ -13,7 +13,7 @@ export type LiaContextualGuidanceEvent=
   |{kind:'family_choice_changed';householdId:string;organizerName:string;memberName:string;mealDate:string;mealType:MealType;questionId:string;desire:LightDesire;homeStyle:LightHomeStyle|null}
   |{kind:'family_take_charge_changed';householdId:string;organizerName:string;memberName:string;mealDate:string;mealType:MealType;active:boolean}
   |{kind:'family_replies_ready';householdId:string;organizerName:string;questionId:string;mealDate:string;mealType:MealType;homeStyle:LightHomeStyle|null;choices:Array<{memberName:string;presence:'yes'|'no'|'maybe'|null;desire:LightDesire|null}>}
-  |{kind:'profile_enrichment_question';householdId:string;organizerName:string;subjectName:string;fact:'birthday'|'favorite_meal'}
+  |{kind:'profile_enrichment_question';householdId:string;organizerName:string;subjectName:string;fact:'birthday'|'favorite_meal'|'favorite_color'|'hair_color'|'perfume'|'shampoo'}
   |{kind:'birthday_awareness';householdId:string;organizerName:string;subjectName:string;daysUntil:number;favoriteMeal:string|null};
 
 type Listener=(event:LiaContextualGuidanceEvent)=>void;
@@ -129,6 +129,18 @@ export function liaContextualGuidancePrompt(event:LiaContextualGuidanceEvent,lan
         ?`${prefix}profite d’un moment calme pour apprendre une seule petite chose utile, sans donner l’impression d’un questionnaire. Demande naturellement quel est le plat que ${event.subjectName} adore vraiment. Une seule question, ton chaleureux, aucune insistance. N’invente aucune préférence si la cliente ne sait pas.`
         :`${prefix}use a calm moment to learn one useful family detail without sounding like a questionnaire. Naturally ask which dish ${event.subjectName} really loves. One question only, warm tone, no pressure. Never invent a preference if the organizer does not know.`;
     }
+    if(event.fact==='favorite_color'||event.fact==='hair_color'||event.fact==='perfume'||event.fact==='shampoo'){
+      const question=event.fact==='favorite_color'
+        ?(fr?`C’est quoi la couleur préférée de ${event.subjectName} ?`:`What is ${event.subjectName}'s favorite color?`)
+        :event.fact==='hair_color'
+          ?(fr?`Les cheveux de ${event.subjectName}, ils sont de quelle couleur ?`:`What color is ${event.subjectName}'s hair?`)
+          :event.fact==='perfume'
+            ?(fr?`${event.subjectName} met quel parfum ?`:`What perfume does ${event.subjectName} wear?`)
+            :(fr?`${event.subjectName} utilise quel shampoing ?`:`What shampoo does ${event.subjectName} use?`);
+      return fr
+        ?`${prefix}pose exactement une petite question “tic-tac”, concrète et immédiate : « ${question} » Une réponse courte doit suffire. Ne demande aucune réflexion, justification, souvenir élaboré ou introspection. Une seule question, ton léger et curieux, puis laisse la personne tranquille.`
+        :`${prefix}ask exactly one quick, concrete, instant-answer question: “${question}” A short answer must be enough. Do not ask for reflection, explanations or introspection. One question only, light and curious, then leave the person alone.`;
+    }
     return fr
       ?`${prefix}profite d’un moment calme pour apprendre une petite information familiale manquante, sans donner l’impression d’un formulaire. Demande simplement quand est l’anniversaire de ${event.subjectName}. Précise que le jour et le mois suffisent et que l’année est facultative. Une seule question, ton naturel et chaleureux, aucune insistance. Ne fais pas encore la blague : attends d’abord la réponse.`
       :`${prefix}use a calm moment to learn one small missing family detail without sounding like a form. Simply ask when ${event.subjectName}'s birthday is. Say that day and month are enough and the year is optional. Ask one question only, warmly, with no pressure.`;
@@ -223,6 +235,10 @@ export function liaContextualGuidanceFallback(event:LiaContextualGuidanceEvent,l
         ?`${prefix}au fait, c’est quoi le plat que ${event.subjectName} adore vraiment ? Je garde ça dans un coin de ma tête pour les bonnes occasions.`
         :`${prefix}by the way, what dish does ${event.subjectName} really love? I’ll keep it in mind for the right moments.`;
     }
+    if(event.fact==='favorite_color')return fr?`${prefix}question éclair : c’est quoi la couleur préférée de ${event.subjectName} ?`:`${prefix}quick one: what is ${event.subjectName}'s favorite color?`;
+    if(event.fact==='hair_color')return fr?`${prefix}question éclair : les cheveux de ${event.subjectName}, ils sont de quelle couleur ?`:`${prefix}quick one: what color is ${event.subjectName}'s hair?`;
+    if(event.fact==='perfume')return fr?`${prefix}question éclair : ${event.subjectName} met quel parfum ?`:`${prefix}quick one: what perfume does ${event.subjectName} wear?`;
+    if(event.fact==='shampoo')return fr?`${prefix}question éclair : ${event.subjectName} utilise quel shampoing ?`:`${prefix}quick one: what shampoo does ${event.subjectName} use?`;
     return fr
       ?`${prefix}au fait, pour que je pense aux anniversaires… c’est quand celui de ${event.subjectName} ? Le jour et le mois me suffisent.`
       :`${prefix}by the way, so I can keep birthdays in mind: when is ${event.subjectName}'s birthday? Day and month are enough; the year is optional.`;
