@@ -1,5 +1,5 @@
 import {liaSpeakerIdentityPolicy,liaUnknownSpeakerQuestion} from './liaSpeakerIdentityPolicy';
-import {beginLiaSpeakerIdentification,consumeLiaSpeakerIdentification,liaIdentityAnswerName,liaSpeakerGreeting} from './liaSpeakerIdentitySession';
+import {beginLiaSpeakerIdentification,consumeLiaSpeakerIdentification,liaIdentityAnswerName,liaSpeakerGreeting,mayAskLiaSpeakerIdentityAgain,noteLiaSpeakerIdentityAsked} from './liaSpeakerIdentitySession';
 import {LiaSpeakerRosterPerson,liaSpeakerDisambiguationQuestion,resolveLiaSpeakerFromRoster} from './liaSpeakerRosterResolution';
 
 export type LiaSpeakerIdentificationAction=
@@ -11,7 +11,8 @@ export type LiaSpeakerIdentificationAction=
 
 export function maybeAskLiaSpeakerIdentity(input:{trackId:string;memberId:string|null;identityConfidence:number;overlappingSpeech?:boolean;context:'table'|'cooking';urgentPracticalQuestion?:boolean;languageTag:string}):LiaSpeakerIdentificationAction{
  const policy=liaSpeakerIdentityPolicy(input);
- if(!policy.shouldAskIdentity)return{kind:'none'};
+ if(!policy.shouldAskIdentity||!mayAskLiaSpeakerIdentityAgain(input.trackId))return{kind:'none'};
+ noteLiaSpeakerIdentityAsked(input.trackId);
  beginLiaSpeakerIdentification(input.trackId);
  return{kind:'ask_identity',trackId:input.trackId,spokenReply:liaUnknownSpeakerQuestion(input.languageTag),answerFirst:policy.answerBeforeIdentityQuestion};
 }
