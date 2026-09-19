@@ -101,3 +101,4 @@ export function liaBirthdayOrganizerReminder(input:{name:string;languageTag:stri
  const list=language(input.languageTag)==='fr'?fr:language(input.languageTag)==='he'?he:en;
  return list[Math.abs(input.variantSeed??0)%list.length];
 }
+

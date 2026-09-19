@@ -6618,6 +6618,19 @@ test('V0.314 birthday greetings have six variants per language and separate noti
 });
 
 
+test('V0.314 birthday greetings provide six spoken and notification variants per language',()=>{
+ const source=fs.readFileSync(path.join(root,'src/services/liaBirthdayGreeting.ts'),'utf8');
+ assert.ok(source.includes("type BirthdaySurface='spoken'|'notification'"));
+ assert.ok(source.includes('if(!input.birthdayKnown)return null'));
+ assert.ok(source.includes('liaBirthdayOrganizerReminder'));
+ assert.ok(source.includes('daysUntil:number'));
+ assert.ok(source.includes('input.daysUntil<0||input.daysUntil>7'));
+ const spoken=source.slice(source.indexOf('const spoken='),source.indexOf('const notification='));
+ const notification=source.slice(source.indexOf('const notification='),source.indexOf('function language'));
+ for(const section of [spoken,notification])for(const lang of ['fr:[','en:[','he:['])assert.ok(section.includes(lang));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
