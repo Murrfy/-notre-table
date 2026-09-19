@@ -1,3 +1,12 @@
+## V0.297 — Goûts appris réutilisés dans les décisions famille
+
+- Une réponse réelle « Fait maison » peut transporter le plat préféré déjà appris pour le membre concerné.
+- LIA peut citer ce plat comme piste dans « facile ou épater la galerie ? », jamais comme menu décidé.
+- La préférence vient uniquement du profil progressif V0.296 ; aucun vote ponctuel n’est transformé en préférence permanente.
+- Même comportement lorsque Message famille est fermé grâce au moniteur familial global existant.
+- Les autres choix Pizza/Pâtes/Sushi/Chinois ne déclenchent pas cette intervention maison spécifique.
+- Aucun nouvel état persistant, moteur ou pipeline vocal.
+
 ## V0.296 — Apprentissage progressif des goûts
 
 - Le moteur d’enrichissement familial ne se limite plus aux anniversaires : il peut ensuite demander le plat préféré d’une personne.
