@@ -57,6 +57,27 @@ export function pruneInactiveTableTracks(
   return{...session,tracks};
 }
 
+export function confirmTableSpeakerIdentity(input:{
+  session:LiaTableConversationSession;
+  trackId:string;
+  memberId:string;
+  confidence?:number;
+}):LiaTableConversationSession{
+  const current=input.session.tracks[input.trackId];
+  if(!current)return input.session;
+  const confidence=Math.max(.9,Math.min(1,input.confidence??1));
+  return{
+    ...input.session,
+    tracks:{
+      ...input.session.tracks,
+      [input.trackId]:{...current,memberId:input.memberId,identityConfidence:confidence},
+    },
+    recentTurns:input.session.recentTurns.map(turn=>turn.speakerTrackId===input.trackId
+      ?{...turn,memberId:input.memberId,identityConfidence:confidence,mayUseMemberName:true}
+      :turn),
+  };
+}
+
 export function activeTableMemberIds(session:LiaTableConversationSession):string[]{
   return [...new Set(
     Object.values(session.tracks)
