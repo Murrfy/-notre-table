@@ -6646,7 +6646,10 @@ test('V0.314 birthday messages provide six spoken, notification and organizer va
  assert.ok(source.includes("surface:BirthdaySurface"));
  assert.ok(source.includes('liaBirthdayOrganizerReminder'));
  assert.ok(source.includes('if(!input.birthdayKnown)return null'));
- for(const section of ['spoken','notification','reminder'])assert.ok(source.includes('const '+section+'='));
+ for(const section of ['spoken','notification'])assert.ok(source.includes('const '+section+'='));
+ assert.ok(source.includes('daysUntil:number'));
+ assert.ok(source.includes('input.daysUntil>7'));
+ assert.ok(source.includes('d===0?['));
  const fr=(source.match(/\(n:string\).*=>/g)??[]).length;
  assert.ok(fr>=18);
 });
