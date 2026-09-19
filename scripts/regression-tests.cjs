@@ -6426,6 +6426,33 @@ test('V0.304 LIA loads private relationship pronunciation for the signed-in prof
 });
 
 
+test('V0.304 conversational boundaries vary replies and pause only after repeated hostility',()=>{
+  const source=fs.readFileSync(path.join(root,'src/services/liaConversationBoundaries.ts'),'utf8');
+  assert.ok(source.includes('recentReplies'));
+  assert.ok(source.includes('priorHostility>=1'));
+  assert.ok(source.includes('now+3*60_000'));
+  assert.ok(source.includes("Pas besoin de me le répéter"));
+});
+
+test('V0.304 uncertain table or kitchen speaker is never named or assigned personal memory',()=>{
+  const policy=fs.readFileSync(path.join(root,'src/services/liaSpeakerIdentityPolicy.ts'),'utf8');
+  const table=fs.readFileSync(path.join(root,'src/services/liaTableSpeechAdapter.ts'),'utf8');
+  assert.ok(policy.includes("input.identityConfidence>=.9&&!input.overlappingSpeech"));
+  assert.ok(policy.includes('mayAttributeMemory:known'));
+  assert.ok(policy.includes('shouldAskIdentity:socialContext&&!known'));
+  assert.ok(policy.includes("return 'Au fait, qui me parle ?'"));
+  assert.ok(table.includes('liaSpeakerIdentityPolicy'));
+});
+
+test('V0.304 family pronunciation is scoped to stable member identity',()=>{
+  const source=fs.readFileSync(path.join(root,'src/services/liaNameVoicePreference.ts'),'utf8');
+  assert.ok(source.includes('resolveFamilySpokenNames'));
+  assert.ok(source.includes('subjectLabel:member.memberId'));
+  assert.ok(source.includes('familyNamePronunciationCorrectionFact'));
+  assert.ok(source.includes('familyPronunciationQuestion'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
