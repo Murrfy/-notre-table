@@ -499,6 +499,10 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
             await speakIfStillFree(assistant.spokenReply);
             return;
           }
+          if(assistant.status==='home_style_saved'||assistant.status==='home_style_needs_clarification'||assistant.status==='home_style_skipped'||assistant.status==='home_style_unavailable'){
+            await speakIfStillFree(assistant.spokenReply);
+            return;
+          }
           const personalReply=liaPersonalPresenceReply(turn.text,locale.languageTag);
           if(personalReply){await speakIfStillFree(personalReply);return;}
 
