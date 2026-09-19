@@ -1,6 +1,7 @@
 import {supabase} from '../lib/supabase';
 import {isRecord,readStoredJson,writeStoredJson} from '../lib/storage';
 import {emitLiaContextualGuidance} from './liaContextualGuidance';
+import {parseLiaFavoriteMealAnswer} from '../lib/liaProfileFacts';
 
 const LEDGER_KEY='@notre-table/lia-profile-enrichment-v1';
 const GLOBAL_GAP_MS=48*60*60*1000;
@@ -175,20 +176,6 @@ export function parseLiaBirthdayAnswer(text:string,now=new Date()):LiaBirthdayVa
     return validBirthday(day,month,year,now)?{day,month,year}:null;
   }
   return null;
-}
-
-export function parseLiaFavoriteMealAnswer(text:string):string|null{
-  const raw=text.trim().replace(/[.!?]+$/g,'').trim();
-  if(!raw)return null;
-  let value=raw
-    .replace(/^(?:son\s+plat\s+pr[eé]f[eé]r[eé]\s+(?:c['’]?est|est)|son\s+pr[eé]f[eé]r[eé]\s+(?:c['’]?est|est)|elle\s+adore|il\s+adore|j['’]?adore|mon\s+plat\s+pr[eé]f[eé]r[eé]\s+(?:c['’]?est|est)|her\s+favorite\s+(?:dish|meal)\s+is|his\s+favorite\s+(?:dish|meal)\s+is|my\s+favorite\s+(?:dish|meal)\s+is|she\s+loves|he\s+loves|i\s+love)\s+/i,'')
-    .replace(/^(?:le|la|les|du|de\s+la|des|un|une|the|a|an)\s+/i,'')
-    .trim();
-  value=value.replace(/\s+/g,' ').slice(0,120).trim();
-  if(value.length<2)return null;
-  const folded=normalized(value);
-  if(/^(?:oui|non|yes|no|je\s+sais\s+pas|i\s+don\s+t\s+know|aucune\s+idee|none|rien)$/.test(folded))return null;
-  return value;
 }
 
 function postBirthdayJoke(subjectName:string,languageTag:string):string{
