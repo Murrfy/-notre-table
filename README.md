@@ -1,5 +1,9 @@
-# Notre Table — V0.307
+# Notre Table — V0.308
 
+
+## V0.308 — Orchestration d'identification du locuteur
+
+À table ou en cuisine, un locuteur inconnu déclenche le flux d'identification. LIA peut demander qui parle, comprendre une réponse comme « Fabien » ou « moi c'est Fabien », résoudre cette réponse contre le foyer et confirmer, clarifier un doublon, ou rester sans attribution si la personne n'est pas identifiable. Une question pratique urgente peut être traitée avant la demande d'identité.
 
 ## V0.307 — Rattachement du locuteur au runtime
 
