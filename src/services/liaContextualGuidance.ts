@@ -2,7 +2,12 @@ import {isRecord,readStoredJson,writeStoredJson} from '../lib/storage';
 import type {MealType} from '../types';
 import type {LightDesire,LightHomeStyle} from './lightParticipation';
 
+export type LiaAppFeature='planning'|'shopping'|'recipes'|'household'|'commander'|'memos';
+export type LiaAppFeatureHelpStep='choose_meal'|'add_item'|'confirm_item'|'write_memo'|'complete_memo'|'choose_location'|'set_address';
+
 export type LiaContextualGuidanceEvent=
+  |{kind:'app_feature_first_use';householdId:string;organizerName:string;feature:LiaAppFeature}
+  |{kind:'app_feature_help';householdId:string;organizerName:string;feature:LiaAppFeature;step:LiaAppFeatureHelpStep}
   |{kind:'family_message_first_use';householdId:string;organizerName:string}
   |{kind:'family_message_help';householdId:string;organizerName:string;step:'prepare'|'share'}
   |{kind:'family_choice_changed';householdId:string;organizerName:string;memberName:string;mealDate:string;mealType:MealType;questionId:string;desire:LightDesire;homeStyle:LightHomeStyle|null}
@@ -22,6 +27,8 @@ function validSeen(value:unknown):value is Record<string,boolean>{
 }
 
 function eventKey(event:LiaContextualGuidanceEvent):string{
+  if(event.kind==='app_feature_first_use')return event.kind+':'+event.householdId+':'+event.feature;
+  if(event.kind==='app_feature_help')return event.kind+':'+event.householdId+':'+event.feature+':'+event.step;
   if(event.kind==='family_message_first_use')return event.kind+':'+event.householdId+':'+event.organizerName;
   if(event.kind==='family_message_help')return event.kind+':'+event.householdId+':'+event.step;
   if(event.kind==='family_choice_changed')return event.kind+':'+event.householdId+':'+event.mealDate+':'+event.mealType+':'+event.memberName+':'+event.desire;
@@ -51,6 +58,21 @@ export function addLiaContextualGuidanceListener(listener:Listener):()=>void{
   return()=>{listeners.delete(listener);};
 }
 
+
+export async function emitLiaAppFeatureFirstUse(input:{householdId:string;organizerName:string;feature:LiaAppFeature}):Promise<boolean>{
+  const organizerName=cleanName(input.organizerName);
+  const key=`feature:${input.householdId}:${input.feature}`;
+  const seen=await readStoredJson<Record<string,boolean>>(SEEN_KEY,{},validSeen);
+  if(seen[key])return false;
+  await writeStoredJson(SEEN_KEY,{...seen,[key]:true});
+  emitLiaContextualGuidance({kind:'app_feature_first_use',householdId:input.householdId,organizerName,feature:input.feature});
+  return true;
+}
+
+export function emitLiaAppFeatureHelp(input:{householdId:string;organizerName:string;feature:LiaAppFeature;step:LiaAppFeatureHelpStep}):void{
+  emitLiaContextualGuidance({kind:'app_feature_help',householdId:input.householdId,organizerName:cleanName(input.organizerName),feature:input.feature,step:input.step});
+}
+
 export async function emitLiaFamilyMessageFirstUse(input:{householdId:string;organizerName:string}):Promise<boolean>{
   const organizerName=cleanName(input.organizerName);
   const key=`family_message:${input.householdId}:${organizerName.toLocaleLowerCase()||'organizer'}`;
@@ -65,6 +87,29 @@ export function liaContextualGuidancePrompt(event:LiaContextualGuidanceEvent,lan
   const fr=languageTag.toLowerCase().startsWith('fr');
   const who=event.organizerName.trim();
   const prefix=who?`${who}, `:'';
+  if(event.kind==='app_feature_first_use'){
+    const guide:Record<LiaAppFeature,string>={
+      planning:fr?'explique brièvement que Planning sert à choisir le repas, les participants et éventuellement qui cuisine, puis à enregistrer le tout.':'briefly explain that Planning is where meals, participants and the cook can be chosen and saved.',
+      shopping:fr?'explique brièvement que Courses permet d’ajouter les produits, de les cocher au magasin et que LIA peut aussi y envoyer des manquants quand on le lui demande.':'briefly explain that Shopping lets them add items, check them off in the store, and that LIA can add missing items when explicitly asked.',
+      recipes:fr?'explique brièvement que Recettes permet de chercher, enregistrer ou importer une recette, puis de lancer le mode cuisine mains libres avec LIA.':'briefly explain that Recipes lets them find, save or import recipes and start hands-free cooking with LIA.',
+      household:fr?'explique brièvement que Famille regroupe les personnes du foyer, leurs informations utiles et les réglages familiaux.':'briefly explain that Family contains household members, useful information and family settings.',
+      commander:fr?'explique brièvement que Commander sert à trouver les options autour du foyer, filtrer par envie et ouvrir le lieu choisi.':'briefly explain that Order helps find nearby options, filter by craving and open the chosen place.',
+      memos:fr?'explique brièvement que Mémos garde les idées ou décisions qu’on veut retrouver plus tard, et que LIA peut aussi y conserver une proposition quand on le lui demande.':'briefly explain that Memos keeps ideas or decisions for later and that LIA can save something there when asked.',
+    };
+    return fr?`${prefix}c’est la première fois que cette fonction est ouverte. ${guide[event.feature]} Une seule phrase ou deux, ton naturel, puis laisse la personne faire.`:`${prefix}this is the first time this feature is opened. ${guide[event.feature]} Keep it to one or two natural sentences, then let them continue.`;
+  }
+  if(event.kind==='app_feature_help'){
+    const help:Record<LiaAppFeatureHelpStep,string>={
+      choose_meal:fr?'la personne a ouvert un repas mais n’a encore choisi ni recette ni plat. Dis seulement de choisir une recette ou d’écrire le plat, puis attends.':'the person opened a meal but has not chosen a recipe or dish yet. Only tell them to choose a recipe or type the dish, then wait.',
+      add_item:fr?'la liste de courses est vide et la personne n’a encore rien saisi. Indique simplement le champ d’ajout, puis tais-toi.':'the shopping list is empty and nothing has been entered. Simply point out the add field, then stop.',
+      confirm_item:fr?'un produit est saisi dans Courses mais n’a pas été ajouté. Dis seulement d’appuyer sur le bouton + pour l’ajouter.':'an item is typed in Shopping but has not been added. Only tell them to press + to add it.',
+      write_memo:fr?'la personne a ouvert la création d’un Mémo mais n’a pas encore donné de titre. Dis seulement de commencer par le titre.':'the person opened a new Memo but has not entered a title. Only tell them to start with the title.',
+      complete_memo:fr?'le titre du Mémo est rempli mais pas son contenu. Dis seulement d’ajouter ce qu’elle veut retenir, puis d’enregistrer.':'the Memo title is filled but its content is empty. Only tell them to add what they want to remember, then save.',
+      choose_location:fr?'Commander attend le choix entre l’adresse du foyer et la position actuelle. Explique uniquement ce choix.':'Order is waiting for a choice between the home address and current location. Explain only that choice.',
+      set_address:fr?'Commander n’a pas d’adresse utilisable. Dis seulement d’indiquer l’adresse de livraison pour afficher les options proches.':'Order has no usable address. Only ask them to set the delivery address to show nearby options.',
+    };
+    return fr?`${prefix}${help[event.step]} Une étape à la fois, ton agréable, et ne répète pas ce qui a déjà été fait.`:`${prefix}${help[event.step]} One step at a time, friendly tone, and do not repeat completed steps.`;
+  }
   if(event.kind==='family_message_first_use'){
     return fr
       ?`${prefix}c’est la première utilisation de Message famille. Explique en une seule intervention courte : choisir les options du repas, sélectionner les personnes à qui demander, envoyer, puis laisser LIA suivre les réponses et aider pour la suite. Ton chaleureux, naturel, pas de tutoriel récité. Ne répète pas cette explication plus tard sauf si la personne semble bloquée.`
@@ -130,6 +175,29 @@ export function liaContextualGuidanceFallback(event:LiaContextualGuidanceEvent,l
   const fr=languageTag.toLowerCase().startsWith('fr');
   const who=event.organizerName.trim();
   const prefix=who?`${who}, `:'';
+  if(event.kind==='app_feature_first_use'){
+    const copy:Record<LiaAppFeature,string>={
+      planning:fr?'ici tu choisis le repas et les personnes concernées, puis tu enregistres.':'here you choose the meal and the people involved, then save it.',
+      shopping:fr?'ici tu ajoutes ce qu’il faut acheter et tu coches les produits au fur et à mesure.':'here you add what to buy and check items off as you go.',
+      recipes:fr?'ici tu retrouves tes recettes, tu peux en ajouter et lancer le mode cuisine avec moi.':'here you find your recipes, add new ones and start cooking mode with me.',
+      household:fr?'ici tu retrouves les personnes du foyer et les informations familiales utiles.':'here you find household members and useful family information.',
+      commander:fr?'ici tu choisis ce qui te fait envie et je t’aide à trouver les options autour de chez toi.':'here you choose what you feel like and I help you find nearby options.',
+      memos:fr?'ici tu gardes ce que tu veux retrouver plus tard.':'here you keep things you want to find again later.',
+    };
+    return `${prefix}${copy[event.feature]}`;
+  }
+  if(event.kind==='app_feature_help'){
+    const copy:Record<LiaAppFeatureHelpStep,string>={
+      choose_meal:fr?'choisis une recette ou écris simplement le plat que tu veux prévoir.':'choose a recipe or simply type the dish you want to plan.',
+      add_item:fr?'écris le premier produit dans le champ d’ajout.':'type the first item in the add field.',
+      confirm_item:fr?'ton produit est prêt : appuie sur + pour l’ajouter.':'your item is ready: press + to add it.',
+      write_memo:fr?'commence par donner un titre à ton Mémo.':'start by giving your Memo a title.',
+      complete_memo:fr?'ajoute maintenant ce que tu veux retenir, puis enregistre.':'now add what you want to remember, then save.',
+      choose_location:fr?'choisis si tu veux chercher autour de la maison ou autour de ta position actuelle.':'choose whether to search around home or your current location.',
+      set_address:fr?'indique l’adresse de livraison et je pourrai afficher les options proches.':'set the delivery address and I can show nearby options.',
+    };
+    return `${prefix}${copy[event.step]}`;
+  }
   if(event.kind==='family_message_first_use'){
     return fr
       ?`${prefix}dans Message famille, choisis les options du repas et les personnes à qui tu veux demander. Envoie, et ensuite je m’occupe de suivre les réponses avec toi.`
