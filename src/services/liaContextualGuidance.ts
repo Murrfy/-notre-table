@@ -1,11 +1,11 @@
 import {isRecord,readStoredJson,writeStoredJson} from '../lib/storage';
 import type {MealType} from '../types';
-import type {LightDesire} from './lightParticipation';
+import type {LightDesire,LightHomeStyle} from './lightParticipation';
 
 export type LiaContextualGuidanceEvent=
   |{kind:'family_message_first_use';householdId:string;organizerName:string}
   |{kind:'family_message_help';householdId:string;organizerName:string;step:'prepare'|'share'}
-  |{kind:'family_choice_changed';householdId:string;organizerName:string;memberName:string;mealDate:string;mealType:MealType;desire:LightDesire}
+  |{kind:'family_choice_changed';householdId:string;organizerName:string;memberName:string;mealDate:string;mealType:MealType;questionId:string;desire:LightDesire;homeStyle:LightHomeStyle|null}
   |{kind:'family_take_charge_changed';householdId:string;organizerName:string;memberName:string;mealDate:string;mealType:MealType;active:boolean}
   |{kind:'profile_enrichment_question';householdId:string;organizerName:string;subjectName:string;fact:'birthday'|'favorite_meal'}
   |{kind:'birthday_awareness';householdId:string;organizerName:string;subjectName:string;daysUntil:number;favoriteMeal:string|null};
@@ -96,9 +96,15 @@ export function liaContextualGuidancePrompt(event:LiaContextualGuidanceEvent,lan
   if(event.kind==='family_choice_changed'){
     const label:Record<LightDesire,string>={home:'Plat fait maison',pizza:'Pizza',pasta:'Pâtes',sushi:'Sushi',chinese:'Chinois'};
     if(event.desire==='home'){
+      if(event.homeStyle){
+        const style=event.homeStyle==='easy'?(fr?'facile et efficace':'easy and effective'):(fr?'un peu plus spectaculaire':'a little more impressive');
+        return fr
+          ?`${prefix}${event.memberName} vient aussi de choisir « Plat fait maison ». Pour ce repas, la cliente a déjà choisi une direction ${style}. Ne repose surtout pas la question « facile ou épater la galerie ». Tu peux simplement constater ce nouveau choix si c’est utile, sinon reste silencieuse.`
+          :`${prefix}${event.memberName} also chose “Home-cooked”. The organizer already chose a ${style} direction for this meal. Do not ask “easy or impress everyone?” again. Briefly acknowledge only if useful; otherwise stay silent.`;
+      }
       return fr
-        ?`${prefix}tu viens de voir une vraie réponse du tableau famille : ${event.memberName} a choisi « Plat fait maison » pour ce repas. Réagis naturellement et avec ton répondant : dis que tu l’as vu, demande si on veut faire facile ou épater la galerie, puis propose d’attendre les autres avant de se lancer ensemble, ou de s’y mettre plus tard. Reste court et ne prétends pas que toute la famille a déjà décidé.`
-        :`${prefix}you just received a real family-board reply: ${event.memberName} chose “Home-cooked” for this meal. React naturally: say you noticed it, ask whether to keep it easy or impress everyone, then suggest waiting for the others before starting together, or doing it later. Keep it short and do not imply the whole family has decided.`;
+        ?`${prefix}tu viens de voir une vraie réponse du tableau famille : ${event.memberName} a choisi « Plat fait maison » pour ce repas. Réagis naturellement et avec ton répondant : dis que tu l’as vu, demande si on veut faire facile ou épater la galerie, puis propose d’attendre les autres avant de se lancer ensemble, ou de s’y mettre plus tard. Reste court et ne prétends pas que toute la famille a déjà décidé. Cette question attend une vraie réponse : facile, épater la galerie, ou plus tard.`
+        :`${prefix}you just received a real family-board reply: ${event.memberName} chose “Home-cooked” for this meal. React naturally: say you noticed it, ask whether to keep it easy or impress everyone, then suggest waiting for the others before starting together, or doing it later. Keep it short and do not imply the whole family has decided. This question expects a real answer: easy, impress everyone, or later.`;
     }
     return fr
       ?`${prefix}le tableau vient d’enregistrer le choix réel de ${event.memberName} : « ${label[event.desire]} ». N’interviens que si cela aide vraiment l’organisation ; sinon reste silencieuse.`
@@ -158,14 +164,20 @@ export function liaContextualGuidanceFallback(event:LiaContextualGuidanceEvent,l
   }
   if(event.kind==='family_choice_changed'){
     if(event.desire!=='home')return'';
+    if(event.homeStyle){
+      const style=event.homeStyle==='easy'?(fr?'facile':'easy'):(fr?'on épate la galerie':'impress everyone');
+      return fr
+        ?`${event.memberName} rejoint le camp du fait maison. Je garde notre direction : ${style}.`
+        :`${event.memberName} joined the home-cooked camp. I’ll keep our direction: ${style}.`;
+    }
     const self=samePerson(event.organizerName,event.memberName);
     return fr
       ?self
         ?`J’ai vu que tu as choisi Plat fait maison 😏. Tu veux qu’on fasse facile ou qu’on épate la galerie ? On peut attendre de voir ce que veulent les autres et se lancer après, ou plus tard si tu préfères.`
-        :`J’ai vu que ${event.memberName} a choisi Plat fait maison 😏. On attend de voir ce que veulent les autres, et ensuite on se lance. Ou plus tard si tu préfères.`
+        :`J’ai vu que ${event.memberName} a choisi Plat fait maison 😏. Tu veux qu’on fasse facile ou qu’on épate la galerie ? On peut attendre les autres et se lancer après, ou plus tard si tu préfères.`
       :self
         ?`I saw you chose Home-cooked 😏. Do you want to keep it easy or impress everyone? We can wait for the others and start together later if you prefer.`
-        :`I saw ${event.memberName} chose Home-cooked 😏. We can wait for the others, then get started together, or do it later if you prefer.`;
+        :`I saw ${event.memberName} chose Home-cooked 😏. Do you want to keep it easy or impress everyone? We can wait for the others, then get started together, or do it later if you prefer.`;
   }
   if(event.active){
     const joke=stableJoke(event);
