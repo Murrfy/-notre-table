@@ -39,6 +39,7 @@ import {clearLiaCalendarClarification,liaCalendarClarificationPending} from '../
 import {liaCookingSessionClarificationPending,liaCookingSessionFollowupActive} from '../services/liaCookingSession';
 import {liaProfileEnrichmentClarificationPending} from '../services/liaProfileEnrichment';
 import {addLiaContextualGuidanceListener,liaContextualGuidanceFallback,liaContextualGuidancePrompt} from '../services/liaContextualGuidance';
+import {beginLiaHomeMealStyleClarification,clearLiaHomeMealStyleClarification,liaHomeMealStyleClarificationPending} from '../services/liaHomeMealStyle';
 
 export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommander,onOpenMemos,onOpenCalendar,onPantryVisionRequested,onPantryRecipeRequested,onNavigationRequested,commanderContextLabel='',onCommanderCommand,householdId,weekStart,demo=false,primaryAssistant=true}:{earlyReturnMessage?:string;onEarlyReturnDismiss?:()=>void;onOpenCommander?:()=>void;onOpenMemos?:()=>void;onOpenCalendar?:()=>void;onPantryVisionRequested?:()=>void;onPantryRecipeRequested?:(recipeId:string,startCooking:boolean)=>void;onNavigationRequested?:(destination:string)=>void;commanderContextLabel?:string;onCommanderCommand?:(command:string)=>boolean;householdId?:string;weekStart?:string;demo?:boolean;primaryAssistant?:boolean}={}){
   const locale=useLocale();
@@ -82,7 +83,7 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
   const handleForegroundAssistantTranscript=useCallback((rawText:string)=>{
     const text=rawText.trim();
     if(!text||!enabled||!primaryAssistant)return;
-    const clarificationPending=phoneNameRetryRef.current>0||liaPhoneCallClarificationPending()||liaMessageClarificationPending()||liaReminderClarificationPending()||liaTimerClarificationPending()||liaDirectAppActionClarificationPending()||liaShoppingShortageFollowupActive()||liaMusicClarificationPending()||liaNavigationClarificationPending()||liaCalendarClarificationPending()||liaCookingSessionClarificationPending()||liaCookingSessionFollowupActive()||liaProfileEnrichmentClarificationPending();
+    const clarificationPending=phoneNameRetryRef.current>0||liaPhoneCallClarificationPending()||liaMessageClarificationPending()||liaReminderClarificationPending()||liaTimerClarificationPending()||liaDirectAppActionClarificationPending()||liaShoppingShortageFollowupActive()||liaMusicClarificationPending()||liaNavigationClarificationPending()||liaCalendarClarificationPending()||liaCookingSessionClarificationPending()||liaCookingSessionFollowupActive()||liaProfileEnrichmentClarificationPending()||liaHomeMealStyleClarificationPending();
     const directlyAddressed=detectLiaDirectAddress(text,directNames).addressed;
     if(!clarificationPending&&!directlyAddressed)return;
 
@@ -235,6 +236,17 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
     return addLiaContextualGuidanceListener(event=>{
       if(!enabled||!appActive)return;
       if(event.kind==='family_choice_changed'&&event.desire!=='home')return;
+      if(event.kind==='family_take_charge_changed'&&event.active)clearLiaHomeMealStyleClarification();
+      if(event.kind==='family_choice_changed'&&event.desire==='home'&&!event.homeStyle){
+        beginLiaHomeMealStyleClarification({
+          questionId:event.questionId,
+          householdId:event.householdId,
+          mealDate:event.mealDate,
+          mealType:event.mealType,
+          organizerName:event.organizerName,
+          demo,
+        });
+      }
       const generation=++tableResponseGenerationRef.current;
       const fallback=liaContextualGuidanceFallback(event,locale.languageTag);
       const prompt=liaContextualGuidancePrompt(event,locale.languageTag);
