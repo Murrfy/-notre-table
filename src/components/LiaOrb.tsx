@@ -47,7 +47,7 @@ import {applyPreferredSpokenNameToSpeech,resolvePreferredSpokenName,type LiaName
 import {evaluateLiaConversationBoundary} from '../services/liaConversationBoundaries';
 import {maybeAskLiaSpeakerIdentity,resolvePendingLiaSpeakerIdentity} from '../services/liaSpeakerIdentificationFlow';
 import {fetchLiaSpeakerRoster} from '../services/liaSpeakerRosterResolution';
-import {knownLiaSpeaker,pendingLiaSpeakerIdentification,rememberLiaSpeakerIdentity,touchLiaSpeakerTrack} from '../services/liaSpeakerIdentitySession';
+import {forgetLiaSpeakerTrack,knownLiaSpeaker,pendingLiaSpeakerIdentification,rememberLiaSpeakerIdentity,touchLiaSpeakerTrack} from '../services/liaSpeakerIdentitySession';
 
 export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommander,onOpenMemos,onOpenCalendar,onPantryVisionRequested,onPantryRecipeRequested,onNavigationRequested,commanderContextLabel='',onCommanderCommand,householdId,weekStart,demo=false,primaryAssistant=true}:{earlyReturnMessage?:string;onEarlyReturnDismiss?:()=>void;onOpenCommander?:()=>void;onOpenMemos?:()=>void;onOpenCalendar?:()=>void;onPantryVisionRequested?:()=>void;onPantryRecipeRequested?:(recipeId:string,startCooking:boolean)=>void;onNavigationRequested?:(destination:string)=>void;commanderContextLabel?:string;onCommanderCommand?:(command:string)=>boolean;householdId?:string;weekStart?:string;demo?:boolean;primaryAssistant?:boolean}={}){
   const locale=useLocale();
@@ -485,6 +485,10 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
           void (async()=>{
             const known=await knownLiaSpeaker(turn.speakerTrackId);
             if(!known)return;
+            if(turn.overlappingSpeech||turn.speechConfidence<.9){
+              await forgetLiaSpeakerTrack(turn.speakerTrackId);
+              return;
+            }
             runtime.confirmSpeaker(turn.speakerTrackId,known.subjectId);
             await touchLiaSpeakerTrack(turn.speakerTrackId);
           })();
