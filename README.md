@@ -1,5 +1,9 @@
-# Notre Table — V0.313
+# Notre Table — V0.314
 
+
+## V0.314 — Famille et invités
+
+LIA sépare désormais les interactions sociales : un membre de la famille identifié reçoit un salut court avec son prénom ; une personne extérieure inconnue peut être gardée comme invitée de session ; une connaissance extérieure déjà rencontrée dispose d'une mémoire minimale dédiée, distincte de la mémoire familiale.
 
 ## V0.313 — Continuité des clarifications d'identité
 
