@@ -6596,6 +6596,15 @@ test('V0.314 family and guest social greetings stay separate',()=>{
 });
 
 
+test('V0.315 known outside guests get returning greetings without entering family roster',()=>{
+ const flow=fs.readFileSync(path.join(root,'src/services/liaSpeakerIdentificationFlow.ts'),'utf8');
+ assert.ok(flow.includes('knownLiaGuestByName(name)'));
+ assert.ok(flow.includes('liaReturningGuestGreeting(knownGuest.displayName'));
+ assert.ok(flow.includes('rememberLiaKnownGuest({displayName:knownGuest.displayName'));
+ assert.ok(flow.includes("kind:'session_guest'"));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
