@@ -1,3 +1,11 @@
+## V0.303 — Prénom naturel et prononciation préférée
+
+- Le prénom peut être utilisé à l'ouverture d'un nouvel échange, sans répétition automatique pendant la conversation.
+- Le prénom affiché et sa prononciation préférée sont deux données distinctes.
+- Une correction de prononciation confirmée devient un fait relationnel `name_pronunciation` rattaché à la personne.
+- Une nouvelle correction remplace la précédente via l'identité stable sujet + clé ; elle ne modifie pas le nom affiché.
+- Si aucune correction fiable n'existe, LIA utilise le premier prénom issu du profil et n'invente aucune prononciation personnalisée.
+
 ## V0.302 — Continuité des recherches interrompues
 
 - Une recherche explicitement demandée puis interrompue devient un open loop existant de type follow_up avec action search.
