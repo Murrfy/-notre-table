@@ -45,6 +45,9 @@ import {getMyDisplayName} from '../services/profiles';
 import {listLiaRelationshipFacts} from '../services/liaRelationshipMemory';
 import {applyPreferredSpokenNameToSpeech,resolvePreferredSpokenName,type LiaNameVoicePreference} from '../services/liaNameVoicePreference';
 import {evaluateLiaConversationBoundary} from '../services/liaConversationBoundaries';
+import {maybeAskLiaSpeakerIdentity,resolvePendingLiaSpeakerIdentity} from '../services/liaSpeakerIdentificationFlow';
+import {fetchLiaSpeakerRoster} from '../services/liaSpeakerRosterResolution';
+import {pendingLiaSpeakerIdentification} from '../services/liaSpeakerIdentitySession';
 
 export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommander,onOpenMemos,onOpenCalendar,onPantryVisionRequested,onPantryRecipeRequested,onNavigationRequested,commanderContextLabel='',onCommanderCommand,householdId,weekStart,demo=false,primaryAssistant=true}:{earlyReturnMessage?:string;onEarlyReturnDismiss?:()=>void;onOpenCommander?:()=>void;onOpenMemos?:()=>void;onOpenCalendar?:()=>void;onPantryVisionRequested?:()=>void;onPantryRecipeRequested?:(recipeId:string,startCooking:boolean)=>void;onNavigationRequested?:(destination:string)=>void;commanderContextLabel?:string;onCommanderCommand?:(command:string)=>boolean;householdId?:string;weekStart?:string;demo?:boolean;primaryAssistant?:boolean}={}){
   const locale=useLocale();
@@ -459,6 +462,36 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
       return()=>{cancelled=true;};
     }
     void startLiaTableLiveCoordinator({
+      onEveryTurn:(turn,runtime)=>{
+        if(!householdId)return false;
+        const pending=pendingLiaSpeakerIdentification();
+        if(pending){
+          if(pending.trackId!==turn.speakerTrackId)return false;
+          void (async()=>{
+            const roster=await fetchLiaSpeakerRoster(householdId);
+            const resolved=resolvePendingLiaSpeakerIdentity({text:turn.text,roster,languageTag:locale.languageTag});
+            if(resolved.kind==='confirmed'){
+              runtime.confirmSpeaker(resolved.trackId,resolved.memberId);
+            }
+            if(resolved.kind!=='none'){
+              await speakLia(resolved.spokenReply,locale.languageTag,currentVoice?.identifier,{onStart:()=>setVoiceSpeaking(true),onDone:()=>setVoiceSpeaking(false),onStopped:()=>setVoiceSpeaking(false),onError:()=>setVoiceSpeaking(false)});
+            }
+          })();
+          return true;
+        }
+        const action=maybeAskLiaSpeakerIdentity({
+          trackId:turn.speakerTrackId,
+          memberId:turn.memberId,
+          identityConfidence:turn.identityConfidence,
+          context:mode==='cooking'?'cooking':'table',
+          languageTag:locale.languageTag,
+        });
+        if(action.kind==='ask_identity'){
+          void speakLia(action.spokenReply,locale.languageTag,currentVoice?.identifier,{onStart:()=>setVoiceSpeaking(true),onDone:()=>setVoiceSpeaking(false),onStopped:()=>setVoiceSpeaking(false),onError:()=>setVoiceSpeaking(false)});
+          return true;
+        }
+        return false;
+      },
       directCallForTurn:(turn)=>({
         directlyAddressed:phoneNameRetryRef.current>0||liaPhoneCallClarificationPending()||liaMessageClarificationPending()||liaReminderClarificationPending()||liaTimerClarificationPending()||liaDirectAppActionClarificationPending()||liaMusicClarificationPending()||liaNavigationClarificationPending()||detectLiaDirectAddress(turn.text,directNames).addressed,
         speechUnderstood:turn.speechConfidence>=.8,
