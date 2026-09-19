@@ -82,3 +82,46 @@ export function applyPreferredSpokenNameToSpeech(input:{
   const escaped=displayFirst.replace(/[.*+?^$()|[\]\\]/g,'\\$&');
   return text.replace(new RegExp(\`\\b\${escaped}\\b\`,'gu'),spoken);
 }
+
+
+export type LiaFamilyNameCandidate={
+  memberId:string;
+  displayName:string;
+  relationLabel?:string|null;
+};
+
+export function resolveFamilySpokenNames(input:{
+  members:ReadonlyArray<LiaFamilyNameCandidate>;
+  relationshipFacts?:ReadonlyArray<LiaRelationshipFact>;
+}):Array<LiaNameVoicePreference&{memberId:string;relationLabel:string|null}>{
+  return input.members.map(member=>{
+    const resolved=resolvePreferredSpokenName({
+      displayName:member.displayName,
+      subjectLabel:member.memberId,
+      relationshipFacts:input.relationshipFacts,
+    });
+    return resolved?{...resolved,memberId:member.memberId,relationLabel:member.relationLabel??null}:null;
+  }).filter((value):value is LiaNameVoicePreference&{memberId:string;relationLabel:string|null}=>value!==null);
+}
+
+export function familyNamePronunciationCorrectionFact(input:{
+  memberId:string;
+  spokenName:string;
+}){
+  return namePronunciationCorrectionFact({subjectLabel:clean(input.memberId),spokenName:input.spokenName});
+}
+
+export function familyPronunciationQuestion(input:{
+  displayName:string;
+  relationLabel?:string|null;
+  languageTag:string;
+}):string{
+  const name=firstNameFromDisplayName(input.displayName);
+  const relation=clean(input.relationLabel??'');
+  if(input.languageTag.toLowerCase().startsWith('fr')){
+    return relation
+      ?\`Je veux être sûre de bien prononcer le prénom de \${relation}, \${name}. Tu me le prononces ?\`
+      :\`Je veux être sûre de bien prononcer \${name}. Tu me le prononces ?\`;
+  }
+  return \`I want to make sure I pronounce \${name} correctly. How do you pronounce it?\`;
+}
