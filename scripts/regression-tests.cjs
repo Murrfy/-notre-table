@@ -6401,6 +6401,14 @@ test('V0.303 user name is an opening-address option, not a repeated conversation
 });
 
 
+test('V0.303 asks pronunciation only when genuinely uncertain and not already known',()=>{
+  const source=fs.readFileSync(path.join(root,'src/services/liaNameVoicePreference.ts'),'utf8');
+  assert.ok(source.includes("pronunciationConfidence==='uncertain'"));
+  assert.ok(source.includes('input.hasConfirmedPronunciation||input.alreadyAsked'));
+  assert.ok(source.includes('Je veux être sûre de bien dire ton prénom'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
