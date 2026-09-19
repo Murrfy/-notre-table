@@ -37,6 +37,7 @@ import { ScreenHeader } from '../components/ScreenHeader';
 import { EmptyState } from '../components/EmptyState';
 import { fetchRecipeTranslation, RecipeTranslationView, translatedIngredients } from '../services/recipeTranslations';
 import { classifyPremiumGateError } from '../lib/premiumGate';
+import {emitLiaFeatureFirstUse,emitLiaFeatureHelp} from '../services/liaContextualGuidance';
 
 const demo: Recipe[] = [
   {
@@ -136,6 +137,7 @@ const unitCodes = new Set<UnitCode>([
 export function RecipesScreen({
   householdId,
   householdName,
+  liaOrganizerName = '',
   demoMode = false,
   weekStart,
   access,
@@ -146,6 +148,7 @@ export function RecipesScreen({
 }: {
   householdId: string;
   householdName: string;
+  liaOrganizerName?: string;
   demoMode?: boolean;
   weekStart: Date;
   access: AccessState;
@@ -184,6 +187,10 @@ export function RecipesScreen({
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [selected, setSelected] = useState<Recipe | null>(null);
   const [translation,setTranslation]=useState<RecipeTranslationView|null>(null);
+  useEffect(()=>{
+    const timer=setTimeout(()=>{void emitLiaFeatureFirstUse({householdId,organizerName:liaOrganizerName,feature:'recipes'});},4_500);
+    return()=>clearTimeout(timer);
+  },[householdId,liaOrganizerName]);
 
   const [editor, setEditor] = useState(false);
   const [title, setTitle] = useState('');
@@ -297,6 +304,11 @@ export function RecipesScreen({
       );
     });
   }, [recipes, query, timeFilter, difficultyFilter, tagFilter, favoritesOnly, locale.languageTag]);
+  useEffect(()=>{
+    if(loading||!query.trim()||filtered.length>0)return;
+    const timer=setTimeout(()=>{emitLiaFeatureHelp({householdId,organizerName:liaOrganizerName,feature:'recipes',step:'search_no_result'});},15_000);
+    return()=>clearTimeout(timer);
+  },[loading,query,filtered.length,householdId,liaOrganizerName]);
 
   const activeFilterCount =
     (timeFilter !== 'all' ? 1 : 0) +
