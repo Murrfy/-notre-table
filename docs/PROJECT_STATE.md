@@ -1,3 +1,17 @@
+## V0.298 — Guidage contextuel généralisé
+
+- Première ouverture d’une grande fonction : explication courte de Planning, Courses, Recettes, Famille, Commander ou Mémos.
+- La présentation est mémorisée par fonction afin de ne pas être répétée mécaniquement.
+- Quand le prénom réel de la cliente est disponible, LIA attend de le connaître avant cette première intervention.
+- Planning : aide seulement si un repas est ouvert sans recette ni plat saisi.
+- Courses : aide seulement si la liste est vide, puis distingue « rien saisi » de « produit saisi mais pas encore ajouté ».
+- Mémos : aide d’abord sur le titre, puis sur le contenu, uniquement si la création reste incomplète.
+- Commander : aide uniquement sur le choix de localisation ou l’adresse manquante.
+- Toute progression réelle réinitialise le délai d’aide ; même étape déjà aidée = pas de répétition pendant la session.
+- Recettes et Famille : première explication uniquement tant qu’un signal de blocage suffisamment fiable n’est pas disponible.
+- Le formulaire d’inscription reste court ; l’enrichissement progressif anniversaire / plat préféré continue sans changement.
+- Même LIA, même voix, même pipeline vocal, aucun tutoriel ou assistant parallèle.
+
 ## V0.297 — Le choix « facile / épater » pilote réellement le repas
 
 - Après un vrai choix « Plat fait maison », LIA peut demander « facile ou épater la galerie ? » et attendre une réponse réelle.
