@@ -3,6 +3,7 @@ import {isRecord,readStoredJson,writeStoredJson} from '../lib/storage';
 import {emitLiaContextualGuidance} from './liaContextualGuidance';
 import {parseLiaFavoriteMealAnswer} from '../lib/liaProfileFacts';
 import {listLiaRelationshipFacts,saveLiaRelationshipFact} from './liaRelationshipMemory';
+import {liaPrivateCuriosityMayPrompt} from './liaPrivateCuriosityContext';
 
 const LEDGER_KEY='@notre-table/lia-profile-enrichment-v1';
 const GLOBAL_GAP_MS=48*60*60*1000;
@@ -102,7 +103,7 @@ export async function maybeEmitLiaProfileEnrichmentQuestion(input:{
   now?:Date;
   demo?:boolean;
 }):Promise<boolean>{
-  if(input.demo||pending||!input.householdId)return false;
+  if(input.demo||pending||!input.householdId||!liaPrivateCuriosityMayPrompt())return false;
   const now=input.now??new Date();
   const ledger=await readStoredJson<Ledger>(LEDGER_KEY,{lastPromptAtIso:null,targets:{}},validLedger);
   if(ledger.lastPromptAtIso&&now.getTime()-ms(ledger.lastPromptAtIso)<GLOBAL_GAP_MS)return false;
