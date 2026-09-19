@@ -25,12 +25,13 @@ export function observeLiaSpeaker(input:{
   turn:LiaResolvedTableTurn;
   displayName?:string|null;
   now?:number;
+  context?:'table'|'cooking';
 }):LiaPresenceSession{
   const now=input.now??Date.now();
   const known=liaSpeakerIdentityPolicy({
     memberId:input.turn.memberId,
     identityConfidence:input.turn.identityConfidence,
-    context:'table',
+    context:input.context??'table',
   }).known;
   const previous=input.session.speakers[input.turn.speakerTrackId];
   return{
