@@ -6208,6 +6208,41 @@ test('V0.297 meal direction is a real family-question fact, resets on reconfigur
 });
 
 
+test('V0.298 contextual guidance generalizes first-use help without duplicating the assistant',()=>{
+  const source=fs.readFileSync(path.join(root,'src/services/liaContextualGuidance.ts'),'utf8');
+  assert.ok(source.includes("export type LiaAppFeature='planning'|'shopping'|'recipes'|'household'|'commander'|'memos'"));
+  assert.ok(source.includes("kind:'app_feature_first_use'"));
+  assert.ok(source.includes("kind:'app_feature_help'"));
+  assert.ok(source.includes("const key=\`feature:\${input.householdId}:\${input.feature}\`"));
+  assert.ok(source.includes("c’est la première fois que cette fonction est ouverte"));
+  assert.ok(!source.includes('second assistant'));
+});
+
+test('V0.298 stuck-step guidance is progress-driven and bounded to one exact app step',()=>{
+  const hook=fs.readFileSync(path.join(root,'src/hooks/useLiaFeatureHelp.ts'),'utf8');
+  assert.ok(hook.includes('progressKey:string'));
+  assert.ok(hook.includes('setTimeout'));
+  assert.ok(hook.includes('Math.max(12_000,input.delayMs??35_000)'));
+  assert.ok(hook.includes('emitLiaAppFeatureHelp'));
+  const planning=fs.readFileSync(path.join(root,'src/screens/PlanningScreen.tsx'),'utf8');
+  const shopping=fs.readFileSync(path.join(root,'src/screens/ShoppingScreen.tsx'),'utf8');
+  const memos=fs.readFileSync(path.join(root,'src/screens/MemosScreen.tsx'),'utf8');
+  const commander=fs.readFileSync(path.join(root,'src/screens/CommanderScreen.tsx'),'utf8');
+  assert.ok(planning.includes("feature:'planning'"));
+  assert.ok(shopping.includes("feature:'shopping'"));
+  assert.ok(memos.includes("feature:'memos'"));
+  assert.ok(commander.includes("feature:'commander'"));
+});
+
+test('V0.298 first-use guidance waits for the real organizer name and covers the main app surfaces',()=>{
+  const main=fs.readFileSync(path.join(root,'src/screens/MainScreen.tsx'),'utf8');
+  assert.ok(main.includes("if(!demo&&!organizerName.trim())return;"));
+  assert.ok(main.includes("tab==='planning'?'planning':tab==='recipes'?'recipes':tab==='shopping'?'shopping':'household'"));
+  assert.ok(main.includes("liaSurface!=='commander'&&liaSurface!=='memos'"));
+  assert.ok(main.includes('organizerName={organizerName}'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
