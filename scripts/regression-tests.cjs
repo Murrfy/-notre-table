@@ -6523,6 +6523,22 @@ test('V0.308 pending identity answer resolves, clarifies, or stays unattributed'
 });
 
 
+test('V0.309 live coordinator lets identity flow intercept every speaker turn',()=>{
+ const source=fs.readFileSync(path.join(root,'src/services/liaTableLiveCoordinator.ts'),'utf8');
+ assert.ok(source.includes('onEveryTurn?'));
+ assert.ok(source.includes("input.onEveryTurn?.(turn,runtime)===true"));
+});
+
+test('V0.309 LiaOrb asks, resolves and binds unknown live speakers before normal replies',()=>{
+ const source=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
+ assert.ok(source.includes('pendingLiaSpeakerIdentification()'));
+ assert.ok(source.includes('fetchLiaSpeakerRoster(householdId)'));
+ assert.ok(source.includes('resolvePendingLiaSpeakerIdentity'));
+ assert.ok(source.includes('runtime.confirmSpeaker(resolved.trackId,resolved.memberId)'));
+ assert.ok(source.includes('maybeAskLiaSpeakerIdentity'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
