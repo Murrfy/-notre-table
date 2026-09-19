@@ -102,3 +102,38 @@ export function liaBirthdayOrganizerReminder(input:{name:string;languageTag:stri
  return list[Math.abs(input.variantSeed??0)%list.length];
 }
 
+
+
+export function liaBirthdayOrganizerReminder(input:{name:string;languageTag:string;daysUntil:number;variantSeed?:number}):string{
+ const n=clean(input.name);
+ const today=input.daysUntil<=0;
+ const sets={
+  fr:today?[
+   `Petit rappel : aujourd'hui, c'est l'anniversaire de ${n}.`,
+   `N'oublie pas : ${n} fête son anniversaire aujourd'hui.`,
+   `Aujourd'hui, pense à ${n} : c'est son anniversaire.`,
+   `Au fait, anniversaire de ${n} aujourd'hui !`,
+   `Je te le glisse avant que tu oublies : c'est l'anniversaire de ${n} aujourd'hui.`,
+   `Mission du jour : ne pas oublier l'anniversaire de ${n} !`,
+  ]:[
+   `Petit rappel : l'anniversaire de ${n} arrive dans ${input.daysUntil} jour${input.daysUntil>1?'s':''}.`,
+   `Dans ${input.daysUntil} jour${input.daysUntil>1?'s':''}, c'est l'anniversaire de ${n}.`,
+   `Pense à ${n} : son anniversaire approche, dans ${input.daysUntil} jour${input.daysUntil>1?'s':''}.`,
+   `Je te préviens à l'avance : anniversaire de ${n} dans ${input.daysUntil} jour${input.daysUntil>1?'s':''}.`,
+   `${n} va bientôt souffler ses bougies : encore ${input.daysUntil} jour${input.daysUntil>1?'s':''}.`,
+   `Note mentale de LIA : dans ${input.daysUntil} jour${input.daysUntil>1?'s':''}, anniversaire de ${n}.`,
+  ],
+  en:today?[
+   `Quick reminder: it's ${n}'s birthday today.`,`Don't forget: ${n}'s birthday is today.`,`Think of ${n} today — it's their birthday.`,`By the way, it's ${n}'s birthday today!`,`Just so it doesn't slip your mind: ${n}'s birthday is today.`,`Today's mission: don't forget ${n}'s birthday!`,
+  ]:[
+   `Quick reminder: ${n}'s birthday is in ${input.daysUntil} day${input.daysUntil===1?'':'s'}.`,`${n}'s birthday is in ${input.daysUntil} day${input.daysUntil===1?'':'s'}.`,`Keep ${n} in mind: their birthday is coming up in ${input.daysUntil} day${input.daysUntil===1?'':'s'}.`,`A heads-up: ${n}'s birthday is in ${input.daysUntil} day${input.daysUntil===1?'':'s'}.`,`${n} will be blowing out candles soon — ${input.daysUntil} day${input.daysUntil===1?'':'s'} to go.`,`LIA note: ${n}'s birthday is in ${input.daysUntil} day${input.daysUntil===1?'':'s'}.`,
+  ],
+  he:today?[
+   `תזכורת קטנה: היום יום ההולדת של ${n}.`,`לא לשכוח: היום יום ההולדת של ${n}.`,`היום תחשוב על ${n}: זה יום ההולדת שלו.`,`אגב, היום יום ההולדת של ${n}!`,`רק שלא יתפספס: היום יום ההולדת של ${n}.`,`המשימה להיום: לא לשכוח את יום ההולדת של ${n}!`,
+  ]:[
+   `תזכורת קטנה: יום ההולדת של ${n} בעוד ${input.daysUntil} ימים.`,`בעוד ${input.daysUntil} ימים יום ההולדת של ${n}.`,`כדאי לזכור את ${n}: יום ההולדת מתקרב בעוד ${input.daysUntil} ימים.`,`מודיעה מראש: יום ההולדת של ${n} בעוד ${input.daysUntil} ימים.`,`${n} עוד מעט מכבה נרות: נשארו ${input.daysUntil} ימים.`,`פתק קטן מ-LIA: בעוד ${input.daysUntil} ימים יום ההולדת של ${n}.`,
+  ],
+ };
+ const list=sets[language(input.languageTag)];
+ return list[Math.abs(input.variantSeed??0)%list.length];
+}
