@@ -6453,6 +6453,28 @@ test('V0.304 family pronunciation is scoped to stable member identity',()=>{
 });
 
 
+test('V0.305 room presence waits for a conversational opening before asking who joined',()=>{
+  const source=fs.readFileSync(path.join(root,'src/services/liaRoomPresence.ts'),'utf8');
+  assert.ok(source.includes('conversationBusy'));
+  assert.ok(source.includes("Tiens, qui s'est joint à nous ?"));
+  assert.ok(source.includes('minimumGapMs??90_000'));
+});
+
+test('V0.305 social participation fails quiet when speaker attribution becomes confused',()=>{
+  const source=fs.readFileSync(path.join(root,'src/services/liaRoomPresence.ts'),'utf8');
+  assert.ok(source.includes('if(input.directlyAddressed)return true'));
+  assert.ok(source.includes('if(input.cookingContext)return true'));
+  assert.ok(source.includes('if(input.overlappingSpeech||input.unidentifiedSpeakerCount>0)return false'));
+});
+
+test('V0.305 a reliably identified newcomer gets a natural greeting and stable room presence',()=>{
+  const source=fs.readFileSync(path.join(root,'src/services/liaRoomPresence.ts'),'utf8');
+  assert.ok(source.includes("input.identityConfidence>=.9&&!input.overlappingSpeech"));
+  assert.ok(source.includes('present:[...input.state.present.filter'));
+  assert.ok(source.includes('Ah, salut'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
