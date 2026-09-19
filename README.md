@@ -1,5 +1,9 @@
-# Notre Table — V0.302
+# Notre Table — V0.303
 
+
+## V0.303 — Prénom naturel et prononciation préférée
+
+LIA peut utiliser le prénom de l'utilisateur au début d'un nouvel échange sans le répéter comme un tic verbal. Une correction orale de prononciation est mémorisée séparément de l'orthographe affichée : le nom écrit reste inchangé, tandis que la forme vocale préférée devient la référence pour cette personne.
 
 ## V0.302 — Reprendre une recherche interrompue
 
