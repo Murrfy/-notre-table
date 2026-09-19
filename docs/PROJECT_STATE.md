@@ -1,3 +1,10 @@
+## V0.307 — Rattachement du locuteur au runtime
+
+- Le runtime de table expose une confirmation explicite `trackId -> memberId`.
+- La session et la carte d'identités du moteur vocal sont mises à jour ensemble.
+- Les tours suivants de cette piste bénéficient du rattachement confirmé.
+- Les autres pistes restent indépendantes et ne récupèrent jamais cette identité par défaut.
+
 ## V0.306 — Résolution du locuteur dans le foyer
 
 - Le prénom annoncé est résolu contre le profil organisateur et les membres légers actifs du foyer.
