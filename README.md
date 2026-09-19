@@ -1,5 +1,9 @@
-# Notre Table — V0.306
+# Notre Table — V0.307
 
+
+## V0.307 — Rattachement du locuteur au runtime
+
+Une identité explicitement confirmée peut maintenant être injectée dans le runtime de conversation de table : la piste vocale concernée reçoit l'identité stable avec confiance confirmée, et les tours suivants utilisent ce rattachement au lieu de rester anonymes.
 
 ## V0.306 — Résolution du locuteur dans le foyer
 
