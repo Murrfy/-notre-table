@@ -6171,6 +6171,47 @@ test('V0.296 birthday awareness can use a learned favorite meal as an idea but n
 });
 
 
+test('V0.297 contextual guidance generalizes first-use help to Planning, Shopping and Recipes without replacing the existing LIA lane',()=>{
+  const guidance=fs.readFileSync(path.join(root,'src/services/liaContextualGuidance.ts'),'utf8');
+  const orb=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
+  assert.ok(guidance.includes("export type LiaGuidedFeature='planning'|'shopping'|'recipes'"));
+  assert.ok(guidance.includes("kind:'feature_first_use'"));
+  assert.ok(guidance.includes("kind:'feature_help'"));
+  assert.ok(guidance.includes('FEATURE_HELP_COOLDOWN_MS=10*60_000'));
+  assert.ok(guidance.includes("event.fact==='favorite_meal'"));
+  assert.ok(orb.includes('addLiaContextualGuidanceListener'));
+  assert.ok(orb.includes('generateLiaTableResponse'));
+});
+
+test('V0.297 Planning explains itself once and intervenes only after a real empty meal-editor hesitation',()=>{
+  const main=fs.readFileSync(path.join(root,'src/screens/MainScreen.tsx'),'utf8');
+  const planning=fs.readFileSync(path.join(root,'src/screens/PlanningScreen.tsx'),'utf8');
+  assert.ok(main.includes('liaOrganizerName={liaOrganizerName}'));
+  assert.ok(planning.includes("feature:'planning'"));
+  assert.ok(planning.includes("step:'meal_choice'"));
+  assert.ok(planning.includes('18_000'));
+  assert.ok(planning.includes("selectedRecipe||custom.trim()||(mealMode==='leftover'&&leftoverFromMealId)"));
+});
+
+test('V0.297 Shopping waits for a stalled typed item before helping and does not nag during normal use',()=>{
+  const shopping=fs.readFileSync(path.join(root,'src/screens/ShoppingScreen.tsx'),'utf8');
+  assert.ok(shopping.includes("feature:'shopping'"));
+  assert.ok(shopping.includes("step:'add_item'"));
+  assert.ok(shopping.includes('if(!label.trim()||addingItem)return'));
+  assert.ok(shopping.includes('12_000'));
+});
+
+test('V0.297 Recipes helps only after a sustained no-result search and keeps first-use guidance separate',()=>{
+  const recipes=fs.readFileSync(path.join(root,'src/screens/RecipesScreen.tsx'),'utf8');
+  const guidance=fs.readFileSync(path.join(root,'src/services/liaContextualGuidance.ts'),'utf8');
+  assert.ok(recipes.includes("feature:'recipes'"));
+  assert.ok(recipes.includes("step:'search_no_result'"));
+  assert.ok(recipes.includes('if(loading||!query.trim()||filtered.length>0)return'));
+  assert.ok(recipes.includes('15_000'));
+  assert.ok(guidance.includes('feature:${input.feature}:${input.householdId}'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
