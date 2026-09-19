@@ -22,6 +22,7 @@ import { MealGlyph } from '../components/MealGlyph';
 import { focusMealForHour, MEAL_ORDER } from '../domain/meals';
 import { beginRequest, createRequestGate, invalidateRequests, isCurrentRequest } from '../lib/requestGate';
 import { classifyPremiumGateError } from '../lib/premiumGate';
+import {emitLiaFeatureFirstUse,emitLiaFeatureHelp} from '../services/liaContextualGuidance';
 
 const mealTypes: Array<{key:MealType;labelKey:TranslationKey}> = MEAL_ORDER.map(key=>({key,labelKey:`meal.${key}` as TranslationKey}));
 const demoRecipes:Recipe[]=[
@@ -35,7 +36,7 @@ const demoMembers:HouseholdMember[]=[
   {user_id:'u3',role:'member',display_name:'Léa',allergies:[],diets:['végétarien'],disliked_foods:[]},
 ];
 
-export function PlanningScreen({householdId,householdName,defaultPartySize=4,demo=false,weekStart,onWeekStartChange,access,onRefreshAccess,onStartTrial,onOpenShopping}:{householdId:string;householdName:string;defaultPartySize?:number;demo?:boolean;weekStart:Date;onWeekStartChange:(date:Date)=>void;access:AccessState;onRefreshAccess?:()=>Promise<AccessState>;onStartTrial?:()=>void;onOpenShopping?:()=>void}){
+export function PlanningScreen({householdId,householdName,liaOrganizerName='',defaultPartySize=4,demo=false,weekStart,onWeekStartChange,access,onRefreshAccess,onStartTrial,onOpenShopping}:{householdId:string;householdName:string;liaOrganizerName?:string;defaultPartySize?:number;demo?:boolean;weekStart:Date;onWeekStartChange:(date:Date)=>void;access:AccessState;onRefreshAccess?:()=>Promise<AccessState>;onStartTrial?:()=>void;onOpenShopping?:()=>void}){
   const days=useMemo(()=>Array.from({length:7},(_,i)=>addDays(weekStart,i)),[weekStart]);
   const locale=useLocale();
   const todayIso=localIsoDate(new Date());
@@ -78,6 +79,17 @@ export function PlanningScreen({householdId,householdName,defaultPartySize=4,dem
   const [myUserId,setMyUserId]=useState(demo?'u1':'');
   const [tasteByRecipe,setTasteByRecipe]=useState<Record<string,RecipeTasteCounts>>({});
   const familyAccess=hasFamilyAccess(access);
+  useEffect(()=>{
+    const timer=setTimeout(()=>{void emitLiaFeatureFirstUse({householdId,organizerName:liaOrganizerName,feature:'planning'});},4_500);
+    return()=>clearTimeout(timer);
+  },[householdId,liaOrganizerName]);
+  useEffect(()=>{
+    if(!editing||saving)return;
+    const mealChosen=Boolean(selectedRecipe||custom.trim()||(mealMode==='leftover'&&leftoverFromMealId));
+    if(mealChosen)return;
+    const timer=setTimeout(()=>{emitLiaFeatureHelp({householdId,organizerName:liaOrganizerName,feature:'planning',step:'meal_choice'});},18_000);
+    return()=>clearTimeout(timer);
+  },[editing,saving,selectedRecipe,custom,mealMode,leftoverFromMealId,householdId,liaOrganizerName]);
   const handlePremiumRefusal=async(error:unknown)=>{
     if(classifyPremiumGateError(error)!=='FAMILY_PLAN_REQUIRED')return false;
     try{await onRefreshAccess?.();}catch{}
