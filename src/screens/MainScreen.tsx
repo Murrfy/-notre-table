@@ -107,8 +107,8 @@ export function MainScreen({ household, demo=false, onSignOut }:{household:House
       if(cancelled)return;
       if(!liaCookingSessionActive()){
         const birthdaySurfaced=await maybeEmitLiaBirthdayAwareness({householdId:household.id,organizerName,demo:false}).catch(()=>false);
-        if(cancelled)return;
-        if(birthdaySurfaced){sessionProactivityUsed=true;return;}
+        if(birthdaySurfaced)sessionProactivityUsed=true;
+        if(cancelled||birthdaySurfaced)return;
       }
       const profileSurfaced=await maybeEmitLiaProfileEnrichmentQuestion({householdId:household.id,organizerName,demo:false}).catch(()=>false);
       if(profileSurfaced)sessionProactivityUsed=true;
