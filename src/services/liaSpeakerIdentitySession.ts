@@ -123,6 +123,35 @@ export function clearLiaSpeakerIdentityAskCooldown(trackId?:string):void{
 }
 
 
+
+const GUEST_KEY='@notre-table/lia-known-guests-v1';
+const MAX_GUESTS=80;
+export type LiaKnownGuest={displayName:string;relationshipLabel:string|null;firstMetAtIso:string;lastMetAtIso:string};
+type GuestStore={guests:LiaKnownGuest[]};
+function validGuests(value:unknown):value is GuestStore{return isRecord(value)&&Array.isArray(value.guests);}
+function guestNameKey(value:string){return clean(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
+
+export async function rememberLiaKnownGuest(input:{displayName:string;relationshipLabel?:string|null;now?:Date}):Promise<LiaKnownGuest>{
+  const now=input.now??new Date();
+  const store=await readStoredJson<GuestStore>(GUEST_KEY,{guests:[]},validGuests);
+  const key=guestNameKey(input.displayName);
+  const previous=store.guests.find(item=>guestNameKey(item.displayName)===key);
+  const guest:LiaKnownGuest={
+    displayName:clean(input.displayName),
+    relationshipLabel:input.relationshipLabel?clean(input.relationshipLabel):previous?.relationshipLabel??null,
+    firstMetAtIso:previous?.firstMetAtIso??now.toISOString(),
+    lastMetAtIso:now.toISOString(),
+  };
+  await writeStoredJson(GUEST_KEY,{guests:[guest,...store.guests.filter(item=>guestNameKey(item.displayName)!==key)].slice(0,MAX_GUESTS)});
+  return guest;
+}
+
+export async function knownLiaGuestByName(displayName:string):Promise<LiaKnownGuest|null>{
+  const store=await readStoredJson<GuestStore>(GUEST_KEY,{guests:[]},validGuests);
+  const key=guestNameKey(displayName);
+  return store.guests.find(item=>guestNameKey(item.displayName)===key)??null;
+}
+
 export type LiaSessionGuest={trackId:string;displayName:string;identifiedAtIso:string};
 const sessionGuests=new Map<string,LiaSessionGuest>();
 
