@@ -56,6 +56,7 @@ const sources=[
   'src/lib/liaAssistantTimer.ts',
   'src/lib/liaPersonalPresence.ts',
   'src/lib/liaBirthdayAwareness.ts',
+  'src/lib/liaProfileFacts.ts',
   'src/services/liaNavigationLiveSession.ts',
   'src/lib/liaPhoneContactResolver.ts',
   'src/i18n/index.ts',
@@ -131,6 +132,7 @@ const liaReminderRequest=require(path.join(temp,'src/lib/liaReminderRequest.js')
 const liaAssistantTimer=require(path.join(temp,'src/lib/liaAssistantTimer.js'));
 const liaPersonalPresence=require(path.join(temp,'src/lib/liaPersonalPresence.js'));
 const liaBirthdayAwareness=require(path.join(temp,'src/lib/liaBirthdayAwareness.js'));
+const liaProfileFacts=require(path.join(temp,'src/lib/liaProfileFacts.js'));
 const liaPhoneContactResolver=require(path.join(temp,'src/lib/liaPhoneContactResolver.js'));
 const i18n=require(path.join(temp,'src/i18n/index.js'));
 
@@ -6126,6 +6128,46 @@ test('V0.295 birthday awareness is useful but non-autonomous and wins over a new
   const enrichmentCall=main.indexOf('await maybeEmitLiaProfileEnrichmentQuestion');
   assert.ok(birthdayCall>=0&&enrichmentCall>birthdayCall);
   assert.ok(main.includes('if(cancelled||birthdaySurfaced)return'));
+});
+
+
+test('V0.296 favorite-meal parsing accepts a real dish and rejects vague non-answers',()=>{
+  assert.equal(liaProfileFacts.parseLiaFavoriteMealAnswer('elle adore les lasagnes.'),'lasagnes');
+  assert.equal(liaProfileFacts.parseLiaFavoriteMealAnswer("son plat préféré c'est le couscous"),'couscous');
+  assert.equal(liaProfileFacts.parseLiaFavoriteMealAnswer('my favorite meal is sushi'),'sushi');
+  assert.equal(liaProfileFacts.parseLiaFavoriteMealAnswer('je sais pas'),null);
+  assert.equal(liaProfileFacts.parseLiaFavoriteMealAnswer('oui'),null);
+});
+
+test('V0.296 progressive learning asks favorite meals only through the existing slow enrichment lane',()=>{
+  const enrichment=fs.readFileSync(path.join(root,'src/services/liaProfileEnrichment.ts'),'utf8');
+  const guidance=fs.readFileSync(path.join(root,'src/services/liaContextualGuidance.ts'),'utf8');
+  assert.ok(enrichment.includes("fact:'birthday'|'favorite_meal'"));
+  assert.ok(enrichment.includes('GLOBAL_GAP_MS=48*60*60*1000'));
+  assert.ok(enrichment.includes('favorite_meal,created_at'));
+  assert.ok(enrichment.includes("p_favorite_meal:favoriteMeal"));
+  assert.ok(guidance.includes("event.fact==='favorite_meal'"));
+  assert.ok(guidance.includes('quel est le plat que'));
+});
+
+test('V0.296 favorite meals are explicit backend facts, not onboarding fields or inferred app behavior',()=>{
+  const migration=fs.readFileSync(path.join(root,'supabase','migrations','202609190031_lia_progressive_favorite_meal.sql'),'utf8');
+  const legacyForm=fs.readFileSync(path.join(root,'supabase','migrations','202609160016_family_roster_form.sql'),'utf8');
+  assert.ok(migration.includes('favorite_meal text'));
+  assert.ok(migration.includes('set_lia_family_favorite_meal'));
+  assert.ok(migration.includes("p_subject_kind not in ('profile','light_member')"));
+  assert.ok(migration.includes('PROFILE_NOT_SELF'));
+  assert.ok(migration.includes('ADMIN_REQUIRED'));
+  assert.ok(!legacyForm.includes('favorite_meal'));
+});
+
+test('V0.296 birthday awareness can use a learned favorite meal as an idea but never as an automatic decision',()=>{
+  const awareness=fs.readFileSync(path.join(root,'src/services/liaBirthdayAwareness.ts'),'utf8');
+  const guidance=fs.readFileSync(path.join(root,'src/services/liaContextualGuidance.ts'),'utf8');
+  assert.ok(awareness.includes('favorite_meal'));
+  assert.ok(awareness.includes('favoriteMeal:candidate.person.favoriteMeal'));
+  assert.ok(guidance.includes('tu peux t’en servir comme piste, sans présenter ça comme une décision'));
+  assert.ok(guidance.includes('sans créer de rappel, achat, réservation ou planning sans demande explicite'));
 });
 
 

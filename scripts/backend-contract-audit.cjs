@@ -188,6 +188,7 @@ const expectedRpcSignatures={
   issue_light_response_token:'uuid, uuid',
   get_light_meal_summary:'uuid',
   set_lia_family_birthday:'uuid, text, uuid, integer, integer, integer',
+  set_lia_family_favorite_meal:'uuid, text, uuid, text',
 };
 for(const [name,args] of Object.entries(expectedRpcSignatures)){
   const marker=`('${name}','${args}')`;

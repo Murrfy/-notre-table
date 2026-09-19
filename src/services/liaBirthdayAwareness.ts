@@ -13,6 +13,7 @@ type BirthdayPerson={
   relation:'self'|'spouse'|'child'|'other';
   month:number;
   day:number;
+  favoriteMeal:string|null;
 };
 type Ledger={shown:Record<string,string>};
 
@@ -29,21 +30,21 @@ async function loadPeople(householdId:string):Promise<BirthdayPerson[]>{
   if(userError)throw userError;
   if(!user)return[];
   const [{data:profile,error:profileError},{data:members,error:memberError}]=await Promise.all([
-    supabase.from('profiles').select('id,display_name,birthday_month,birthday_day').eq('id',user.id).maybeSingle(),
-    supabase.from('light_members').select('id,display_name,relation,active,birthday_month,birthday_day').eq('household_id',householdId).eq('active',true),
+    supabase.from('profiles').select('id,display_name,birthday_month,birthday_day,favorite_meal').eq('id',user.id).maybeSingle(),
+    supabase.from('light_members').select('id,display_name,relation,active,birthday_month,birthday_day,favorite_meal').eq('household_id',householdId).eq('active',true),
   ]);
   if(profileError)throw profileError;
   if(memberError)throw memberError;
   const people:BirthdayPerson[]=[];
   if(profile?.birthday_month&&profile?.birthday_day){
     const name=cleanName(profile.display_name||'');
-    if(name)people.push({kind:'profile',id:user.id,name,relation:'self',month:Number(profile.birthday_month),day:Number(profile.birthday_day)});
+    if(name)people.push({kind:'profile',id:user.id,name,relation:'self',month:Number(profile.birthday_month),day:Number(profile.birthday_day),favoriteMeal:cleanName(String(profile.favorite_meal??''))||null});
   }
   for(const row of (members??[]) as any[]){
     if(!row.birthday_month||!row.birthday_day)continue;
     const name=cleanName(row.display_name??'');if(!name)continue;
     const relation=row.relation==='spouse'?'spouse':row.relation==='child'?'child':'other';
-    people.push({kind:'light_member',id:String(row.id),name,relation,month:Number(row.birthday_month),day:Number(row.birthday_day)});
+    people.push({kind:'light_member',id:String(row.id),name,relation,month:Number(row.birthday_month),day:Number(row.birthday_day),favoriteMeal:cleanName(String(row.favorite_meal??''))||null});
   }
   return people;
 }
@@ -74,6 +75,7 @@ export async function maybeEmitLiaBirthdayAwareness(input:{
       organizerName:cleanName(input.organizerName),
       subjectName:candidate.person.name,
       daysUntil:candidate.when.days,
+      favoriteMeal:candidate.person.favoriteMeal,
     });
     return true;
   }

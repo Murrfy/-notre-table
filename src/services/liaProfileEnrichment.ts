@@ -1,6 +1,7 @@
 import {supabase} from '../lib/supabase';
 import {isRecord,readStoredJson,writeStoredJson} from '../lib/storage';
 import {emitLiaContextualGuidance} from './liaContextualGuidance';
+import {parseLiaFavoriteMealAnswer} from '../lib/liaProfileFacts';
 
 const LEDGER_KEY='@notre-table/lia-profile-enrichment-v1';
 const GLOBAL_GAP_MS=48*60*60*1000;
@@ -12,7 +13,7 @@ export type LiaProfileEnrichmentTarget={
   subjectKind:'profile'|'light_member';
   subjectId:string;
   subjectName:string;
-  fact:'birthday';
+  fact:'birthday'|'favorite_meal';
 };
 
 type TargetLedger={lastAskedAtIso?:string|null;snoozedUntilIso?:string|null;dismissed?:boolean};
@@ -51,15 +52,16 @@ async function profileCandidates(householdId:string):Promise<LiaProfileEnrichmen
   if(userError)throw userError;
   if(!user)return[];
   const [{data:profile,error:profileError},{data:members,error:memberError}]=await Promise.all([
-    supabase.from('profiles').select('id,display_name,birthday_month,birthday_day').eq('id',user.id).maybeSingle(),
-    supabase.from('light_members').select('id,display_name,relation,active,birthday_month,birthday_day,created_at').eq('household_id',householdId).eq('active',true).order('created_at',{ascending:true}),
+    supabase.from('profiles').select('id,display_name,birthday_month,birthday_day,favorite_meal').eq('id',user.id).maybeSingle(),
+    supabase.from('light_members').select('id,display_name,relation,active,birthday_month,birthday_day,favorite_meal,created_at').eq('household_id',householdId).eq('active',true).order('created_at',{ascending:true}),
   ]);
   if(profileError)throw profileError;
   if(memberError)throw memberError;
 
   const candidates:LiaProfileEnrichmentTarget[]=[];
+  const profileName=cleanName(profile?.display_name||'toi')||'toi';
   if(profile&&(!profile.birthday_month||!profile.birthday_day)){
-    candidates.push({householdId,subjectKind:'profile',subjectId:user.id,subjectName:cleanName(profile.display_name||'toi')||'toi',fact:'birthday'});
+    candidates.push({householdId,subjectKind:'profile',subjectId:user.id,subjectName:profileName,fact:'birthday'});
   }
   const ranked=[...(members??[])].sort((a:any,b:any)=>{
     const score=(x:any)=>x.relation==='spouse'?0:x.relation==='child'?1:2;
@@ -70,6 +72,15 @@ async function profileCandidates(householdId:string):Promise<LiaProfileEnrichmen
     const subjectName=cleanName(member.display_name??'');
     if(!subjectName)continue;
     candidates.push({householdId,subjectKind:'light_member',subjectId:String(member.id),subjectName,fact:'birthday'});
+  }
+  if(profile&&!cleanName(String(profile.favorite_meal??''))){
+    candidates.push({householdId,subjectKind:'profile',subjectId:user.id,subjectName:profileName,fact:'favorite_meal'});
+  }
+  for(const member of ranked as any[]){
+    if(cleanName(String(member.favorite_meal??'')))continue;
+    const subjectName=cleanName(member.display_name??'');
+    if(!subjectName)continue;
+    candidates.push({householdId,subjectKind:'light_member',subjectId:String(member.id),subjectName,fact:'favorite_meal'});
   }
   return candidates;
 }
@@ -102,7 +113,7 @@ export async function maybeEmitLiaProfileEnrichmentQuestion(input:{
   };
   await writeStoredJson(LEDGER_KEY,next);
   pending=target;
-  emitLiaContextualGuidance({kind:'profile_enrichment_question',householdId:target.householdId,organizerName:cleanName(input.organizerName),subjectName:target.subjectName,fact:'birthday'});
+  emitLiaContextualGuidance({kind:'profile_enrichment_question',householdId:target.householdId,organizerName:cleanName(input.organizerName),subjectName:target.subjectName,fact:target.fact});
   return true;
 }
 
@@ -216,15 +227,38 @@ export async function continueLiaProfileEnrichmentClarification(input:{
     return{status:'skipped',spokenReply:fr(input.languageTag)?'Pas de souci, on verra ça une autre fois.':'No problem, we can come back to it another time.'};
   }
 
+  if(!supabase){
+    pending=null;
+    return{status:'unavailable',spokenReply:fr(input.languageTag)?'Je n’arrive pas à enregistrer ça pour le moment.':'I can’t save that right now.'};
+  }
+
+  if(target.fact==='favorite_meal'){
+    const favoriteMeal=parseLiaFavoriteMealAnswer(input.text);
+    if(!favoriteMeal){
+      return{status:'needs_clarification',spokenReply:fr(input.languageTag)
+        ?`Dis-moi simplement le plat que ${target.subjectName} adore vraiment. Par exemple « couscous » ou « lasagnes ».`
+        :`Just tell me the dish ${target.subjectName} really loves, for example “couscous” or “lasagna”.`};
+    }
+    const {error}=await supabase.rpc('set_lia_family_favorite_meal',{
+      p_household_id:target.householdId,
+      p_subject_kind:target.subjectKind,
+      p_subject_id:target.subjectId,
+      p_favorite_meal:favoriteMeal,
+    });
+    if(error){
+      return{status:'unavailable',spokenReply:fr(input.languageTag)?'Je n’arrive pas à l’enregistrer pour le moment. On réessaiera plus tard.':'I can’t save it right now. We’ll try again later.'};
+    }
+    pending=null;
+    return{status:'saved',spokenReply:fr(input.languageTag)
+      ?`Parfait, je garde en tête que ${target.subjectName} adore ${favoriteMeal}.`
+      :`Perfect. I’ll remember that ${target.subjectName} loves ${favoriteMeal}.`};
+  }
+
   const birthday=parseLiaBirthdayAnswer(input.text,input.now??new Date());
   if(!birthday){
     return{status:'needs_clarification',spokenReply:fr(input.languageTag)
       ?'Donne-moi simplement le jour et le mois, par exemple « 12 mars ». L’année est facultative.'
       :'Just give me the day and month, for example “March 12”. The year is optional.'};
-  }
-  if(!supabase){
-    pending=null;
-    return{status:'unavailable',spokenReply:fr(input.languageTag)?'Je n’arrive pas à enregistrer ça pour le moment.':'I can’t save that right now.'};
   }
   const {error}=await supabase.rpc('set_lia_family_birthday',{
     p_household_id:target.householdId,

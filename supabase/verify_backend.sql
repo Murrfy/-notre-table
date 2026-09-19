@@ -78,7 +78,8 @@ with expected(routine_name,arg_types) as (
     ('upsert_light_meal_question','uuid, date, text, text[], timestamp with time zone'),
     ('issue_light_response_token','uuid, uuid'),
     ('get_light_meal_summary','uuid'),
-    ('set_lia_family_birthday','uuid, text, uuid, integer, integer, integer')
+    ('set_lia_family_birthday','uuid, text, uuid, integer, integer, integer'),
+    ('set_lia_family_favorite_meal','uuid, text, uuid, text')
 ), resolved as (
   select e.routine_name,e.arg_types,p.oid,p.proowner,p.proacl
   from expected e
@@ -190,7 +191,7 @@ select
 -- 7) Applied migration versions visible to the Supabase migration history.
 -- Every expected row should show applied=true.
 with expected(version) as (
-  values ('202609140001'),('202609140002'),('202609140003'),('202609140004'),('202609140005'),('202609140006'),('202609140007'),('202609140008'),('202609140009'),('202609140010'),('202609140011'),('202609150012'),('202609150013'),('202609160014'),('202609160015'),('202609160016'),('202609160017'),('202609160018'),('202609160019'),('202609160020'),('202609160021'),('202609170022'),('202609170023'),('202609170024'),('202609180025'),('202609180026'),('202609180027'),('202609180028'),('202609190029'),('202609190030')
+  values ('202609140001'),('202609140002'),('202609140003'),('202609140004'),('202609140005'),('202609140006'),('202609140007'),('202609140008'),('202609140009'),('202609140010'),('202609140011'),('202609150012'),('202609150013'),('202609160014'),('202609160015'),('202609160016'),('202609160017'),('202609160018'),('202609160019'),('202609160020'),('202609160021'),('202609170022'),('202609170023'),('202609170024'),('202609180025'),('202609180026'),('202609180027'),('202609180028'),('202609190029'),('202609190030'),('202609190031')
 )
 select e.version,(m.version is not null) as applied
 from expected e

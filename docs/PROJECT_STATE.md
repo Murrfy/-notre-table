@@ -1,3 +1,14 @@
+## V0.296 — Apprentissage progressif des goûts
+
+- Le moteur d’enrichissement familial ne se limite plus aux anniversaires : il peut ensuite demander le plat préféré d’une personne.
+- Priorité inchangée : les anniversaires manquants restent proposés avant les goûts.
+- Une seule initiative à la fois, avec au moins 48 h entre deux questions globales.
+- « Plus tard » reporte ; un refus clôt ce fait sans insistance.
+- Le plat préféré est enregistré uniquement après une réponse explicite ; aucune déduction depuis les clics ou commandes de repas.
+- Stockage backend pour le profil de l’utilisateur ou un membre léger du foyer, avec contrôle d’accès identique aux anniversaires.
+- À l’approche d’un anniversaire, le plat préféré peut servir de piste conversationnelle, jamais de décision automatique.
+- Même moteur LIA, même pipeline vocal, aucun questionnaire ou assistant parallèle.
+
 ## V0.295 — Anniversaires utiles, sans automatisme imposé
 
 - LIA exploite les anniversaires déjà enregistrés au lieu de les stocker passivement.
