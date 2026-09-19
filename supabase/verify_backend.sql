@@ -79,7 +79,8 @@ with expected(routine_name,arg_types) as (
     ('issue_light_response_token','uuid, uuid'),
     ('get_light_meal_summary','uuid'),
     ('set_lia_family_birthday','uuid, text, uuid, integer, integer, integer'),
-    ('set_lia_family_favorite_meal','uuid, text, uuid, text')
+    ('set_lia_family_favorite_meal','uuid, text, uuid, text'),
+    ('set_lia_family_home_style','uuid, text')
 ), resolved as (
   select e.routine_name,e.arg_types,p.oid,p.proowner,p.proacl
   from expected e
