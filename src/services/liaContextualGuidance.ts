@@ -7,7 +7,7 @@ export type LiaContextualGuidanceEvent=
   |{kind:'family_message_help';householdId:string;organizerName:string;step:'prepare'|'share'}
   |{kind:'family_choice_changed';householdId:string;organizerName:string;memberName:string;mealDate:string;mealType:MealType;desire:LightDesire}
   |{kind:'family_take_charge_changed';householdId:string;organizerName:string;memberName:string;mealDate:string;mealType:MealType;active:boolean}
-  |{kind:'profile_enrichment_question';householdId:string;organizerName:string;subjectName:string;fact:'birthday'|'favorite_meal'}
+  |{kind:'profile_enrichment_question';householdId:string;organizerName:string;subjectName:string;fact:'birthday'|'favorite_meal'|'disliked_food'}
   |{kind:'birthday_awareness';householdId:string;organizerName:string;subjectName:string;daysUntil:number;favoriteMeal:string|null};
 
 type Listener=(event:LiaContextualGuidanceEvent)=>void;
@@ -82,6 +82,11 @@ export function liaContextualGuidancePrompt(event:LiaContextualGuidanceEvent,lan
         ?`${prefix}profite d’un moment calme pour apprendre une seule petite chose utile, sans donner l’impression d’un questionnaire. Demande naturellement quel est le plat que ${event.subjectName} adore vraiment. Une seule question, ton chaleureux, aucune insistance. N’invente aucune préférence si la cliente ne sait pas.`
         :`${prefix}use a calm moment to learn one useful family detail without sounding like a questionnaire. Naturally ask which dish ${event.subjectName} really loves. One question only, warm tone, no pressure. Never invent a preference if the organizer does not know.`;
     }
+    if(event.fact==='disliked_food'){
+      return fr
+        ?`${prefix}profite d’un moment calme pour apprendre un seul goût utile. Demande simplement s’il y a un aliment que ${event.subjectName} n’aime vraiment pas. Parle de préférence ou de goût, jamais d’allergie. Une seule question, ton léger, aucune insistance, et n’invente rien si la cliente ne sait pas.`
+        :`${prefix}use a calm moment to learn one useful taste preference. Simply ask whether there is one food ${event.subjectName} really dislikes. Treat this as taste only, never as an allergy. One question only, light tone, no pressure, and do not invent anything if the organizer does not know.`;
+    }
     return fr
       ?`${prefix}profite d’un moment calme pour apprendre une petite information familiale manquante, sans donner l’impression d’un formulaire. Demande simplement quand est l’anniversaire de ${event.subjectName}. Précise que le jour et le mois suffisent et que l’année est facultative. Une seule question, ton naturel et chaleureux, aucune insistance. Ne fais pas encore la blague : attends d’abord la réponse.`
       :`${prefix}use a calm moment to learn one small missing family detail without sounding like a form. Simply ask when ${event.subjectName}'s birthday is. Say that day and month are enough and the year is optional. Ask one question only, warmly, with no pressure.`;
@@ -138,6 +143,11 @@ export function liaContextualGuidanceFallback(event:LiaContextualGuidanceEvent,l
       return fr
         ?`${prefix}au fait, c’est quoi le plat que ${event.subjectName} adore vraiment ? Je garde ça dans un coin de ma tête pour les bonnes occasions.`
         :`${prefix}by the way, what dish does ${event.subjectName} really love? I’ll keep it in mind for the right moments.`;
+    }
+    if(event.fact==='disliked_food'){
+      return fr
+        ?`${prefix}au fait, il y a un aliment que ${event.subjectName} n’aime vraiment pas ? Je parle juste de goût, pas d’allergie.`
+        :`${prefix}by the way, is there one food ${event.subjectName} really dislikes? I mean taste only, not an allergy.`;
     }
     return fr
       ?`${prefix}au fait, pour que je pense aux anniversaires… c’est quand celui de ${event.subjectName} ? Le jour et le mois me suffisent.`
