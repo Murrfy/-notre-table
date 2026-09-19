@@ -16,15 +16,18 @@ import {recordCommanderSponsoredImpression} from '../services/commanderAdSession
 import {commanderDistanceBucket,emitProductTelemetry} from '../services/productTelemetry';
 import {colors,radius} from '../theme';
 import {CommanderDetailScreen} from './CommanderDetailScreen';
+import {useLiaFeatureHelp} from '../hooks/useLiaFeatureHelp';
 
 const categories=['sushi','pizza','burger','asian','healthy','dessert'] as const;
 
 type Section={key:string;titleKey:'commander.section.forYou'|'commander.section.openNow'|'commander.section.fast'|'commander.section.nearby'|'commander.section.offers';rows:CommanderPlace[];allRows:CommanderPlace[]};
 
-export function CommanderScreen({deliveryAddress,currentAddress=null,locationConsent=DEFAULT_PRIVACY_CONSENT,onClose}:{deliveryAddress?:string|null;currentAddress?:string|null;locationConsent?:PrivacyConsentState;onClose:()=>void}){
+export function CommanderScreen({householdId,organizerName='',deliveryAddress,currentAddress=null,locationConsent=DEFAULT_PRIVACY_CONSENT,onClose}:{householdId:string;organizerName?:string;deliveryAddress?:string|null;currentAddress?:string|null;locationConsent?:PrivacyConsentState;onClose:()=>void}){
   const locale=useLocale();const rtl=locale.textDirection==='rtl';const[query,setQuery]=useState('');const[category,setCategory]=useState<string>('');const[rows,setRows]=useState<CommanderPlace[]>([]);const[sponsoredRows,setSponsoredRows]=useState<CommanderPlace[]>([]);const[loading,setLoading]=useState(true);const[error,setError]=useState(false);const[offline,setOffline]=useState(false);const[networkNonce,setNetworkNonce]=useState(0);const wasOfflineRef=useRef(false);const sponsoredImpressionKeysRef=useRef(new Set<string>());const[selected,setSelected]=useState<CommanderPlace|null>(null);const[activeAddress,setActiveAddress]=useState(deliveryAddress?.trim()??'');const[addressEditing,setAddressEditing]=useState(false);const[addressDraft,setAddressDraft]=useState(deliveryAddress?.trim()??'');const[carouselIndexes,setCarouselIndexes]=useState<Record<string,number>>({});const[activeCarouselKey,setActiveCarouselKey]=useState('');const[seenPlaceIdsBySection,setSeenPlaceIdsBySection]=useState<Record<string,string[]>>({});const[destinationChoiceMade,setDestinationChoiceMade]=useState(false);const[viewAllSection,setViewAllSection]=useState<{key:string;title:string;rows:CommanderPlace[]}|null>(null);const scrollRef=useRef<ScrollView>(null);const scrollYRef=useRef(0);
   const destinationChoiceRequired=commanderNeedsDestinationChoice({householdAddress:deliveryAddress,currentAddress,consent:locationConsent});
   const destinationChoicePending=destinationChoiceRequired&&!destinationChoiceMade;
+  const commanderHelpStep=destinationChoicePending?'choose_location' as const:!activeAddress.trim()?'set_address' as const:null;
+  useLiaFeatureHelp({active:Boolean(commanderHelpStep)&&!selected&&!viewAllSection,householdId,organizerName,feature:'commander',step:commanderHelpStep,progressKey:`${destinationChoicePending}:${activeAddress.trim()}:${addressEditing}:${addressDraft.trim()}`});
   useEffect(()=>{const home=deliveryAddress?.trim()??'';setActiveAddress(home);setAddressDraft(home);setDestinationChoiceMade(false);},[deliveryAddress,currentAddress,locationConsent.preciseLocation]);
   useEffect(()=>{void emitProductTelemetry('commander_open',{address_present:!!activeAddress.trim()});},[]);
   useEffect(()=>{let active=true;const observe=(state:Network.NetworkState)=>{if(!active)return;const nextOffline=state.isConnected===false||state.isInternetReachable===false;setOffline(nextOffline);if(wasOfflineRef.current&&!nextOffline)setNetworkNonce(value=>value+1);wasOfflineRef.current=nextOffline;};const sub=Network.addNetworkStateListener(observe);void Network.getNetworkStateAsync().then(observe).catch(()=>undefined);return()=>{active=false;sub.remove();};},[]);
