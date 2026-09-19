@@ -1,5 +1,5 @@
 import {liaSpeakerIdentityPolicy,liaUnknownSpeakerQuestion} from './liaSpeakerIdentityPolicy';
-import {beginLiaSpeakerIdentification,consumeLiaSpeakerIdentification,liaIdentityAnswerName,liaSpeakerGreeting,mayAskLiaSpeakerIdentityAgain,noteLiaSpeakerIdentityAsked,rememberLiaSessionGuest} from './liaSpeakerIdentitySession';
+import {beginLiaSpeakerIdentification,consumeLiaSpeakerIdentification,liaIdentityAnswerName,liaSpeakerGreeting,mayAskLiaSpeakerIdentityAgain,noteLiaSpeakerIdentityAsked,rememberLiaSessionGuest,liaUnknownGuestIntroductionQuestion} from './liaSpeakerIdentitySession';
 import {LiaSpeakerRosterPerson,liaSpeakerDisambiguationQuestion,resolveLiaSpeakerFromRoster} from './liaSpeakerRosterResolution';
 
 export type LiaSpeakerIdentificationAction=
@@ -7,7 +7,7 @@ export type LiaSpeakerIdentificationAction=
  |{kind:'ask_identity';trackId:string;spokenReply:string;answerFirst:boolean}
  |{kind:'confirmed';trackId:string;memberId:string;spokenReply:string}
  |{kind:'clarify';trackId:string;spokenReply:string}
- |{kind:'session_guest';trackId:string;displayName:string;spokenReply:string};
+ |{kind:'session_guest';trackId:string;displayName:string;spokenReply:string;awaitingRelationshipConfirmation:true};
 
 export function maybeAskLiaSpeakerIdentity(input:{trackId:string;memberId:string|null;identityConfidence:number;overlappingSpeech?:boolean;context:'table'|'cooking';urgentPracticalQuestion?:boolean;languageTag:string}):LiaSpeakerIdentificationAction{
  const policy=liaSpeakerIdentityPolicy(input);
@@ -27,5 +27,5 @@ export function resolvePendingLiaSpeakerIdentity(input:{text:string;roster:LiaSp
  if(resolution.status==='ambiguous'){beginLiaSpeakerIdentification(pending.trackId);return{kind:'clarify',trackId:pending.trackId,spokenReply:liaSpeakerDisambiguationQuestion(resolution.candidates,input.languageTag)};}
  const fr=input.languageTag.toLowerCase().startsWith('fr');
  rememberLiaSessionGuest(pending.trackId,name);
- return{kind:'session_guest',trackId:pending.trackId,displayName:name,spokenReply:fr?'Enchantée '+name+'. Je te garde avec ce prénom pour cette conversation.':'Nice to meet you '+name+'. I will use that name for this conversation.'};
+ return{kind:'session_guest',trackId:pending.trackId,displayName:name,spokenReply:liaUnknownGuestIntroductionQuestion(name,input.languageTag,name.length),awaitingRelationshipConfirmation:true};
 }
