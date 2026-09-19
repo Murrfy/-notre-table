@@ -40,10 +40,17 @@ export function MainScreen({ household, demo=false, onSignOut }:{household:House
   const [liaPantryVisionRequestId,setLiaPantryVisionRequestId]=useState(0);
   const [liaRecipeOpenRequest,setLiaRecipeOpenRequest]=useState<{requestId:number;recipeId:string;startCooking:boolean}|null>(null);
   const [liaReturnGreeting,setLiaReturnGreeting]=useState('');
+  const [liaOrganizerName,setLiaOrganizerName]=useState('');
   const lastOpenRefreshRef=useRef(0);
   const [weekStart,setWeekStart]=useState<Date>(()=>startOfWeek(new Date(),locale.firstWeekday));
   useEffect(()=>{setWeekStart(current=>startOfWeek(current,locale.firstWeekday));},[locale.firstWeekday]);
   useEffect(()=>startLiaFamilyMealDecisionMonitor({householdId:household.id,demo}),[household.id,demo]);
+  useEffect(()=>{
+    let active=true;
+    if(demo){setLiaOrganizerName('');return()=>{active=false;};}
+    void getMyDisplayName().then(name=>{if(active)setLiaOrganizerName(name.trim());}).catch(()=>{if(active)setLiaOrganizerName('');});
+    return()=>{active=false;};
+  },[demo,household.id]);
   useEffect(()=>{
     const refresh=async()=>{
       const now=Date.now();if(now-lastOpenRefreshRef.current<2_000)return;lastOpenRefreshRef.current=now;
@@ -118,9 +125,9 @@ export function MainScreen({ household, demo=false, onSignOut }:{household:House
     else if(memo.link_kind==='family')setTab('household');
   };
   return <SafeAreaView style={styles.safe}><View style={styles.body}>
-    {tab==='planning'&&<PlanningScreen householdId={household.id} householdName={household.name} defaultPartySize={household.default_party_size??4} demo={demo} weekStart={weekStart} onWeekStartChange={setWeekStart} access={access} onRefreshAccess={refreshAccess} onStartTrial={previewTrial} onOpenShopping={()=>setTab('shopping')}/>} 
-    {tab==='recipes'&&<RecipesScreen householdId={household.id} householdName={household.name} demoMode={demo} weekStart={weekStart} access={access} onRefreshAccess={refreshAccess} onStartTrial={previewTrial} liaPantryVisionRequestId={liaPantryVisionRequestId} liaRecipeOpenRequest={liaRecipeOpenRequest}/>} 
-    {tab==='shopping'&&<ShoppingScreen householdId={household.id} demo={demo} weekStart={weekStart} onWeekStartChange={setWeekStart} onFamilyRequired={requireFamily}/>} 
+    {tab==='planning'&&<PlanningScreen householdId={household.id} householdName={household.name} liaOrganizerName={liaOrganizerName} defaultPartySize={household.default_party_size??4} demo={demo} weekStart={weekStart} onWeekStartChange={setWeekStart} access={access} onRefreshAccess={refreshAccess} onStartTrial={previewTrial} onOpenShopping={()=>setTab('shopping')}/>} 
+    {tab==='recipes'&&<RecipesScreen householdId={household.id} householdName={household.name} liaOrganizerName={liaOrganizerName} demoMode={demo} weekStart={weekStart} access={access} onRefreshAccess={refreshAccess} onStartTrial={previewTrial} liaPantryVisionRequestId={liaPantryVisionRequestId} liaRecipeOpenRequest={liaRecipeOpenRequest}/>} 
+    {tab==='shopping'&&<ShoppingScreen householdId={household.id} liaOrganizerName={liaOrganizerName} demo={demo} weekStart={weekStart} onWeekStartChange={setWeekStart} onFamilyRequired={requireFamily}/>} 
     {tab==='household'&&<HouseholdDashboardScreen household={household} demo={demo} access={access} onRefreshAccess={refreshAccess} onStartTrial={previewTrial} onSignOut={onSignOut}/>} 
     <LiaOrb earlyReturnMessage={liaReturnGreeting} onEarlyReturnDismiss={()=>setLiaReturnGreeting('')} onOpenCommander={()=>setLiaSurface('commander')} onOpenMemos={()=>setLiaSurface('memos')} onOpenCalendar={()=>setLiaSurface('calendar')} onPantryVisionRequested={()=>{setLiaSurface(null);setTab('recipes');setLiaPantryVisionRequestId(id=>id+1);}} onPantryRecipeRequested={(recipeId,startCooking)=>{setLiaSurface(null);setTab('recipes');setLiaRecipeOpenRequest(current=>({requestId:(current?.requestId??0)+1,recipeId,startCooking}));}} onNavigationRequested={destination=>setLiaNavigationDestination(destination)} householdId={household.id} weekStart={localIsoDate(weekStart)} demo={demo}/>
     <Modal visible={liaSurface!==null} animationType="slide" onRequestClose={()=>setLiaSurface(null)}>{liaSurface==='commander'?<CommanderScreen deliveryAddress={household.delivery_address??null} onClose={()=>setLiaSurface(null)}/>:liaSurface==='memos'?<MemosScreen demo={demo} onClose={()=>setLiaSurface(null)} onOpenLinkedContext={openMemoLinkedContext}/>:liaSurface==='calendar'?<LiaCalendarScreen demo={demo} onClose={()=>setLiaSurface(null)} onNavigate={destination=>{setLiaSurface(null);setLiaNavigationDestination(destination);}}/>:null}</Modal>
