@@ -1,3 +1,9 @@
+## V0.314 — Anniversaires
+
+- Si une date d'anniversaire est réellement connue, LIA dispose de 6 souhaits parlés et 6 notifications par langue (FR/HE/EN).
+- LIA peut aussi rappeler l'anniversaire à l'organisateur, aujourd'hui ou avant la date, avec 6 formulations par langue.
+- Aucun anniversaire n'est inventé à partir d'un âge ou d'une supposition.
+
 ## V0.314 — Famille et invités
 
 - Famille : salut bref avec prénom, sans formule de retrouvailles d'invité.
