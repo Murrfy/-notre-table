@@ -1,3 +1,10 @@
+## V0.310 — Persistance bornée de l'identité du locuteur
+
+- Une identité explicitement confirmée est mémorisée avec la piste, l'identifiant stable et le prénom.
+- La liaison expire après 12 heures sans activité.
+- Une piste connue peut être restaurée dans le runtime actif et son horodatage est rafraîchi.
+- Aucun mécanisme ne prétend reconnaître biométriquement une personne à partir de sa voix.
+
 ## V0.309 — Identification branchée au flux vocal réel
 
 - Le coordinateur expose chaque tour vocal au contrôle d'identité avant la participation normale.

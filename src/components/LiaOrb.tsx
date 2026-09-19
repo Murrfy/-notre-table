@@ -47,7 +47,7 @@ import {applyPreferredSpokenNameToSpeech,resolvePreferredSpokenName,type LiaName
 import {evaluateLiaConversationBoundary} from '../services/liaConversationBoundaries';
 import {maybeAskLiaSpeakerIdentity,resolvePendingLiaSpeakerIdentity} from '../services/liaSpeakerIdentificationFlow';
 import {fetchLiaSpeakerRoster} from '../services/liaSpeakerRosterResolution';
-import {pendingLiaSpeakerIdentification} from '../services/liaSpeakerIdentitySession';
+import {knownLiaSpeaker,pendingLiaSpeakerIdentification,rememberLiaSpeakerIdentity,touchLiaSpeakerTrack} from '../services/liaSpeakerIdentitySession';
 
 export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommander,onOpenMemos,onOpenCalendar,onPantryVisionRequested,onPantryRecipeRequested,onNavigationRequested,commanderContextLabel='',onCommanderCommand,householdId,weekStart,demo=false,primaryAssistant=true}:{earlyReturnMessage?:string;onEarlyReturnDismiss?:()=>void;onOpenCommander?:()=>void;onOpenMemos?:()=>void;onOpenCalendar?:()=>void;onPantryVisionRequested?:()=>void;onPantryRecipeRequested?:(recipeId:string,startCooking:boolean)=>void;onNavigationRequested?:(destination:string)=>void;commanderContextLabel?:string;onCommanderCommand?:(command:string)=>boolean;householdId?:string;weekStart?:string;demo?:boolean;primaryAssistant?:boolean}={}){
   const locale=useLocale();
@@ -472,12 +472,22 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
             const resolved=resolvePendingLiaSpeakerIdentity({text:turn.text,roster,languageTag:locale.languageTag});
             if(resolved.kind==='confirmed'){
               runtime.confirmSpeaker(resolved.trackId,resolved.memberId);
+              const person=roster.find(item=>item.subjectId===resolved.memberId);
+              if(person)await rememberLiaSpeakerIdentity({trackId:resolved.trackId,subjectKind:person.subjectKind,subjectId:person.subjectId,displayName:person.displayName});
             }
             if(resolved.kind!=='none'){
               await speakLia(resolved.spokenReply,locale.languageTag,currentVoice?.identifier,{onStart:()=>setVoiceSpeaking(true),onDone:()=>setVoiceSpeaking(false),onStopped:()=>setVoiceSpeaking(false),onError:()=>setVoiceSpeaking(false)});
             }
           })();
           return true;
+        }
+        if(!turn.memberId){
+          void (async()=>{
+            const known=await knownLiaSpeaker(turn.speakerTrackId);
+            if(!known)return;
+            runtime.confirmSpeaker(turn.speakerTrackId,known.subjectId);
+            await touchLiaSpeakerTrack(turn.speakerTrackId);
+          })();
         }
         const action=maybeAskLiaSpeakerIdentity({
           trackId:turn.speakerTrackId,

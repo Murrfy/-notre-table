@@ -1,5 +1,9 @@
-# Notre Table — V0.309
+# Notre Table — V0.310
 
+
+## V0.310 — Persistance bornée de l'identité du locuteur
+
+Une association de piste vocale explicitement confirmée peut être conservée localement pendant une fenêtre courte de continuité. Elle expire après 12 heures d'inactivité et peut être oubliée. Cette continuité ne constitue pas une reconnaissance biométrique de voix.
 
 ## V0.309 — Identification branchée au flux vocal réel
 
