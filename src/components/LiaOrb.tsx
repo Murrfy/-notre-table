@@ -37,7 +37,7 @@ import {liaPersonalPresenceReply} from '../lib/liaPersonalPresence';
 import {liaNavigationLiveSessionActive} from '../services/liaNavigationLiveSession';
 import {clearLiaCalendarClarification,liaCalendarClarificationPending} from '../services/liaAssistantCalendarExecution';
 import {liaCookingSessionClarificationPending,liaCookingSessionFollowupActive} from '../services/liaCookingSession';
-import {liaProfileEnrichmentClarificationPending} from '../services/liaProfileEnrichment';
+import {clearLiaProfileEnrichmentClarification,liaProfileEnrichmentClarificationPending} from '../services/liaProfileEnrichment';
 import {addLiaContextualGuidanceListener,liaContextualGuidanceFallback,liaContextualGuidancePrompt} from '../services/liaContextualGuidance';
 import {beginLiaHomeMealStyleClarification,clearLiaHomeMealStyleClarification,liaHomeMealStyleClarificationPending} from '../services/liaHomeMealStyle';
 import {noteLiaPrivateCuriosityHumanSpeech,updateLiaPrivateCuriosityContext} from '../services/liaPrivateCuriosityContext';
@@ -252,7 +252,10 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
     return()=>{void deactivateKeepAwake('notre-table-lia-active');};
   },[enabled,open,listening]);
 
-  useEffect(()=>{updateLiaPrivateCuriosityContext({mode,appActive,listening,liaSpeaking:voiceSpeaking,musicActive:musicPresenceRef.current.musicActive});},[mode,appActive,listening,voiceSpeaking]);
+  useEffect(()=>{
+    updateLiaPrivateCuriosityContext({mode,appActive,listening,liaSpeaking:voiceSpeaking,musicActive:musicPresenceRef.current.musicActive});
+    if(mode==='table')clearLiaProfileEnrichmentClarification();
+  },[mode,appActive,listening,voiceSpeaking]);
 
   const modeLabel=locale.t(mode==='cooking'?'lia.modeCooking':mode==='table'?'lia.modeTable':'lia.modeIdle');
   const socialLabel=locale.t(social==='discreet'?'lia.socialDiscreet':social==='host'?'lia.socialHost':'lia.socialPresent');
@@ -268,6 +271,7 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
     if(!primaryAssistant)return;
     return addLiaContextualGuidanceListener(event=>{
       if(!enabled||!appActive)return;
+      if(event.kind==='profile_enrichment_question'&&mode==='table'){clearLiaProfileEnrichmentClarification();return;}
       if(event.kind==='family_choice_changed'&&event.desire!=='home')return;
       if(event.kind==='family_take_charge_changed'&&event.active)clearLiaHomeMealStyleClarification();
       if(event.kind==='family_choice_changed'&&event.desire==='home'&&!event.homeStyle){
@@ -300,7 +304,7 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
         });
       })();
     });
-  },[primaryAssistant,enabled,appActive,locale.languageTag,currentVoice?.identifier,naming,weekStart,demo]);
+  },[primaryAssistant,enabled,appActive,mode,locale.languageTag,currentVoice?.identifier,naming,weekStart,demo]);
 
   useEffect(()=>{
     if(Platform.OS!=='ios')return;
