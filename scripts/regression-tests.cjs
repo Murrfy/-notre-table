@@ -6655,6 +6655,27 @@ test('V0.314 birthday messages provide six spoken, notification and organizer va
 });
 
 
+test('V0.314 returning non-family guests are remembered without becoming family',()=>{
+ const session=fs.readFileSync(path.join(root,'src/services/liaSpeakerIdentitySession.ts'),'utf8');
+ const orb=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
+ assert.ok(session.includes("GUEST_KEY='@notre-table/lia-known-guests-v1'"));
+ assert.ok(session.includes('liaReturningGuestGreeting'));
+ assert.ok(orb.includes('knownLiaGuestByName(resolved.displayName)'));
+ assert.ok(orb.includes('rememberLiaKnownGuest({displayName:resolved.displayName})'));
+ assert.ok(orb.includes('liaReturningGuestGreeting(resolved.displayName'));
+});
+
+test('V0.314 birthday messages provide six spoken and notification variants per language plus organizer reminders',()=>{
+ const source=fs.readFileSync(path.join(root,'src/services/liaBirthdayGreeting.ts'),'utf8');
+ assert.ok(source.includes("type BirthdaySurface='spoken'|'notification'"));
+ assert.ok(source.includes('liaBirthdayOrganizerReminder'));
+ assert.ok(source.includes('liaBirthdayGreeting'));
+ assert.ok(source.includes('if(!input.birthdayKnown)return null'));
+ const birthdayCount=(source.match(/birthday|anniversaire|הולדת/g)??[]).length;
+ assert.ok(birthdayCount>=36);
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
