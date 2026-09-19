@@ -12,6 +12,7 @@ export type LightMember={
   relation:'spouse'|'child'|'other';
   relation_label?:string|null;
   active:boolean;
+  favorite_meal?:string|null;
   created_at?:string;
   updated_at?:string;
 };
@@ -61,7 +62,7 @@ function client(){
 }
 
 export async function fetchLightMembers(householdId:string):Promise<LightMember[]>{
-  const {data,error}=await client().from('light_members').select('id,household_id,display_name,phone_number,age,relation,relation_label,active,created_at,updated_at').eq('household_id',householdId).order('created_at',{ascending:true});
+  const {data,error}=await client().from('light_members').select('id,household_id,display_name,phone_number,age,relation,relation_label,active,favorite_meal,created_at,updated_at').eq('household_id',householdId).order('created_at',{ascending:true});
   if(error)throw error;
   return (data??[]).map((row:any)=>({...row,phone_number:typeof row.phone_number==='string'?row.phone_number:'',age:Number.isInteger(row.age)?Number(row.age):null,relation:row.relation==='spouse'||row.relation==='child'?row.relation:'other'})) as LightMember[];
 }
