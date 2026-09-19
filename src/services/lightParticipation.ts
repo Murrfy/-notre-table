@@ -154,3 +154,10 @@ export function subscribeLightMealResponses(questionId:string,onChange:()=>void)
   const channel=client.channel(`light-meal-${questionId}`).on('postgres_changes',{event:'*',schema:'public',table:'light_meal_responses',filter:`question_id=eq.${questionId}`},onChange).subscribe();
   return()=>{void client.removeChannel(channel);};
 }
+
+export function subscribeLightMealQuestion(questionId:string,onChange:()=>void):()=>void{
+  const client=supabase;
+  if(!client)return()=>{};
+  const channel=client.channel(`light-meal-question-${questionId}`).on('postgres_changes',{event:'UPDATE',schema:'public',table:'light_meal_questions',filter:`id=eq.${questionId}`},onChange).subscribe();
+  return()=>{void client.removeChannel(channel);};
+}
