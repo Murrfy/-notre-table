@@ -1,5 +1,5 @@
 import {liaSpeakerIdentityPolicy,liaUnknownSpeakerQuestion} from './liaSpeakerIdentityPolicy';
-import {beginLiaSpeakerIdentification,consumeLiaSpeakerIdentification,liaIdentityAnswerName,liaSpeakerGreeting,mayAskLiaSpeakerIdentityAgain,noteLiaSpeakerIdentityAsked,rememberLiaSessionGuest,liaUnknownGuestIntroductionQuestion} from './liaSpeakerIdentitySession';
+import {beginLiaSpeakerIdentification,consumeLiaSpeakerIdentification,liaIdentityAnswerName,liaSpeakerGreeting,mayAskLiaSpeakerIdentityAgain,noteLiaSpeakerIdentityAsked,rememberLiaSessionGuest,liaUnknownGuestIntroductionQuestion,liaFamilyMemberGreeting} from './liaSpeakerIdentitySession';
 import {LiaSpeakerRosterPerson,liaSpeakerDisambiguationQuestion,resolveLiaSpeakerFromRoster} from './liaSpeakerRosterResolution';
 
 export type LiaSpeakerIdentificationAction=
@@ -23,7 +23,7 @@ export function resolvePendingLiaSpeakerIdentity(input:{text:string;roster:LiaSp
  const name=liaIdentityAnswerName(input.text);
  if(!name){beginLiaSpeakerIdentification(pending.trackId);return{kind:'clarify',trackId:pending.trackId,spokenReply:liaUnknownSpeakerQuestion(input.languageTag)};}
  const resolution=resolveLiaSpeakerFromRoster(name,input.roster);
- if(resolution.status==='matched')return{kind:'confirmed',trackId:pending.trackId,memberId:resolution.person.subjectId,spokenReply:liaSpeakerGreeting(resolution.person.displayName,input.languageTag)};
+ if(resolution.status==='matched')return{kind:'confirmed',trackId:pending.trackId,memberId:resolution.person.subjectId,spokenReply:liaFamilyMemberGreeting(resolution.person.displayName,input.languageTag,resolution.person.displayName.length)};
  if(resolution.status==='ambiguous'){beginLiaSpeakerIdentification(pending.trackId);return{kind:'clarify',trackId:pending.trackId,spokenReply:liaSpeakerDisambiguationQuestion(resolution.candidates,input.languageTag)};}
  const fr=input.languageTag.toLowerCase().startsWith('fr');
  rememberLiaSessionGuest(pending.trackId,name);
