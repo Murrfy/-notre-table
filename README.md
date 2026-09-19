@@ -1,5 +1,13 @@
-# Notre Table — V0.295
+# Notre Table — V0.296
 
+
+## V0.296 — LIA apprend les goûts petit à petit
+
+V0.296 généralise le moteur d’enrichissement progressif créé pour les anniversaires. Le formulaire initial reste court : après les dates d’anniversaire, LIA peut apprendre un deuxième fait familial utile, **le plat préféré de chacun**, toujours dans un moment calme et jamais sous forme de questionnaire massif.
+
+La cadence reste stricte : une seule petite question à la fois, au moins 48 heures entre deux initiatives, possibilité de répondre « plus tard » ou de refuser, et aucune inférence silencieuse. Une réponse comme « elle adore les lasagnes » enregistre seulement **lasagnes** comme fait explicitement confirmé.
+
+L’information devient utile sans devenir autonome : à l’approche d’un anniversaire, si LIA sait que la personne adore un plat précis, elle peut le proposer comme simple piste — « Je sais que Myriam adore le couscous… ça peut nous donner une idée » — mais elle ne crée jamais de repas, rappel, achat ou réservation sans demande explicite.
 
 ## V0.295 — LIA utilise les anniversaires qu’elle a appris
 
