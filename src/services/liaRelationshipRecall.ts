@@ -67,10 +67,14 @@ export async function collectLiaPrivateRelationshipRecall(input:{
 
   const folded=fold(input.userText);
   const explicitMemory=asksRememberedDetail(folded);
+  const subjectMentioned=scoped.some(item=>{const subject=fold(item.fact.subjectLabel??'');return Boolean(subject&&folded.includes(subject));});
   const relevant=scoped.filter(item=>{
     const subject=fold(item.fact.subjectLabel??'');
     const subjectMention=Boolean(subject&&folded.includes(subject));
-    return keywordMatch(item.parts.kind,folded)||(explicitMemory&&subjectMention);
+    if(explicitMemory&&subjectMention)return true;
+    if(!keywordMatch(item.parts.kind,folded))return false;
+    if(subjectMentioned)return subjectMention;
+    return item.parts.subjectKind==='profile';
   }).slice(0,3);
   if(relevant.length){
     return relevant.map((item,index)=>memoryFact(item.fact,item.parts.kind,input.languageTag,`memory.private_relevant_${index+1}`));
