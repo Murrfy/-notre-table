@@ -68,3 +68,17 @@ export function pronunciationQuestion(languageTag:string):string{
   if(tag.startsWith('he'))return 'אני רוצה לוודא שאני מבטאת נכון את השם שלך. איך מבטאים אותו?';
   return 'I want to make sure I pronounce your name correctly. How do you pronounce it?';
 }
+
+
+export function applyPreferredSpokenNameToSpeech(input:{
+  text:string;
+  displayName:string;
+  spokenName:string;
+}):string{
+  const text=input.text;
+  const displayFirst=firstNameFromDisplayName(input.displayName);
+  const spoken=clean(input.spokenName);
+  if(!text||!displayFirst||!spoken||displayFirst===spoken)return text;
+  const escaped=displayFirst.replace(/[.*+?^$()|[\]\\]/g,'\\$&');
+  return text.replace(new RegExp(\`\\b\${escaped}\\b\`,'gu'),spoken);
+}
