@@ -1,5 +1,11 @@
-# Notre Table — V0.301
+# Notre Table — V0.302
 
+
+## V0.302 — Reprendre une recherche interrompue
+
+V0.302 donne à LIA un état de continuité borné pour une recherche explicitement demandée puis interrompue. La tâche réutilise les open loops existantes avec une action de recherche : elle peut être reprise sans recommencer, expire après 14 jours et n'introduit aucun second moteur de rappels.
+
+Une piste prometteuse peut préparer un Mémo avec son lien, mais ce Mémo n'est jamais enregistré silencieusement : LIA le propose et la cliente décide. Les notifications contextuelles ne peuvent exposer le sujet que pour une recherche ordinaire ; les sujets personnels ou sensibles restent protégés par le canal privé générique existant.
 
 ## V0.301 — Réutiliser les petits souvenirs sans les exposer
 
