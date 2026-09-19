@@ -7,12 +7,14 @@ import {
   applyLiaTableSpeechSegment,
   createLiaTableConversationSession,
   clearLiaTableConversationSession,
+  confirmTableSpeakerIdentity,
   LiaTableConversationSession,
 } from './liaTableConversationSession';
 
 export type LiaTableConversationRuntime={
   stop:()=>Promise<void>;
   getSession:()=>LiaTableConversationSession;
+  confirmSpeaker:(trackId:string,memberId:string)=>LiaTableConversationSession;
 };
 
 export async function startLiaTableConversationRuntime(input:{
@@ -48,5 +50,10 @@ export async function startLiaTableConversationRuntime(input:{
       await adapter.stopSession();
     },
     getSession:()=>session,
+    confirmSpeaker:(trackId,memberId)=>{
+      session=confirmTableSpeakerIdentity({session,trackId,memberId,confidence:1});
+      identities.set(trackId,{memberId,confidence:1});
+      return session;
+    },
   };
 }
