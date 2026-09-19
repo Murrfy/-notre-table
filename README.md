@@ -1,5 +1,9 @@
-# Notre Table — V0.308
+# Notre Table — V0.309
 
+
+## V0.309 — Identification branchée au flux vocal réel
+
+Le flux d'identification est maintenant intercepté dans le coordinateur vocal réel de LIA. À table ou en cuisine, une piste inconnue est identifiée avant la réponse conversationnelle normale ; la réponse d'identité est résolue contre le foyer puis injectée dans le runtime actif.
 
 ## V0.308 — Orchestration d'identification du locuteur
 

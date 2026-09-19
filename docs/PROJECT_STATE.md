@@ -1,3 +1,10 @@
+## V0.309 — Identification branchée au flux vocal réel
+
+- Le coordinateur expose chaque tour vocal au contrôle d'identité avant la participation normale.
+- LIA demande l'identité d'une piste inconnue à table ou en cuisine.
+- La réponse est résolue contre le foyer puis `confirmSpeaker` rattache la piste au membre stable.
+- Tant que l'identification n'est pas résolue, le tour n'est pas envoyé au flux conversationnel normal.
+
 ## V0.308 — Orchestration d'identification du locuteur
 
 - Table/cuisine : un locuteur incertain déclenche une demande d'identité.
