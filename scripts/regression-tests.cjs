@@ -6513,13 +6513,13 @@ test('V0.308 unknown table or cooking speaker triggers one identification flow',
  assert.ok(source.includes('answerFirst:policy.answerBeforeIdentityQuestion'));
 });
 
-test('V0.308 pending identity answer resolves, clarifies, or stays unattributed',()=>{
+test('V0.308+ pending identity answer resolves, clarifies, or becomes a session guest',()=>{
  const source=fs.readFileSync(path.join(root,'src/services/liaSpeakerIdentificationFlow.ts'),'utf8');
  assert.ok(source.includes('resolvePendingLiaSpeakerIdentity'));
  assert.ok(source.includes("resolution.status==='matched'"));
  assert.ok(source.includes("resolution.status==='ambiguous'"));
- assert.ok(source.includes("kind:'unknown_name'"));
- assert.ok(source.includes('ne vais rien t’attribuer au hasard'));
+ assert.ok(source.includes("kind:'session_guest'"));
+ assert.ok(source.includes('rememberLiaSessionGuest(pending.trackId,name)'));
 });
 
 
@@ -6579,6 +6579,20 @@ test('V0.313 identity clarification keeps the same speaker track pending',()=>{
  assert.ok(matches.length>=2);
  assert.ok(source.includes("if(!name){beginLiaSpeakerIdentification(pending.trackId)"));
  assert.ok(source.includes("resolution.status==='ambiguous'){beginLiaSpeakerIdentification(pending.trackId)"));
+});
+
+
+test('V0.314 family and guest social greetings stay separate',()=>{
+ const session=fs.readFileSync(path.join(root,'src/services/liaSpeakerIdentitySession.ts'),'utf8');
+ const flow=fs.readFileSync(path.join(root,'src/services/liaSpeakerIdentificationFlow.ts'),'utf8');
+ assert.ok(session.includes('liaFamilyMemberGreeting'));
+ assert.ok(session.includes('liaReturningGuestGreeting'));
+ assert.ok(session.includes('liaUnknownGuestIntroductionQuestion'));
+ assert.ok(session.includes('rememberLiaKnownGuest'));
+ assert.ok(session.includes('knownLiaGuestByName'));
+ assert.ok(flow.includes('liaFamilyMemberGreeting(resolution.person.displayName'));
+ assert.ok(flow.includes("kind:'session_guest'"));
+ assert.ok(!flow.includes("kind:'unknown_name'"));
 });
 
 

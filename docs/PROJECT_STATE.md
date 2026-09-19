@@ -1,3 +1,10 @@
+## V0.314 — Famille et invités
+
+- Famille : salut bref avec prénom, sans formule de retrouvailles d'invité.
+- Nouvel extérieur : prise de connaissance naturelle avec variantes de formulation.
+- Extérieur déjà rencontré : mémoire minimale distincte (prénom, première/dernière rencontre, lien éventuel).
+- Aucun contenu personnel de conversation n'est automatiquement enregistré dans cette mémoire d'invité.
+
 ## V0.313 — Continuité des clarifications d'identité
 
 - Nom incompris : la piste reste en attente d'identification.

@@ -121,3 +121,122 @@ export function clearLiaSpeakerIdentityAskCooldown(trackId?:string):void{
   if(trackId)recentlyAskedIdentity.delete(trackId);
   else recentlyAskedIdentity.clear();
 }
+
+
+
+const GUEST_KEY='@notre-table/lia-known-guests-v1';
+const MAX_GUESTS=80;
+export type LiaKnownGuest={displayName:string;relationshipLabel:string|null;firstMetAtIso:string;lastMetAtIso:string};
+type GuestStore={guests:LiaKnownGuest[]};
+function validGuests(value:unknown):value is GuestStore{return isRecord(value)&&Array.isArray(value.guests);}
+function guestNameKey(value:string){return clean(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
+
+export async function rememberLiaKnownGuest(input:{displayName:string;relationshipLabel?:string|null;now?:Date}):Promise<LiaKnownGuest>{
+  const now=input.now??new Date();
+  const store=await readStoredJson<GuestStore>(GUEST_KEY,{guests:[]},validGuests);
+  const key=guestNameKey(input.displayName);
+  const previous=store.guests.find(item=>guestNameKey(item.displayName)===key);
+  const guest:LiaKnownGuest={
+    displayName:clean(input.displayName),
+    relationshipLabel:input.relationshipLabel?clean(input.relationshipLabel):previous?.relationshipLabel??null,
+    firstMetAtIso:previous?.firstMetAtIso??now.toISOString(),
+    lastMetAtIso:now.toISOString(),
+  };
+  await writeStoredJson(GUEST_KEY,{guests:[guest,...store.guests.filter(item=>guestNameKey(item.displayName)!==key)].slice(0,MAX_GUESTS)});
+  return guest;
+}
+
+export async function knownLiaGuestByName(displayName:string):Promise<LiaKnownGuest|null>{
+  const store=await readStoredJson<GuestStore>(GUEST_KEY,{guests:[]},validGuests);
+  const key=guestNameKey(displayName);
+  return store.guests.find(item=>guestNameKey(item.displayName)===key)??null;
+}
+
+export type LiaSessionGuest={trackId:string;displayName:string;identifiedAtIso:string};
+const sessionGuests=new Map<string,LiaSessionGuest>();
+
+export function rememberLiaSessionGuest(trackId:string,displayName:string,now=new Date()):LiaSessionGuest{
+  const guest={trackId,displayName:clean(displayName),identifiedAtIso:now.toISOString()};
+  sessionGuests.set(trackId,guest);
+  return guest;
+}
+
+export function knownLiaSessionGuest(trackId:string):LiaSessionGuest|null{
+  return sessionGuests.get(trackId)??null;
+}
+
+export function clearLiaSessionGuests():void{
+  sessionGuests.clear();
+}
+
+
+export function liaUnknownGuestIntroductionQuestion(name:string,languageTag:string,variantSeed=0):string{
+  const n=clean(name);
+  const fr=[
+    `${n} ? On se connaît ?`,
+    `${n}… je crois qu’on ne s’est pas encore présentés, non ?`,
+    `Ah, ${n} ! Première fois qu’on discute tous les deux ?`,
+    `${n} ? Ton prénom me plaît bien, mais je ne crois pas t’avoir encore rencontré.`,
+    `${n}… attends, tu me dis quelque chose ou on fait connaissance maintenant ?`,
+    `Salut ${n}. Aide-moi un peu : on s’est déjà parlé ou je t’adopte à partir d’aujourd’hui ?`,
+  ];
+  const en=[
+    `${n}? Do we know each other?`,
+    `${n}… I don't think we've been introduced yet, have we?`,
+    `Ah, ${n}! Is this our first chat together?`,
+    `${n}? Nice name, but I don't think we've met yet.`,
+    `${n}… wait, do you ring a bell or are we meeting right now?`,
+    `Hi ${n}. Help me out: have we spoken before, or do I get to know you starting today?`,
+  ];
+  const he=[
+    `${n}? אנחנו מכירים?`,
+    `${n}… נראה לי שעוד לא הכרנו, נכון?`,
+    `אה, ${n}! זאת הפעם הראשונה שאנחנו מדברים?`,
+    `${n}? שם יפה, אבל נראה לי שעוד לא נפגשנו.`,
+    `${n}… רגע, אתה מוכר לי או שאנחנו מכירים עכשיו?`,
+    `שלום ${n}. תעזור לי רגע: כבר דיברנו פעם או שמכאן מתחילים להכיר?`,
+  ];
+  const list=languageTag.toLowerCase().startsWith('fr')?fr:languageTag.toLowerCase().startsWith('he')?he:en;
+  return list[Math.abs(variantSeed)%list.length];
+}
+
+
+export function liaReturningGuestGreeting(name:string,languageTag:string,variantSeed=0):string{
+  const n=clean(name);
+  const fr=[
+    `David`===n?`${n}, ça fait plaisir de te revoir !`:`${n}, ça fait plaisir de te revoir !`,
+    `Ah, ${n} ! Contente de te retrouver.`,
+    `Tiens, ${n} ! Ça me fait plaisir de te revoir par ici.`,
+    `Salut ${n} ! Cette fois, je sais très bien qui tu es.`,
+    `Ah ${n}, te revoilà ! Bienvenue à la maison.`,
+    `${n} ! Ça faisait un petit moment. Contente de te revoir.`,
+  ];
+  const en=[
+    `${n}, it's good to see you again!`,
+    `Ah, ${n}! Nice to have you back.`,
+    `Well, ${n}! Good to see you around again.`,
+    `Hi ${n}! This time I know exactly who you are.`,
+    `Ah ${n}, you're back! Welcome.`,
+    `${n}! It's been a little while. Good to see you again.`,
+  ];
+  const he=[
+    `${n}, כיף לראות אותך שוב!`,
+    `אה, ${n}! שמחה לראות אותך שוב.`,
+    `הנה ${n}! כיף שחזרת.`,
+    `שלום ${n}! הפעם אני כבר יודעת מצוין מי אתה.`,
+    `אה ${n}, חזרת! ברוך הבא.`,
+    `${n}! עבר קצת זמן. כיף לראות אותך שוב.`,
+  ];
+  const list=languageTag.toLowerCase().startsWith('fr')?fr:languageTag.toLowerCase().startsWith('he')?he:en;
+  return list[Math.abs(variantSeed)%list.length];
+}
+
+
+export function liaFamilyMemberGreeting(name:string,languageTag:string,variantSeed=0):string{
+  const n=clean(name);
+  const fr=[`Salut ${n} !`,`Coucou ${n} !`,`Bonjour ${n} !`,`Ah, salut ${n} !`,`Hello ${n} !`,`Tiens, salut ${n} !`];
+  const en=[`Hi ${n}!`,`Hey ${n}!`,`Hello ${n}!`,`Ah, hi ${n}!`,`Hey there, ${n}!`,`Hi again, ${n}!`];
+  const he=[`שלום ${n}!`,`היי ${n}!`,`אה, שלום ${n}!`,`היי ${n}, מה נשמע?`,`שלום לך ${n}!`,`אהלן ${n}!`];
+  const list=languageTag.toLowerCase().startsWith('fr')?fr:languageTag.toLowerCase().startsWith('he')?he:en;
+  return list[Math.abs(variantSeed)%list.length];
+}
