@@ -6320,6 +6320,43 @@ test('V0.300 a saved quick fact gets conversational follow-up with factuality gu
 });
 
 
+test('V0.301 relationship recall is opt-in at response-context level and private by default',()=>{
+  const adapter=fs.readFileSync(path.join(root,'src/services/liaTableResponseAdapter.ts'),'utf8');
+  const runtime=fs.readFileSync(path.join(root,'src/services/liaTableResponseRuntime.ts'),'utf8');
+  assert.ok(adapter.includes("relationshipMemoryAccess?:'none'|'private'"));
+  assert.ok(runtime.includes("input.context.relationshipMemoryAccess==='private'"));
+  assert.ok(runtime.includes("route.memoryScope==='relevant_confirmed'"));
+  assert.ok(runtime.includes('collectLiaPrivateRelationshipRecall'));
+  assert.ok(runtime.includes('...relationshipFacts,...appFacts'));
+});
+
+test('V0.301 direct non-table conversation may use private memory while table conversation gets none',()=>{
+  const orb=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
+  assert.ok(orb.includes("relationshipMemoryAccess:mode==='table'?'none':'private'"));
+  const occurrences=(orb.match(/relationshipMemoryAccess:/g)||[]).length;
+  assert.equal(occurrences,1);
+});
+
+test('V0.301 private recall scopes named people correctly and throttles spontaneous delight to once per day',()=>{
+  const recall=fs.readFileSync(path.join(root,'src/services/liaRelationshipRecall.ts'),'utf8');
+  assert.ok(recall.includes('const SPONTANEOUS_GAP_MS=24*60*60*1000'));
+  assert.ok(recall.includes("fact.confirmed&&fact.sensitivity==='ordinary'"));
+  assert.ok(recall.includes("item.parts.subjectKind==='profile'||input.demo||memberIds.has(item.parts.subjectId)"));
+  assert.ok(recall.includes('if(subjectMentioned)return subjectMention'));
+  assert.ok(recall.includes("return item.parts.subjectKind==='profile'"));
+  assert.ok(recall.includes("'memory.private_delight'"));
+  assert.ok(recall.includes('lastFactId:candidate.fact.id'));
+});
+
+test('V0.301 remembered delight stays optional, factual and never becomes a new interrogation',()=>{
+  const request=fs.readFileSync(path.join(root,'src/lib/liaAgentRequest.ts'),'utf8');
+  assert.ok(request.includes('Persistent personal memory is private by default.'));
+  assert.ok(request.includes('memory.private_delight is an optional affectionate callback'));
+  assert.ok(request.includes('never force it into the reply or expose it as gossip'));
+  assert.ok(request.includes('never turn one remembered detail into a new interrogation'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
