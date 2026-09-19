@@ -6539,6 +6539,21 @@ test('V0.309 LiaOrb asks, resolves and binds unknown live speakers before normal
 });
 
 
+test('V0.310 confirmed speaker tracks persist with bounded lifetime',()=>{
+ const source=fs.readFileSync(path.join(root,'src/services/liaSpeakerIdentitySession.ts'),'utf8');
+ assert.ok(source.includes('12*60*60_000'));
+ assert.ok(source.includes('forgetLiaSpeakerTrack'));
+ assert.ok(source.includes('touchLiaSpeakerTrack'));
+});
+
+test('V0.310 LiaOrb stores confirmed identities and can restore a known track',()=>{
+ const source=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
+ assert.ok(source.includes('rememberLiaSpeakerIdentity'));
+ assert.ok(source.includes('knownLiaSpeaker(turn.speakerTrackId)'));
+ assert.ok(source.includes('runtime.confirmSpeaker(turn.speakerTrackId,known.subjectId)'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
