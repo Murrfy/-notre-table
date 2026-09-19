@@ -1,0 +1,50 @@
+import type {LiaRelationshipFact} from './liaRelationshipMemory';
+
+export type LiaNameVoicePreference={
+  subjectLabel:string;
+  displayName:string;
+  spokenName:string;
+};
+
+function clean(value:string,max=80){return value.trim().replace(/\s+/g,' ').slice(0,max);}
+
+export function firstNameFromDisplayName(displayName:string):string{
+  return clean(displayName).split(/\s+/)[0]??'';
+}
+
+export function resolvePreferredSpokenName(input:{
+  displayName:string;
+  subjectLabel?:string|null;
+  relationshipFacts?:ReadonlyArray<LiaRelationshipFact>;
+}):LiaNameVoicePreference|null{
+  const displayName=clean(input.displayName);
+  const subjectLabel=clean(input.subjectLabel??displayName);
+  if(!displayName||!subjectLabel)return null;
+  const fact=[...(input.relationshipFacts??[])].find(row=>
+    row.confirmed&&row.subjectLabel===subjectLabel&&row.factKey==='name_pronunciation'&&row.factValue.trim()
+  );
+  return{subjectLabel,displayName,spokenName:clean(fact?.factValue??firstNameFromDisplayName(displayName))};
+}
+
+export function namePronunciationCorrectionFact(input:{
+  subjectLabel:string;
+  spokenName:string;
+}):{topic:'family';subjectLabel:string;factKey:'name_pronunciation';factValue:string;sensitivity:'ordinary';householdSafe:false;confirmed:true}{
+  const subjectLabel=clean(input.subjectLabel);
+  const spokenName=clean(input.spokenName);
+  if(!subjectLabel||!spokenName)throw new Error('NAME_PRONUNCIATION_REQUIRED');
+  return{topic:'family',subjectLabel,factKey:'name_pronunciation',factValue:spokenName,sensitivity:'ordinary',householdSafe:false,confirmed:true};
+}
+
+export function shouldUseNameAtConversationStart(input:{
+  isConversationStart:boolean;
+  turnsSinceStart:number;
+  usedNameThisConversation:boolean;
+}):boolean{
+  return input.isConversationStart&&input.turnsSinceStart===0&&!input.usedNameThisConversation;
+}
+
+export function openingAddress(spokenName:string,shouldUse:boolean):string|null{
+  const safe=clean(spokenName);
+  return shouldUse&&safe?safe:null;
+}
