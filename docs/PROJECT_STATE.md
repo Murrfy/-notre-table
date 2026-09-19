@@ -1,3 +1,9 @@
+## V0.311 — Sécurité de continuité du locuteur
+
+- Une piste restaurée exige une parole non superposée et une confiance audio élevée.
+- Chevauchement ou confiance < 0,9 : la liaison locale est supprimée avant toute restauration.
+- LIA revient ensuite au flux normal d'identification plutôt que de conserver une fausse certitude.
+
 ## V0.310 — Persistance bornée de l'identité du locuteur
 
 - Une identité explicitement confirmée est mémorisée avec la piste, l'identifiant stable et le prénom.

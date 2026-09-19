@@ -1,5 +1,9 @@
-# Notre Table — V0.310
+# Notre Table — V0.311
 
+
+## V0.311 — Sécurité de continuité du locuteur
+
+Une association de piste restaurée n'est plus considérée comme sûre lorsque la parole se chevauche ou que la transcription audio est insuffisamment fiable. Dans ce cas, LIA supprime la liaison locale et revient à l'identification prudente au lieu d'attribuer des propos à la mauvaise personne.
 
 ## V0.310 — Persistance bornée de l'identité du locuteur
 

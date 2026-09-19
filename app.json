@@ -2,7 +2,7 @@
   "expo": {
     "name": "Notre Table",
     "slug": "notre-table",
-    "version": "0.310.0",
+    "version": "0.311.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "ios": {

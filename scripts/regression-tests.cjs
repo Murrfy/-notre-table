@@ -6554,6 +6554,14 @@ test('V0.310 LiaOrb stores confirmed identities and can restore a known track',(
 });
 
 
+test('V0.311 restored speaker identity is discarded on overlap or weak speech evidence',()=>{
+ const source=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
+ assert.ok(source.includes('turn.overlappingSpeech||turn.speechConfidence<.9'));
+ assert.ok(source.includes('forgetLiaSpeakerTrack(turn.speakerTrackId)'));
+ assert.ok(source.indexOf('forgetLiaSpeakerTrack(turn.speakerTrackId)')<source.indexOf('runtime.confirmSpeaker(turn.speakerTrackId,known.subjectId)'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
