@@ -7,8 +7,8 @@ export type LiaContextualGuidanceEvent=
   |{kind:'family_message_help';householdId:string;organizerName:string;step:'prepare'|'share'}
   |{kind:'family_choice_changed';householdId:string;organizerName:string;memberName:string;mealDate:string;mealType:MealType;desire:LightDesire}
   |{kind:'family_take_charge_changed';householdId:string;organizerName:string;memberName:string;mealDate:string;mealType:MealType;active:boolean}
-  |{kind:'profile_enrichment_question';householdId:string;organizerName:string;subjectName:string;fact:'birthday'}
-  |{kind:'birthday_awareness';householdId:string;organizerName:string;subjectName:string;daysUntil:number};
+  |{kind:'profile_enrichment_question';householdId:string;organizerName:string;subjectName:string;fact:'birthday'|'favorite_meal'}
+  |{kind:'birthday_awareness';householdId:string;organizerName:string;subjectName:string;daysUntil:number;favoriteMeal:string|null};
 
 type Listener=(event:LiaContextualGuidanceEvent)=>void;
 const listeners=new Set<Listener>();
@@ -77,15 +77,21 @@ export function liaContextualGuidancePrompt(event:LiaContextualGuidanceEvent,lan
     return fr?`${prefix}${task} Une étape à la fois, ton rassurant et léger, puis tais-toi dès qu’elle avance.`:`${prefix}${task} One step at a time, light and reassuring, then stop once they progress.`;
   }
   if(event.kind==='profile_enrichment_question'){
+    if(event.fact==='favorite_meal'){
+      return fr
+        ?`${prefix}profite d’un moment calme pour apprendre une seule petite chose utile, sans donner l’impression d’un questionnaire. Demande naturellement quel est le plat que ${event.subjectName} adore vraiment. Une seule question, ton chaleureux, aucune insistance. N’invente aucune préférence si la cliente ne sait pas.`
+        :`${prefix}use a calm moment to learn one useful family detail without sounding like a questionnaire. Naturally ask which dish ${event.subjectName} really loves. One question only, warm tone, no pressure. Never invent a preference if the organizer does not know.`;
+    }
     return fr
       ?`${prefix}profite d’un moment calme pour apprendre une petite information familiale manquante, sans donner l’impression d’un formulaire. Demande simplement quand est l’anniversaire de ${event.subjectName}. Précise que le jour et le mois suffisent et que l’année est facultative. Une seule question, ton naturel et chaleureux, aucune insistance. Ne fais pas encore la blague : attends d’abord la réponse.`
       :`${prefix}use a calm moment to learn one small missing family detail without sounding like a form. Simply ask when ${event.subjectName}'s birthday is. Say that day and month are enough and the year is optional. Ask one question only, warmly, with no pressure.`;
   }
   if(event.kind==='birthday_awareness'){
     const timing=event.daysUntil===0?(fr?'aujourd’hui':'today'):event.daysUntil===1?(fr?'demain':'tomorrow'):(fr?`dans ${event.daysUntil} jours`:`in ${event.daysUntil} days`);
+    const favorite=event.favoriteMeal?.trim()||'';
     return fr
-      ?`${prefix}tu sais maintenant que l’anniversaire de ${event.subjectName} est ${timing}. Fais une intervention courte et naturelle. Ne mentionne jamais son âge. Si c’est pertinent, demande simplement si la cliente veut prévoir quelque chose pour le repas ou l’occasion, sans créer de rappel, achat, réservation ou planning sans demande explicite.`
-      :`${prefix}you know that ${event.subjectName}'s birthday is ${timing}. Make one short natural intervention. Never mention their age. If useful, simply ask whether the organizer wants to plan something for the meal or occasion, without creating reminders, purchases, reservations, or plans unless explicitly asked.`;
+      ?`${prefix}tu sais maintenant que l’anniversaire de ${event.subjectName} est ${timing}. Fais une intervention courte et naturelle. Ne mentionne jamais son âge.${favorite?` Tu sais aussi que ${event.subjectName} adore ${favorite} : tu peux t’en servir comme piste, sans présenter ça comme une décision.`:''} Si c’est pertinent, demande simplement si la cliente veut prévoir quelque chose pour le repas ou l’occasion, sans créer de rappel, achat, réservation ou planning sans demande explicite.`
+      :`${prefix}you know that ${event.subjectName}'s birthday is ${timing}. Make one short natural intervention. Never mention their age.${favorite?` You also know ${event.subjectName} loves ${favorite}; you may use that as an idea, never as a decision.`:''} If useful, simply ask whether the organizer wants to plan something for the meal or occasion, without creating reminders, purchases, reservations, or plans unless explicitly asked.`;
   }
   if(event.kind==='family_choice_changed'){
     const label:Record<LightDesire,string>={home:'Plat fait maison',pizza:'Pizza',pasta:'Pâtes',sushi:'Sushi',chinese:'Chinois'};
@@ -128,20 +134,26 @@ export function liaContextualGuidanceFallback(event:LiaContextualGuidanceEvent,l
     return fr?`${prefix}la demande est prête. Choisis maintenant les personnes à qui l’envoyer, et je suis la suite avec toi.`:`${prefix}the request is ready. Choose who to send it to, and I’ll follow what happens with you.`;
   }
   if(event.kind==='profile_enrichment_question'){
+    if(event.fact==='favorite_meal'){
+      return fr
+        ?`${prefix}au fait, c’est quoi le plat que ${event.subjectName} adore vraiment ? Je garde ça dans un coin de ma tête pour les bonnes occasions.`
+        :`${prefix}by the way, what dish does ${event.subjectName} really love? I’ll keep it in mind for the right moments.`;
+    }
     return fr
       ?`${prefix}au fait, pour que je pense aux anniversaires… c’est quand celui de ${event.subjectName} ? Le jour et le mois me suffisent.`
       :`${prefix}by the way, so I can keep birthdays in mind: when is ${event.subjectName}'s birthday? Day and month are enough; the year is optional.`;
   }
   if(event.kind==='birthday_awareness'){
     const self=samePerson(event.organizerName,event.subjectName);
+    const favorite=event.favoriteMeal?.trim()||'';
     if(event.daysUntil===0){
       return fr
-        ?self?`Joyeux anniversaire ${event.subjectName} 🎂. Si tu veux, on peut rendre le repas un peu spécial aujourd’hui.`:`${prefix}c’est l’anniversaire de ${event.subjectName} aujourd’hui 🎂. Tu veux qu’on prévoie quelque chose de spécial pour le repas ?`
+        ?self?`Joyeux anniversaire ${event.subjectName} 🎂. ${favorite?`Je sais que tu adores ${favorite}… ça peut être une piste si tu veux 😏. `:''}On peut rendre le repas un peu spécial aujourd’hui.`:`${prefix}c’est l’anniversaire de ${event.subjectName} aujourd’hui 🎂. ${favorite?`Je sais que ${event.subjectName} adore ${favorite}… ça peut être une piste si tu veux. `:''}Tu veux qu’on prévoie quelque chose de spécial pour le repas ?`
         :self?`Happy birthday ${event.subjectName} 🎂. If you want, we can make today's meal a little special.`:`${prefix}it’s ${event.subjectName}'s birthday today 🎂. Want to plan something special for the meal?`;
     }
     const timing=event.daysUntil===1?(fr?'demain':'tomorrow'):(fr?`dans ${event.daysUntil} jours`:`in ${event.daysUntil} days`);
     return fr
-      ?`${prefix}petit rappel : l’anniversaire de ${event.subjectName}, c’est ${timing}. Si tu veux prévoir quelque chose, je suis là.`
+      ?`${prefix}petit rappel : l’anniversaire de ${event.subjectName}, c’est ${timing}.${favorite?` Je sais que ${event.subjectName} adore ${favorite}… ça peut nous donner une idée.`:''} Si tu veux prévoir quelque chose, je suis là.`
       :`${prefix}quick heads-up: ${event.subjectName}'s birthday is ${timing}. If you want to plan something, I’m here.`;
   }
   if(event.kind==='family_choice_changed'){
