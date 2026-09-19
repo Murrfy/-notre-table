@@ -1,3 +1,18 @@
+## V0.299 — Guidage contextuel généralisé
+
+- Première ouverture d’une grande fonction : explication courte de Planning, Courses, Recettes, Famille, Commander ou Mémos.
+- La présentation est mémorisée par fonction afin de ne pas être répétée mécaniquement.
+- Hors démo, LIA attend le prénom réel de la cliente avant cette première intervention.
+- Planning : aide seulement si un repas est ouvert sans recette ni plat saisi.
+- Courses : distingue une liste vide sans saisie d’un produit déjà saisi mais pas encore ajouté.
+- Mémos : distingue titre manquant et contenu manquant.
+- Commander : distingue choix de localisation et adresse manquante.
+- Toute progression réelle réinitialise le délai d’aide ; une même étape déjà aidée n’est pas répétée pendant la session du composant.
+- Recettes et Famille : première explication uniquement tant qu’un signal de blocage suffisamment fiable n’existe pas.
+- Le suivi V0.298 de fin des réponses famille reste actif et indépendant.
+- Le formulaire d’inscription reste court ; l’enrichissement progressif anniversaire / plat préféré continue sans changement.
+- Même LIA, même voix, même pipeline vocal, aucun tutoriel ou assistant parallèle.
+
 ## V0.298 — Reprise intelligente après les réponses famille
 
 - LIA sait quand tous les destinataires réels d’un Message famille ont répondu.
