@@ -11,6 +11,7 @@ export type LightMember={
   age:number|null;
   relation:'spouse'|'child'|'other';
   relation_label?:string|null;
+  disliked_foods?:string[];
   active:boolean;
   created_at?:string;
   updated_at?:string;
@@ -61,9 +62,9 @@ function client(){
 }
 
 export async function fetchLightMembers(householdId:string):Promise<LightMember[]>{
-  const {data,error}=await client().from('light_members').select('id,household_id,display_name,phone_number,age,relation,relation_label,active,created_at,updated_at').eq('household_id',householdId).order('created_at',{ascending:true});
+  const {data,error}=await client().from('light_members').select('id,household_id,display_name,phone_number,age,relation,relation_label,disliked_foods,active,created_at,updated_at').eq('household_id',householdId).order('created_at',{ascending:true});
   if(error)throw error;
-  return (data??[]).map((row:any)=>({...row,phone_number:typeof row.phone_number==='string'?row.phone_number:'',age:Number.isInteger(row.age)?Number(row.age):null,relation:row.relation==='spouse'||row.relation==='child'?row.relation:'other'})) as LightMember[];
+  return (data??[]).map((row:any)=>({...row,phone_number:typeof row.phone_number==='string'?row.phone_number:'',age:Number.isInteger(row.age)?Number(row.age):null,relation:row.relation==='spouse'||row.relation==='child'?row.relation:'other',disliked_foods:Array.isArray(row.disliked_foods)?row.disliked_foods.filter((item:any)=>typeof item==='string'&&item.trim()).map((item:string)=>item.trim()):[]})) as LightMember[];
 }
 
 export async function createLightMember(householdId:string,displayName:string,phoneNumber:string):Promise<string>{
