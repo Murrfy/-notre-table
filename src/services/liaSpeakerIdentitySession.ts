@@ -121,3 +121,21 @@ export function clearLiaSpeakerIdentityAskCooldown(trackId?:string):void{
   if(trackId)recentlyAskedIdentity.delete(trackId);
   else recentlyAskedIdentity.clear();
 }
+
+
+export type LiaSessionGuest={trackId:string;displayName:string;identifiedAtIso:string};
+const sessionGuests=new Map<string,LiaSessionGuest>();
+
+export function rememberLiaSessionGuest(trackId:string,displayName:string,now=new Date()):LiaSessionGuest{
+  const guest={trackId,displayName:clean(displayName),identifiedAtIso:now.toISOString()};
+  sessionGuests.set(trackId,guest);
+  return guest;
+}
+
+export function knownLiaSessionGuest(trackId:string):LiaSessionGuest|null{
+  return sessionGuests.get(trackId)??null;
+}
+
+export function clearLiaSessionGuests():void{
+  sessionGuests.clear();
+}
