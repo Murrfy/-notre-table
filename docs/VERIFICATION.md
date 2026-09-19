@@ -1,4 +1,3 @@
-# Vérifications techniques — état courant V0.308
-- Checkpoint V0.308 : orchestration complète de l'identification conversationnelle du locuteur.
-- Validation installée GitHub : à exécuter sur le SHA exact V0.308 avant intégration dans `main`.
-- Base V0.307 : validation GitHub complète réussie avant fusion dans `main`.
+# Vérifications techniques — état courant V0.309
+- Checkpoint V0.309 : intégration du flux d'identification dans `LiaOrb` et le coordinateur vocal réel.
+- Validation installée GitHub : à exécuter sur le SHA exact V0.309 avant intégration dans `main`.
