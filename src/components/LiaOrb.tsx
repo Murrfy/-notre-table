@@ -40,6 +40,7 @@ import {liaCookingSessionClarificationPending,liaCookingSessionFollowupActive} f
 import {liaProfileEnrichmentClarificationPending} from '../services/liaProfileEnrichment';
 import {addLiaContextualGuidanceListener,liaContextualGuidanceFallback,liaContextualGuidancePrompt} from '../services/liaContextualGuidance';
 import {beginLiaHomeMealStyleClarification,clearLiaHomeMealStyleClarification,liaHomeMealStyleClarificationPending} from '../services/liaHomeMealStyle';
+import {noteLiaPrivateCuriosityHumanSpeech,updateLiaPrivateCuriosityContext} from '../services/liaPrivateCuriosityContext';
 
 export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommander,onOpenMemos,onOpenCalendar,onPantryVisionRequested,onPantryRecipeRequested,onNavigationRequested,commanderContextLabel='',onCommanderCommand,householdId,weekStart,demo=false,primaryAssistant=true}:{earlyReturnMessage?:string;onEarlyReturnDismiss?:()=>void;onOpenCommander?:()=>void;onOpenMemos?:()=>void;onOpenCalendar?:()=>void;onPantryVisionRequested?:()=>void;onPantryRecipeRequested?:(recipeId:string,startCooking:boolean)=>void;onNavigationRequested?:(destination:string)=>void;commanderContextLabel?:string;onCommanderCommand?:(command:string)=>boolean;householdId?:string;weekStart?:string;demo?:boolean;primaryAssistant?:boolean}={}){
   const locale=useLocale();
@@ -221,6 +222,8 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
     return()=>{void deactivateKeepAwake('notre-table-lia-active');};
   },[enabled,open,listening]);
 
+  useEffect(()=>{updateLiaPrivateCuriosityContext({mode,appActive,listening,liaSpeaking:voiceSpeaking,musicActive:musicPresenceRef.current.musicActive});},[mode,appActive,listening,voiceSpeaking]);
+
   const modeLabel=locale.t(mode==='cooking'?'lia.modeCooking':mode==='table'?'lia.modeTable':'lia.modeIdle');
   const socialLabel=locale.t(social==='discreet'?'lia.socialDiscreet':social==='host'?'lia.socialHost':'lia.socialPresent');
   useEffect(()=>{if(!earlyReturnMessage){setReturnVisible(false);return;}setReturnVisible(true);const timer=setTimeout(()=>setReturnVisible(false),9_000);return()=>clearTimeout(timer);},[earlyReturnMessage]);
@@ -318,6 +321,7 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
     if(!listening)return;
     const subscription=addLiaAmbientMusicRecognitionListener(event=>{
       musicPresenceRef.current=noteLiaMusicMatch(musicPresenceRef.current,{title:event.title,artist:event.artist,identifier:event.identifier,matchedAtMs:event.matchedAtMs});
+      updateLiaPrivateCuriosityContext({musicActive:musicPresenceRef.current.musicActive});
     });
     void startLiaAmbientMusicRecognition();
     return()=>{subscription?.remove();void stopLiaAmbientMusicRecognition();};
@@ -347,9 +351,11 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
       const speech=isHumanSpeechClassification(event.label);
       const music=isMusicClassification(event.label);
       musicPresenceRef.current=noteLiaMusicAudioEvidence(musicPresenceRef.current,music&&event.confidence>=.55,now);
+      updateLiaPrivateCuriosityContext({musicActive:musicPresenceRef.current.musicActive});
       audioStateRef.current=nextLiaAudioRuntimeState(audioStateRef.current,{label:event.label,confidence:event.confidence,atMs:now},laughter?'laughter':speech?'speech':'other');
 
       if(speech&&event.confidence>=.55){
+        noteLiaPrivateCuriosityHumanSpeech(now);
         if(pendingReactionRef.current){clearTimeout(pendingReactionRef.current);pendingReactionRef.current=null;}
         if(voiceSpeaking)void stopLiaVoice();
         return;
