@@ -230,3 +230,13 @@ export function liaReturningGuestGreeting(name:string,languageTag:string,variant
   const list=languageTag.toLowerCase().startsWith('fr')?fr:languageTag.toLowerCase().startsWith('he')?he:en;
   return list[Math.abs(variantSeed)%list.length];
 }
+
+
+export function liaFamilyMemberGreeting(name:string,languageTag:string,variantSeed=0):string{
+  const n=clean(name);
+  const fr=[`Salut ${n} !`,`Coucou ${n} !`,`Bonjour ${n} !`,`Ah, salut ${n} !`,`Hello ${n} !`,`Tiens, salut ${n} !`];
+  const en=[`Hi ${n}!`,`Hey ${n}!`,`Hello ${n}!`,`Ah, hi ${n}!`,`Hey there, ${n}!`,`Hi again, ${n}!`];
+  const he=[`שלום ${n}!`,`היי ${n}!`,`אה, שלום ${n}!`,`היי ${n}, מה נשמע?`,`שלום לך ${n}!`,`אהלן ${n}!`];
+  const list=languageTag.toLowerCase().startsWith('fr')?fr:languageTag.toLowerCase().startsWith('he')?he:en;
+  return list[Math.abs(variantSeed)%list.length];
+}
