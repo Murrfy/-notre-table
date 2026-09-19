@@ -1,10 +1,48 @@
 import {addDays,localIsoDate} from '../lib/dates';
+import {isRecord,readStoredJson,writeStoredJson} from '../lib/storage';
 import {supabase} from '../lib/supabase';
 import {emitLiaContextualGuidance} from './liaContextualGuidance';
 import {fetchLightMealDecisionSnapshots,subscribeLightMealResponses,type LightMealDecisionSnapshot,type LightMealRecipient} from './lightParticipation';
 import {getMyDisplayName} from './profiles';
 
 type RecipientState={desire:LightMealRecipient['desire'];takesCharge:boolean;responded:boolean;memberName:string};
+
+const FOLLOWTHROUGH_SEEN_KEY='@notre-table/lia-family-followthrough-seen-v1';
+
+function validFollowthroughSeen(value:unknown):value is Record<string,boolean>{
+  return isRecord(value)&&Object.values(value).every(item=>typeof item==='boolean');
+}
+
+async function emitReadyRepliesOnce(input:{snapshots:LightMealDecisionSnapshot[];householdId:string;organizerName:string}):Promise<void>{
+  const seen=await readStoredJson<Record<string,boolean>>(FOLLOWTHROUGH_SEEN_KEY,{},validFollowthroughSeen);
+  const next={...seen};
+  let changed=false;
+  for(const snapshot of input.snapshots){
+    const key=snapshot.question.id;
+    const recipients=snapshot.summary.recipients;
+    const complete=recipients.length>0&&recipients.every(item=>item.responded);
+    if(!complete){
+      if(next[key]){delete next[key];changed=true;}
+      continue;
+    }
+    if(snapshot.summary.take_charge_name||recipients.some(item=>item.takes_charge))continue;
+    if(next[key])continue;
+    emitLiaContextualGuidance({
+      kind:'family_replies_ready',
+      householdId:input.householdId,
+      organizerName:input.organizerName,
+      questionId:snapshot.question.id,
+      mealDate:snapshot.question.meal_date,
+      mealType:snapshot.question.meal_type,
+      homeStyle:snapshot.question.lia_home_style??null,
+      choices:recipients.map(item=>({memberName:item.member_name,presence:item.presence,desire:item.desire})),
+    });
+    next[key]=true;changed=true;
+  }
+  const keys=Object.keys(next);
+  if(keys.length>60){for(const key of keys.slice(0,keys.length-60)){delete next[key];changed=true;}}
+  if(changed)await writeStoredJson(FOLLOWTHROUGH_SEEN_KEY,next);
+}
 
 function recipientMap(snapshot:LightMealDecisionSnapshot):Map<string,RecipientState>{
   return new Map(snapshot.summary.recipients.map(item=>[
@@ -87,6 +125,7 @@ export function startLiaFamilyMealDecisionMonitor(input:{householdId:string;demo
       syncResponseSubscriptions(snapshots);
       if(emitChanges)compareAndEmit(snapshots);
       else previous=new Map(snapshots.map(snapshot=>[snapshot.question.id,recipientMap(snapshot)]));
+      await emitReadyRepliesOnce({snapshots,householdId:input.householdId,organizerName});
     }finally{
       running=false;
       if(rerun&&active){rerun=false;void refresh(true);}
