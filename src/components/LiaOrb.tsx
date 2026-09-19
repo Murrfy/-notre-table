@@ -44,6 +44,7 @@ import {noteLiaPrivateCuriosityHumanSpeech,updateLiaPrivateCuriosityContext} fro
 import {getMyDisplayName} from '../services/profiles';
 import {listLiaRelationshipFacts} from '../services/liaRelationshipMemory';
 import {applyPreferredSpokenNameToSpeech,resolvePreferredSpokenName,type LiaNameVoicePreference} from '../services/liaNameVoicePreference';
+import {evaluateLiaConversationBoundary} from '../services/liaConversationBoundaries';
 
 export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommander,onOpenMemos,onOpenCalendar,onPantryVisionRequested,onPantryRecipeRequested,onNavigationRequested,commanderContextLabel='',onCommanderCommand,householdId,weekStart,demo=false,primaryAssistant=true}:{earlyReturnMessage?:string;onEarlyReturnDismiss?:()=>void;onOpenCommander?:()=>void;onOpenMemos?:()=>void;onOpenCalendar?:()=>void;onPantryVisionRequested?:()=>void;onPantryRecipeRequested?:(recipeId:string,startCooking:boolean)=>void;onNavigationRequested?:(destination:string)=>void;commanderContextLabel?:string;onCommanderCommand?:(command:string)=>boolean;householdId?:string;weekStart?:string;demo?:boolean;primaryAssistant?:boolean}={}){
   const locale=useLocale();
@@ -106,6 +107,11 @@ export function LiaOrb({earlyReturnMessage='',onEarlyReturnDismiss,onOpenCommand
     };
 
     void (async()=>{
+      const boundary=await evaluateLiaConversationBoundary(text);
+      if(generation!==tableResponseGenerationRef.current)return;
+      if(boundary.reply){await speakReply(boundary.reply);return;}
+      if(boundary.pauseUntil)return;
+
       const namingTurn=await handleLiaNamingTurn({text,languageTag:locale.languageTag,preferences:naming});
       if(generation!==tableResponseGenerationRef.current)return;
       if(namingTurn.handled){
