@@ -1,3 +1,12 @@
+## V0.302 — Continuité des recherches interrompues
+
+- Une recherche explicitement demandée puis interrompue devient un open loop existant de type follow_up avec action search.
+- La reprise est bornée : première relance après 30 minutes, expiration après 14 jours.
+- Une piste prometteuse peut préparer une suggestion de Mémo avec lien, sans création silencieuse du Mémo.
+- Mémos reste volontaire : aucune conversation arbitraire ou intime n'est enregistrée par ce mécanisme.
+- Le texte contextuel d'une notification n'est autorisé que pour une sensibilité ordinary ; personnel/sensible reste privé.
+- Aucun second moteur de rappels, recherche ou notifications n'est créé.
+
 ## V0.301 — Souvenirs privés réutilisables avec surprise bornée
 
 - Les faits relationnels privés ne sont injectés que dans une conversation directe explicitement marquée comme privée.
