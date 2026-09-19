@@ -6409,6 +6409,23 @@ test('V0.303 asks pronunciation only when genuinely uncertain and not already kn
 });
 
 
+test('V0.304 preferred pronunciation is applied only at speech rendering',()=>{
+  const preference=fs.readFileSync(path.join(root,'src/services/liaNameVoicePreference.ts'),'utf8');
+  const orb=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
+  assert.ok(preference.includes('applyPreferredSpokenNameToSpeech'));
+  assert.ok(orb.includes('const voiceReply=nameVoice?applyPreferredSpokenNameToSpeech'));
+  assert.ok(orb.includes('await speakLia(voiceReply'));
+  assert.ok(!preference.includes('updateMyDisplayName'));
+});
+
+test('V0.304 LIA loads private relationship pronunciation for the signed-in profile',()=>{
+  const orb=fs.readFileSync(path.join(root,'src/components/LiaOrb.tsx'),'utf8');
+  assert.ok(orb.includes('getMyDisplayName()'));
+  assert.ok(orb.includes('listLiaRelationshipFacts(demo)'));
+  assert.ok(orb.includes('resolvePreferredSpokenName({displayName,subjectLabel:displayName,relationshipFacts:facts})'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
