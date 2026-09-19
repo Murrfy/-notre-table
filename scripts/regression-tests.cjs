@@ -6623,7 +6623,8 @@ test('V0.314 birthday greetings provide six spoken and notification variants per
  assert.ok(source.includes("type BirthdaySurface='spoken'|'notification'"));
  assert.ok(source.includes('if(!input.birthdayKnown)return null'));
  assert.ok(source.includes('liaBirthdayOrganizerReminder'));
- assert.ok(source.includes("LiaBirthdayReminderStage='advance'|'today'"));
+ assert.ok(source.includes('daysUntil:number'));
+ assert.ok(source.includes('input.daysUntil<0||input.daysUntil>7'));
  const spoken=source.slice(source.indexOf('const spoken='),source.indexOf('const notification='));
  const notification=source.slice(source.indexOf('const notification='),source.indexOf('function language'));
  for(const section of [spoken,notification])for(const lang of ['fr:[','en:[','he:['])assert.ok(section.includes(lang));
