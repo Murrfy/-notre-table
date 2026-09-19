@@ -6171,6 +6171,31 @@ test('V0.296 birthday awareness can use a learned favorite meal as an idea but n
 });
 
 
+test('V0.297 live Family Message guidance passes only an explicitly learned favorite meal',()=>{
+  const screen=fs.readFileSync(path.join(root,'src/screens/LightParticipationScreen.tsx'),'utf8');
+  const service=fs.readFileSync(path.join(root,'src/services/lightParticipation.ts'),'utf8');
+  assert.ok(service.includes('favorite_meal?:string|null'));
+  assert.ok(service.includes('active,favorite_meal,created_at'));
+  assert.ok(screen.includes('members.find(member=>member.id===recipient.member_id)?.favorite_meal?.trim()||null'));
+  assert.ok(screen.includes('favoriteMeal});'));
+});
+
+test('V0.297 background family monitoring keeps the same learned taste when Message famille is closed',()=>{
+  const monitor=fs.readFileSync(path.join(root,'src/services/liaFamilyMealMonitor.ts'),'utf8');
+  assert.ok(monitor.includes('fetchLightMembers'));
+  assert.ok(monitor.includes('favoriteByMemberId'));
+  assert.ok(monitor.includes('favoriteMeal:favoriteByMemberId.get(memberId)??null'));
+});
+
+test('V0.297 LIA may mention the learned favorite for a real home-cooked vote but never treat it as decided',()=>{
+  const guidance=fs.readFileSync(path.join(root,'src/services/liaContextualGuidance.ts'),'utf8');
+  assert.ok(guidance.includes("favoriteMeal:string|null"));
+  assert.ok(guidance.includes('tu peux le citer comme simple piste, jamais comme choix déjà décidé'));
+  assert.ok(guidance.includes('Je sais que tu adores ${favorite}… ça peut être une piste.'));
+  assert.ok(guidance.includes("if(event.desire!=='home')return''"));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
