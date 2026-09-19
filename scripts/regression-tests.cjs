@@ -6607,6 +6607,17 @@ test('V0.314 birthday messages are varied, multilingual, and require a known dat
 });
 
 
+test('V0.314 birthday greetings have six variants per language and separate notification surface',()=>{
+ const source=fs.readFileSync(path.join(root,'src/services/liaBirthdayGreeting.ts'),'utf8');
+ assert.ok(source.includes("type BirthdaySurface='spoken'|'notification'"));
+ assert.ok(source.includes('birthdayKnown:boolean'));
+ assert.ok(source.includes("if(!input.birthdayKnown)return null"));
+ assert.ok(source.includes('liaBirthdayOrganizerReminder'));
+ const french=(source.match(/Joyeux anniversaire|Bon anniversaire|anniversaire de/g)??[]).length;
+ assert.ok(french>=6);
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
