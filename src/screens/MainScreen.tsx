@@ -53,13 +53,15 @@ export function MainScreen({ household, demo=false, onSignOut }:{household:House
     return()=>{active=false;};
   },[demo,household.id]);
   useEffect(()=>{
+    if(!demo&&!organizerName.trim())return;
     const feature:LiaAppFeature=tab==='planning'?'planning':tab==='recipes'?'recipes':tab==='shopping'?'shopping':'household';
     void emitLiaAppFeatureFirstUse({householdId:household.id,organizerName,feature}).catch(()=>{});
-  },[household.id,organizerName,tab]);
+  },[demo,household.id,organizerName,tab]);
   useEffect(()=>{
+    if(!demo&&!organizerName.trim())return;
     if(liaSurface!=='commander'&&liaSurface!=='memos')return;
     void emitLiaAppFeatureFirstUse({householdId:household.id,organizerName,feature:liaSurface}).catch(()=>{});
-  },[household.id,organizerName,liaSurface]);
+  },[demo,household.id,organizerName,liaSurface]);
   useEffect(()=>{
     const refresh=async()=>{
       const now=Date.now();if(now-lastOpenRefreshRef.current<2_000)return;lastOpenRefreshRef.current=now;
