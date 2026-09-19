@@ -42,9 +42,23 @@ export async function rememberLiaSpeakerIdentity(input:{
   return speaker;
 }
 
-export async function knownLiaSpeaker(trackId:string):Promise<LiaKnownSpeaker|null>{
+export async function knownLiaSpeaker(trackId:string,now=new Date()):Promise<LiaKnownSpeaker|null>{
   const store=await readStoredJson<Store>(KEY,{speakers:[]},valid);
-  return store.speakers.find(item=>item.trackId===trackId)??null;
+  const found=store.speakers.find(item=>item.trackId===trackId)??null;
+  if(!found)return null;
+  const age=now.getTime()-Date.parse(found.lastHeardAtIso);
+  return Number.isFinite(age)&&age<=12*60*60_000?found:null;
+}
+
+export async function forgetLiaSpeakerTrack(trackId:string):Promise<void>{
+  const store=await readStoredJson<Store>(KEY,{speakers:[]},valid);
+  await writeStoredJson(KEY,{speakers:store.speakers.filter(item=>item.trackId!==trackId)});
+}
+
+export async function touchLiaSpeakerTrack(trackId:string,now=new Date()):Promise<void>{
+  const store=await readStoredJson<Store>(KEY,{speakers:[]},valid);
+  const speakers=store.speakers.map(item=>item.trackId===trackId?{...item,lastHeardAtIso:now.toISOString()}:item);
+  await writeStoredJson(KEY,{speakers});
 }
 
 export function liaSpeakerGreeting(name:string,languageTag:string):string{
