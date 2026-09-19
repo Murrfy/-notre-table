@@ -1,5 +1,5 @@
 import {liaSpeakerIdentityPolicy,liaUnknownSpeakerQuestion} from './liaSpeakerIdentityPolicy';
-import {beginLiaSpeakerIdentification,consumeLiaSpeakerIdentification,liaIdentityAnswerName,liaSpeakerGreeting,mayAskLiaSpeakerIdentityAgain,noteLiaSpeakerIdentityAsked,rememberLiaSessionGuest,liaUnknownGuestIntroductionQuestion,liaFamilyMemberGreeting} from './liaSpeakerIdentitySession';
+import {beginLiaSpeakerIdentification,consumeLiaSpeakerIdentification,liaIdentityAnswerName,liaSpeakerGreeting,mayAskLiaSpeakerIdentityAgain,noteLiaSpeakerIdentityAsked,rememberLiaSessionGuest,liaUnknownGuestIntroductionQuestion,liaFamilyMemberGreeting,knownLiaGuestByName,liaReturningGuestGreeting,rememberLiaKnownGuest} from './liaSpeakerIdentitySession';
 import {LiaSpeakerRosterPerson,liaSpeakerDisambiguationQuestion,resolveLiaSpeakerFromRoster} from './liaSpeakerRosterResolution';
 
 export type LiaSpeakerIdentificationAction=
@@ -17,7 +17,7 @@ export function maybeAskLiaSpeakerIdentity(input:{trackId:string;memberId:string
  return{kind:'ask_identity',trackId:input.trackId,spokenReply:liaUnknownSpeakerQuestion(input.languageTag),answerFirst:policy.answerBeforeIdentityQuestion};
 }
 
-export function resolvePendingLiaSpeakerIdentity(input:{text:string;roster:LiaSpeakerRosterPerson[];languageTag:string}):LiaSpeakerIdentificationAction{
+export async function resolvePendingLiaSpeakerIdentity(input:{text:string;roster:LiaSpeakerRosterPerson[];languageTag:string}):Promise<LiaSpeakerIdentificationAction>{
  const pending=consumeLiaSpeakerIdentification();
  if(!pending)return{kind:'none'};
  const name=liaIdentityAnswerName(input.text);
@@ -25,7 +25,8 @@ export function resolvePendingLiaSpeakerIdentity(input:{text:string;roster:LiaSp
  const resolution=resolveLiaSpeakerFromRoster(name,input.roster);
  if(resolution.status==='matched')return{kind:'confirmed',trackId:pending.trackId,memberId:resolution.person.subjectId,spokenReply:liaFamilyMemberGreeting(resolution.person.displayName,input.languageTag,resolution.person.displayName.length)};
  if(resolution.status==='ambiguous'){beginLiaSpeakerIdentification(pending.trackId);return{kind:'clarify',trackId:pending.trackId,spokenReply:liaSpeakerDisambiguationQuestion(resolution.candidates,input.languageTag)};}
- const fr=input.languageTag.toLowerCase().startsWith('fr');
+ const knownGuest=await knownLiaGuestByName(name);
  rememberLiaSessionGuest(pending.trackId,name);
+ if(knownGuest){await rememberLiaKnownGuest({displayName:knownGuest.displayName,relationshipLabel:knownGuest.relationshipLabel});return{kind:'session_guest',trackId:pending.trackId,displayName:knownGuest.displayName,spokenReply:liaReturningGuestGreeting(knownGuest.displayName,input.languageTag,knownGuest.displayName.length+new Date(knownGuest.lastMetAtIso).getDate()),awaitingRelationshipConfirmation:true};}
  return{kind:'session_guest',trackId:pending.trackId,displayName:name,spokenReply:liaUnknownGuestIntroductionQuestion(name,input.languageTag,name.length),awaitingRelationshipConfirmation:true};
 }
