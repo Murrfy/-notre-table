@@ -1,7 +1,7 @@
 import {supabase} from '../lib/supabase';
 import {isRecord,readStoredJson,writeStoredJson} from '../lib/storage';
 import {emitLiaContextualGuidance} from './liaContextualGuidance';
-import {parseLiaFavoriteMealAnswer} from '../lib/liaProfileFacts';
+import {parseLiaDislikedFoodAnswer,parseLiaFavoriteMealAnswer} from '../lib/liaProfileFacts';
 
 const LEDGER_KEY='@notre-table/lia-profile-enrichment-v1';
 const GLOBAL_GAP_MS=48*60*60*1000;
@@ -13,7 +13,7 @@ export type LiaProfileEnrichmentTarget={
   subjectKind:'profile'|'light_member';
   subjectId:string;
   subjectName:string;
-  fact:'birthday'|'favorite_meal';
+  fact:'birthday'|'favorite_meal'|'disliked_food';
 };
 
 type TargetLedger={lastAskedAtIso?:string|null;snoozedUntilIso?:string|null;dismissed?:boolean};
@@ -51,11 +51,13 @@ async function profileCandidates(householdId:string):Promise<LiaProfileEnrichmen
   const {data:{user},error:userError}=await supabase.auth.getUser();
   if(userError)throw userError;
   if(!user)return[];
-  const [{data:profile,error:profileError},{data:members,error:memberError}]=await Promise.all([
+  const [{data:profile,error:profileError},{data:preferences,error:preferencesError},{data:members,error:memberError}]=await Promise.all([
     supabase.from('profiles').select('id,display_name,birthday_month,birthday_day,favorite_meal').eq('id',user.id).maybeSingle(),
-    supabase.from('light_members').select('id,display_name,relation,active,birthday_month,birthday_day,favorite_meal,created_at').eq('household_id',householdId).eq('active',true).order('created_at',{ascending:true}),
+    supabase.from('member_preferences').select('user_id,disliked_foods').eq('user_id',user.id).maybeSingle(),
+    supabase.from('light_members').select('id,display_name,relation,active,birthday_month,birthday_day,favorite_meal,disliked_foods,created_at').eq('household_id',householdId).eq('active',true).order('created_at',{ascending:true}),
   ]);
   if(profileError)throw profileError;
+  if(preferencesError)throw preferencesError;
   if(memberError)throw memberError;
 
   const candidates:LiaProfileEnrichmentTarget[]=[];
@@ -81,6 +83,17 @@ async function profileCandidates(householdId:string):Promise<LiaProfileEnrichmen
     const subjectName=cleanName(member.display_name??'');
     if(!subjectName)continue;
     candidates.push({householdId,subjectKind:'light_member',subjectId:String(member.id),subjectName,fact:'favorite_meal'});
+  }
+  const profileDislikes=Array.isArray(preferences?.disliked_foods)?preferences.disliked_foods.filter((item:any)=>cleanName(String(item))).map((item:any)=>cleanName(String(item))):[];
+  if(profile&&profileDislikes.length===0){
+    candidates.push({householdId,subjectKind:'profile',subjectId:user.id,subjectName:profileName,fact:'disliked_food'});
+  }
+  for(const member of ranked as any[]){
+    const dislikes=Array.isArray(member.disliked_foods)?member.disliked_foods.filter((item:any)=>cleanName(String(item))):[];
+    if(dislikes.length)continue;
+    const subjectName=cleanName(member.display_name??'');
+    if(!subjectName)continue;
+    candidates.push({householdId,subjectKind:'light_member',subjectId:String(member.id),subjectName,fact:'disliked_food'});
   }
   return candidates;
 }
@@ -252,6 +265,28 @@ export async function continueLiaProfileEnrichmentClarification(input:{
     return{status:'saved',spokenReply:fr(input.languageTag)
       ?`Parfait, je garde en tête que ${target.subjectName} adore ${favoriteMeal}.`
       :`Perfect. I’ll remember that ${target.subjectName} loves ${favoriteMeal}.`};
+  }
+
+  if(target.fact==='disliked_food'){
+    const dislikedFood=parseLiaDislikedFoodAnswer(input.text);
+    if(!dislikedFood){
+      return{status:'needs_clarification',spokenReply:fr(input.languageTag)
+        ?`Dis-moi juste un aliment que ${target.subjectName} n’aime vraiment pas. Par exemple « champignons » ou « coriandre ».`
+        :`Just tell me one food ${target.subjectName} really dislikes, for example “mushrooms” or “cilantro”.`};
+    }
+    const {error}=await supabase.rpc('add_lia_family_disliked_food',{
+      p_household_id:target.householdId,
+      p_subject_kind:target.subjectKind,
+      p_subject_id:target.subjectId,
+      p_disliked_food:dislikedFood,
+    });
+    if(error){
+      return{status:'unavailable',spokenReply:fr(input.languageTag)?'Je n’arrive pas à l’enregistrer pour le moment. On réessaiera plus tard.':'I can’t save it right now. We’ll try again later.'};
+    }
+    pending=null;
+    return{status:'saved',spokenReply:fr(input.languageTag)
+      ?`C’est noté : ${target.subjectName} n’aime vraiment pas ${dislikedFood}. Je l’éviterai dans mes idées.`
+      :`Got it: ${target.subjectName} really dislikes ${dislikedFood}. I’ll avoid it in my suggestions.`};
   }
 
   const birthday=parseLiaBirthdayAnswer(input.text,input.now??new Date());
