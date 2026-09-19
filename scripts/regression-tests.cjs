@@ -6380,6 +6380,27 @@ test('V0.302 contextual lock-screen copy is allowed only for ordinary research',
 });
 
 
+test('V0.303 keeps written name distinct from corrected spoken pronunciation',()=>{
+  const source=fs.readFileSync(path.join(root,'src/services/liaNameVoicePreference.ts'),'utf8');
+  assert.ok(source.includes("factKey:'name_pronunciation'"));
+  assert.ok(source.includes('displayName,spokenName'));
+  assert.ok(source.includes("householdSafe:false"));
+});
+
+test('V0.303 pronunciation correction replaces the stable person fact instead of changing display name',()=>{
+  const source=fs.readFileSync(path.join(root,'src/services/liaNameVoicePreference.ts'),'utf8');
+  const memory=fs.readFileSync(path.join(root,'src/services/liaRelationshipMemory.ts'),'utf8');
+  assert.ok(source.includes("row.subjectLabel===subjectLabel&&row.factKey==='name_pronunciation'"));
+  assert.ok(memory.includes("onConflict:'user_id,topic,subject_label,fact_key'"));
+  assert.ok(!source.includes('updateMyDisplayName'));
+});
+
+test('V0.303 user name is an opening-address option, not a repeated conversational tic',()=>{
+  const source=fs.readFileSync(path.join(root,'src/services/liaNameVoicePreference.ts'),'utf8');
+  assert.ok(source.includes('isConversationStart&&input.turnsSinceStart===0&&!input.usedNameThisConversation'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
