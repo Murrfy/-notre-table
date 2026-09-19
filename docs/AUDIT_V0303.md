@@ -9,7 +9,7 @@
 - La correction vocale ne modifie jamais `display_name`.
 - Une correction ultérieure remplace la préférence précédente au lieu de créer des variantes concurrentes.
 - Le prénom n'est pas injecté à chaque tour de conversation.
-- Aucune prononciation personnalisée n'est inventée sans correction connue.
+- Aucune prononciation personnalisée n'est inventée sans correction connue.\n- En cas d'incertitude réelle, LIA peut demander la prononciation une seule fois ; elle ne redemande pas lorsqu'une préférence confirmée existe.
 
 ## Validation
 À valider par le workflow GitHub `Validate Notre Table` sur le SHA exact de la PR avant fusion.
