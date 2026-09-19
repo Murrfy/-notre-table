@@ -44,7 +44,10 @@ function memosFact(items:LiaMemo[]):LiaAgentConfirmedFact|null{
 }
 function familyFact(items:LightMember[]):LiaAgentConfirmedFact|null{
   const active=items.filter(item=>item.active);
-  return confirmed('app.family_members',active.length?compact(active.map(item=>`${item.display_name}${item.phone_number?.trim()?' (joignable)':' (sans numéro)'}`),12):'Aucun membre actif enregistré pour les messages famille.');
+  return confirmed('app.family_members',active.length?compact(active.map(item=>{
+    const dislike=item.disliked_foods?.find(value=>value.trim())?.trim();
+    return `${item.display_name}${item.phone_number?.trim()?' (joignable)':' (sans numéro)'}${dislike?` · n’aime pas: ${dislike}`:''}`;
+  }),12):'Aucun membre actif enregistré pour les messages famille.');
 }
 function familyDecisionsFact(items:LightMealDecisionSnapshot[]):LiaAgentConfirmedFact|null{
   if(!items.length)return null;
