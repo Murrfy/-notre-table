@@ -6253,6 +6253,8 @@ test('V0.299 stuck-step guidance resets on real progress and targets exact scree
   assert.ok(hook.includes('setTimeout'));
   assert.ok(hook.includes('Math.max(12_000,input.delayMs??35_000)'));
   assert.ok(hook.includes('emitLiaAppFeatureHelp'));
+  assert.ok(hook.includes('useRef(new Set<string>())'));
+  assert.ok(hook.includes('emittedRef.current.has(key)'));
   const planning=fs.readFileSync(path.join(root,'src/screens/PlanningScreen.tsx'),'utf8');
   const shopping=fs.readFileSync(path.join(root,'src/screens/ShoppingScreen.tsx'),'utf8');
   const memos=fs.readFileSync(path.join(root,'src/screens/MemosScreen.tsx'),'utf8');
