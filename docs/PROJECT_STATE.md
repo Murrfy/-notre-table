@@ -1,3 +1,16 @@
+## V0.297 — Guidage contextuel généralisé
+
+- Le moteur de guidage V0.294 est étendu à Planning, Courses et Recettes ; aucun système parallèle.
+- Première utilisation : une seule explication courte par fonction et par foyer local.
+- Planning : aide après 18 s dans l’éditeur si aucun repas, recette ou reste n’a encore été choisi.
+- Courses : aide après 12 s lorsqu’un article est saisi mais non ajouté.
+- Recettes : aide après 15 s lorsqu’une recherche non vide reste sans résultat.
+- Les timers s’annulent dès que la personne progresse ; LIA se tait pendant une utilisation normale.
+- Un même type d’aide est limité par un cooldown de 10 minutes.
+- Le prénom du profil est utilisé lorsqu’il est réellement disponible, sans servir de clé de répétition.
+- Les apprentissages V0.294–V0.296 restent inchangés : anniversaires et plats préférés sont conservés.
+- Même LIA, même voix, même pipeline et même lane de génération contextuelle.
+
 ## V0.296 — Apprentissage progressif des goûts
 
 - Le moteur d’enrichissement familial ne se limite plus aux anniversaires : il peut ensuite demander le plat préféré d’une personne.
