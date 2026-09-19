@@ -1,5 +1,11 @@
-# Notre Table — V0.303
+# Notre Table — V0.304
 
+
+## V0.304 — Voix personnelle, limites et identité prudente
+
+La prononciation préférée est désormais appliquée au rendu vocal sans modifier le prénom écrit. La même logique est préparée par identité stable pour les membres de la famille. LIA dispose aussi de réponses variées face aux répétitions, cris probables et insultes répétées, avec un retrait temporaire au niveau le plus fort.
+
+À table et en cuisine, une identité de locuteur n'est considérée fiable qu'avec une confiance élevée et sans chevauchement de voix. Sans identité fiable, LIA n'utilise aucun prénom et n'attribue aucun souvenir personnel ; elle cherche à identifier la personne, tout en pouvant répondre d'abord à une question pratique urgente.
 
 ## V0.303 — Prénom naturel et prononciation préférée
 
