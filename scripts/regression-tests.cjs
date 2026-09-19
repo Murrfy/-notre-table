@@ -6357,6 +6357,29 @@ test('V0.301 remembered delight stays optional, factual and never becomes a new 
 });
 
 
+test('V0.302 interrupted research becomes a bounded search continuation, not forgotten work',()=>{
+  const source=fs.readFileSync(path.join(root,'src/services/liaResearchContinuity.ts'),'utf8');
+  assert.ok(source.includes("kind:'follow_up'"));
+  assert.ok(source.includes("action:'search'"));
+  assert.ok(source.includes('30*60*1000'));
+  assert.ok(source.includes('14*24*60*60*1000'));
+});
+
+test('V0.302 promising research may propose a linked Memo but never silently persists one',()=>{
+  const source=fs.readFileSync(path.join(root,'src/services/liaResearchContinuity.ts'),'utf8');
+  assert.ok(source.includes('memoSuggestion'));
+  assert.ok(source.includes("kind:'other' as const"));
+  assert.ok(source.includes('liaResearchContinuationCanAutoPersistMemo():false'));
+  assert.ok(!source.includes('createLiaMemo('));
+});
+
+test('V0.302 contextual lock-screen copy is allowed only for ordinary research',()=>{
+  const source=fs.readFileSync(path.join(root,'src/services/liaResearchContinuity.ts'),'utf8');
+  assert.ok(source.includes("input.sensitivity==='ordinary'"));
+  assert.ok(source.includes('notificationPreviewSafe:Boolean(notificationPreview)'));
+});
+
+
 let passed=0;
 for(const {name,fn} of tests){
   try{fn();passed++;console.log(`PASS ${name}`);}catch(error){console.error(`FAIL ${name}`);console.error(error?.stack||error);process.exitCode=1;}
